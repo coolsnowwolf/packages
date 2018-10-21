@@ -13,12 +13,14 @@ include $(TOPDIR)/rules.mk
 # - check if default mode has changed from being tcp_only
 #
 PKG_NAME:=shadowsocks-libev
-PKG_VERSION:=3.2.0
+PKG_VERSION:=3.2.1
 PKG_RELEASE:=1
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://github.com/shadowsocks/shadowsocks-libev/releases/download/v$(PKG_VERSION)
-PKG_HASH:=5521cf623a07fd1e393528516a83acd2b66c5d4bb4535a52662806a6a060c606
+PKG_SOURCE_PROTO:=git
+PKG_SOURCE_URL:=https://github.com/shadowsocks/shadowsocks-libev.git
+PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
+PKG_SOURCE_VERSION:=92cab3503c94b36234872f66926de0070a9cdcd0
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
 
 PKG_MAINTAINER:=Yousong Zhou <yszhou4tech@gmail.com>
 
@@ -42,10 +44,10 @@ define Package/shadowsocks-libev-config
 endef
 
 define Package/shadowsocks-libev-config/install
-	$(INSTALL_DIR) $(1)/etc/config
-	$(INSTALL_DATA) ./files/shadowsocks-libev.config $(1)/etc/config/shadowsocks-libev
-	$(INSTALL_DIR) $(1)/etc/init.d
-	$(INSTALL_BIN) ./files/shadowsocks-libev.init $(1)/etc/init.d/shadowsocks-libev
+	#$(INSTALL_DIR) $(1)/etc/config
+	#$(INSTALL_DATA) ./files/shadowsocks-libev.config $(1)/etc/config/shadowsocks-libev
+	#$(INSTALL_DIR) $(1)/etc/init.d
+	#$(INSTALL_BIN) ./files/shadowsocks-libev.init $(1)/etc/init.d/shadowsocks-libev
 endef
 
 
