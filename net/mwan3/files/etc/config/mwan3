@@ -19,6 +19,15 @@ config interface 'wan'
 	option down '3'
 	option up '8'
 
+config member 'wan_m1_w3'
+	option interface 'wan'
+	option metric '1'
+	option weight '3'
+
+config policy 'balanced'
+	option last_resort 'unreachable'
+	list use_member 'wan_m1_w3'
+
 config rule 'https'
 	option sticky '1'
 	option dest_port '443'
