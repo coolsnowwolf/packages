@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=python-lxml
-PKG_VERSION:=4.1.1
+PKG_VERSION:=4.3.1
 PKG_RELEASE:=1
 
-PKG_SOURCE:=lxml-$(PKG_VERSION).tgz
-PKG_SOURCE_URL:=http://lxml.de/files/
-PKG_HASH:=940caef1ec7c78e0c34b0f6b94fe42d0f2022915ffc78643d28538a5cfd0f40e
+PKG_SOURCE:=lxml-$(PKG_VERSION).tar.gz
+PKG_SOURCE_URL:=https://files.pythonhosted.org/packages/source/l/lxml
+PKG_HASH:=da5e7e941d6e71c9c9a717c93725cda0708c2474f532e3680ac5e39ec57d224d
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(BUILD_VARIANT)-lxml-$(PKG_VERSION)
 PKG_UNPACK=$(HOST_TAR) -C $(PKG_BUILD_DIR) --strip-components=1 -xzf $(DL_DIR)/$(PKG_SOURCE)
@@ -30,7 +30,7 @@ define Package/python-lxml/Default
   SECTION:=lang
   CATEGORY:=Languages
   SUBMENU:=Python
-  URL:=http://lxml.de
+  URL:=https://lxml.de
   DEPENDS:=+libxml2 +libxslt +libexslt
 endef
 
