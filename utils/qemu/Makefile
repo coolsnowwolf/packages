@@ -9,11 +9,11 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=qemu
-PKG_VERSION:=2.11.1
-PKG_RELEASE:=1
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
-PKG_HASH:=d9df2213ceed32e91dab7bc9dd19c1af83f91ba72c7aeef7605dfaaf81732ccb
-PKG_SOURCE_URL:=http://wiki.qemu-project.org/download/
+PKG_VERSION:=3.1.0
+PKG_RELEASE:=2
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
+PKG_HASH:=6a0508df079a0a33c2487ca936a56c12122f105b8a96a44374704bef6c69abfc
+PKG_SOURCE_URL:=http://download.qemu.org/
 PKG_LICENSE:=GPL-2.0
 PKG_LICENSE_FILES:=LICENSE tcg/LICENSE
 PKG_MAINTAINER:=Yousong Zhou <yszhou4tech@gmail.com>
@@ -96,6 +96,34 @@ define Package/qemu-bridge-helper/install
 	$(INSTALL_DATA) ./files/bridge.conf $(1)/etc/qemu
 endef
 
+define Package/qemu-img
+ SECTION:=utils
+ CATEGORY:=Utilities
+ SUBMENU:=Virtualization
+ TITLE:=QEMU Image utility
+ URL:=http://www.qemu.org
+ DEPENDS:=+glib2 $(CXX_DEPENDS) $(QEMU_DEPS_IN_HOST)
+endef
+
+define Package/qemu-img/install
+	$(INSTALL_DIR) $(1)/usr/bin/
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/qemu-img $(1)/usr/bin/qemu-img
+endef
+
+define Package/qemu-nbd
+ SECTION:=utils
+ CATEGORY:=Utilities
+ SUBMENU:=Virtualization
+ TITLE:=QEMU Network Block Device Utility
+ URL:=http://www.qemu.org
+ DEPENDS:=+glib2 $(CXX_DEPENDS) $(QEMU_DEPS_IN_HOST) +kmod-nbd
+endef
+
+define Package/qemu-nbd/install
+	$(INSTALL_DIR) $(1)/usr/sbin/
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/qemu-nbd $(1)/usr/sbin/qemu-nbd
+endef
+
 PKG_CONFIG_DEPENDS += CONFIG_PACKAGE_qemu-ga
 
 # Naming rules used in qemu Makefile.target
@@ -165,75 +193,77 @@ CONFIGURE_ARGS +=			\
 	--disable-fortify-source	\
 	--disable-stack-protector	\
 
+# Make a list from QEMU source code for reference
+#
+#	grep -E '^\s*--disable-[^)]+\)' configure | cut -f1 -d')' | sort -u
+#
 CONFIGURE_ARGS +=			\
 	--audio-drv-list=''		\
+	--disable-attr			\
+	--disable-bluez			\
+	--disable-brlapi		\
+	--disable-bsd-user		\
+	--disable-bzip2			\
+	--disable-cap-ng		\
+	--disable-cocoa			\
+	--disable-curl			\
 	--disable-debug-info		\
-	--disable-modules		\
-	--disable-sdl			\
-	--disable-qom-cast-debug	\
-	--disable-virtfs		\
-	--disable-vnc			\
 	--disable-debug-tcg		\
+	--disable-docs			\
+	--disable-gcrypt		\
+	--disable-glusterfs		\
+	--disable-gnutls		\
+	--disable-gtk			\
+	--disable-guest-agent-msi	\
+	--disable-jemalloc		\
+	--disable-libiscsi		\
+	--disable-libnfs		\
+	--disable-libpmem		\
+	--disable-libssh2		\
+	--disable-libudev		\
+	--disable-libusb		\
+	--disable-libxml2		\
+	--disable-linux-aio		\
+	--disable-lzo			\
+	--disable-modules		\
+	--disable-netmap		\
+	--disable-nettle		\
+	--disable-numa			\
+	--disable-opengl		\
+	--disable-qom-cast-debug	\
+	--disable-rbd			\
+	--disable-rdma			\
+	--disable-sdl			\
+	--disable-seccomp		\
+	--disable-smartcard		\
+	--disable-snappy		\
 	--disable-sparse		\
+	--disable-spice			\
 	--disable-strip			\
-	--disable-vnc-sasl		\
-	--disable-vnc-jpeg		\
-	--disable-vnc-png		\
+	--disable-tcg-interpreter	\
+	--disable-tcmalloc		\
+	--disable-tools			\
+	--disable-tpm			\
+	--disable-usb-redir		\
 	--disable-uuid			\
 	--disable-vde			\
-	--disable-netmap		\
+	--disable-vhdx			\
+	--disable-virglrenderer		\
+	--disable-virtfs		\
+	--disable-vnc			\
+	--disable-vnc-jpeg		\
+	--disable-vnc-png		\
+	--disable-vnc-sasl		\
+	--disable-vte			\
+	--disable-werror		\
 	--disable-xen			\
 	--disable-xen-pci-passthrough	\
 	--disable-xen-pv-domain-build	\
-	--disable-brlapi		\
-	--disable-bluez			\
-	--disable-tcg-interpreter	\
-	--disable-cap-ng		\
-	--disable-spice			\
-	--disable-libiscsi		\
-	--disable-libnfs		\
-	--disable-cocoa			\
-	--disable-bsd-user		\
-	--disable-curl			\
-	--disable-linux-aio		\
-	--disable-attr			\
-	--disable-docs			\
-	--disable-opengl		\
-	--disable-rbd			\
 	--disable-xfsctl		\
-	--disable-smartcard		\
-	--disable-libusb		\
-	--disable-usb-redir		\
 	--disable-zlib-test		\
-	--disable-lzo			\
-	--disable-snappy		\
-	--disable-bzip2			\
-	--disable-guest-agent-msi	\
-	--disable-tools			\
-	--disable-seccomp		\
-	--disable-glusterfs		\
-	--disable-gtk			\
-	--disable-gnutls		\
-	--disable-nettle		\
-	--disable-gcrypt		\
-	--disable-rdma			\
-	--disable-vte			\
-	--disable-virglrenderer		\
-	--disable-tpm			\
-	--disable-libssh2		\
-	--disable-vhdx			\
-	--disable-numa			\
-	--disable-tcmalloc		\
-	--disable-jemalloc		\
-	--disable-strip			\
-	--disable-werror		\
 
-QEMU_CONFIGURE_TARGET_LIST := $(foreach target,$(QEMU_TARGET_LIST),$(if $(CONFIG_PACKAGE_qemu-$(target)),$(target)))
-CONFIGURE_ARGS += --target-list='$(QEMU_CONFIGURE_TARGET_LIST)'
-
-ifneq ($(CONFIG_PACKAGE_qemu-ga),)
-CONFIGURE_ARGS += --enable-guest-agent
-endif
+CONFIGURE_ARGS += --target-list='$(foreach target,$(QEMU_TARGET_LIST),$(if $(CONFIG_PACKAGE_qemu-$(target)),$(target)))'
+CONFIGURE_ARGS += $(if $(CONFIG_PACKAGE_qemu-ga),--enable-guest-agent)
 
 TARGET_LDFLAGS += -Wl,--as-needed
 MAKE_VARS += V=s
@@ -246,6 +276,8 @@ MAKE_FLAGS:=$(filter-out	\
 QEMU_MAKE_TARGETS := \
 	$(if $(CONFIG_PACKAGE_qemu-ga),qemu-ga) \
 	$(if $(CONFIG_PACKAGE_qemu-bridge-helper),qemu-bridge-helper) \
+	$(if $(CONFIG_PACKAGE_qemu-img),qemu-img) \
+	$(if $(CONFIG_PACKAGE_qemu-nbd),qemu-nbd) \
 	$(foreach target,$(QEMU_TARGET_LIST),$(if $(CONFIG_PACKAGE_qemu-$(target)),subdir-$(target))) \
 
 define Build/Compile
@@ -255,6 +287,8 @@ endef
 $(eval $(call BuildPackage,virtio-console-helper))
 $(eval $(call BuildPackage,qemu-ga))
 $(eval $(call BuildPackage,qemu-bridge-helper))
+$(eval $(call BuildPackage,qemu-img))
+$(eval $(call BuildPackage,qemu-nbd))
 $(eval $(call BuildPackage,qemu-blobs))
 $(foreach target,$(QEMU_TARGET_LIST), \
   $(eval $(call BuildPackage,qemu-$(target))) \
