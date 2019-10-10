@@ -39,7 +39,7 @@ menu "Kernel features for Docker"
 	menu "Network"
 		config DOCKER_NET_OVERLAY
 			bool "Enables the Overlay network feature"
-			default y
+			default n
 			select PACKAGE_kmod-udptunnel4
 			help
 			  Selects kernel options for the Overlay network feature.
@@ -77,7 +77,7 @@ menu "Kernel features for Docker"
 
 		config DOCKER_STO_BTRFS
 			bool "Enables support for btrfs as the backing filesystem"
-			default y
+			default n
 			select PACKAGE_kmod-fs-btrfs
 			select KERNEL_BTRFS_FS_POSIX_ACL
 	endmenu
