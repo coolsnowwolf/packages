@@ -1,7 +1,7 @@
 menu "Kernel features for Docker"
 	config DOCKER_KERNEL_OPTIONS
 		bool "Enable Basic kernel support for Docker"
-		default n
+		default y
 		select KERNEL_CGROUPS
 		select KERNEL_CGROUP_CPUACCT
 		select KERNEL_CGROUP_SCHED
@@ -18,7 +18,7 @@ menu "Kernel features for Docker"
 
 	config DOCKER_SECCOMP
 		bool "Enable support for seccomp in Docker"
-		default n
+		default y
 		select KERNEL_SECCOMP
 		select PACKAGE_libseccomp
 		help
@@ -27,7 +27,7 @@ menu "Kernel features for Docker"
 
 	config DOCKER_RES_SHAPE
 		bool "Enables support for resource shaping"
-		default n
+		default y
 		select KERNEL_MEMCG_SWAP
 		select KERNEL_MEMCG_SWAP_ENABLED
 		select KERNEL_BLK_DEV_THROTTLING
@@ -39,7 +39,7 @@ menu "Kernel features for Docker"
 	menu "Network"
 		config DOCKER_NET_OVERLAY
 			bool "Enables the Overlay network feature"
-			default n
+			default y
 			select PACKAGE_kmod-udptunnel4
 			help
 			  Selects kernel options for the Overlay network feature.
@@ -58,7 +58,7 @@ menu "Kernel features for Docker"
 
 		config DOCKER_NET_MACVLAN
 			bool "Enables macvlan kernel support"
-			default n
+			default y
 			select PACKAGE_kmod-macvlan
 			select PACKAGE_kmod-dummy
 
@@ -72,12 +72,12 @@ menu "Kernel features for Docker"
 	menu "Storage"
 		config DOCKER_STO_EXT4
 			bool "Enables support for ext3 or ext4 as the backing filesystem"
-			default n
+			default y
 			select KERNEL_EXT4_FS_POSIX_ACL
 
 		config DOCKER_STO_BTRFS
 			bool "Enables support for btrfs as the backing filesystem"
-			default n
+			default y
 			select PACKAGE_kmod-fs-btrfs
 			select KERNEL_BTRFS_FS_POSIX_ACL
 	endmenu
