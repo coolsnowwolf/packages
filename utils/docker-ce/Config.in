@@ -18,7 +18,7 @@ menu "Kernel features for Docker"
 
 	config DOCKER_SECCOMP
 		bool "Enable support for seccomp in Docker"
-		default n
+		default y
 		select KERNEL_SECCOMP
 		select PACKAGE_libseccomp
 		help
