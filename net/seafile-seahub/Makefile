@@ -38,7 +38,7 @@ define Package/seafile-seahub
   TITLE:=Seafile server - seahub component
   URL:=https://seafile.com/
   DEPENDS:=+python \
-	+django-simple-captcha +django-statici18n +django-webpack-loader \
+	+python-django-simple-captcha +python-django-statici18n +python-django-webpack-loader \
 	+python-flup +gunicorn +openpyxl \
 	$(foreach dep,$(SEAFILE_PYTHON_DEPENDS),+python-$(dep))
 endef
