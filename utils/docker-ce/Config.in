@@ -1,4 +1,6 @@
 menu "Kernel features for Docker"
+        depends on PACKAGE_docke-ce
+
 	config DOCKER_KERNEL_OPTIONS
 		bool "Enable Basic kernel support for Docker"
 		default y
