@@ -34,20 +34,20 @@ PKG_BUILD_DEPENDS:=c-ares pcre
 include $(INCLUDE_DIR)/package.mk
 
 
-define Package/shadowsocks-libev-config
-  SECTION:=net
-  CATEGORY:=Network
-  SUBMENU:=Web Servers/Proxies
-  TITLE:=shadowsocks-libev config scripts
-  URL:=https://github.com/shadowsocks/shadowsocks-libev
-endef
+# define Package/shadowsocks-libev-config
+#   SECTION:=net
+#   CATEGORY:=Network
+#   SUBMENU:=Web Servers/Proxies
+#   TITLE:=shadowsocks-libev config scripts
+#   URL:=https://github.com/shadowsocks/shadowsocks-libev
+# endef
 
-define Package/shadowsocks-libev-config/install
-	#$(INSTALL_DIR) $(1)/etc/config
-	#$(INSTALL_DATA) ./files/shadowsocks-libev.config $(1)/etc/config/shadowsocks-libev
-	#$(INSTALL_DIR) $(1)/etc/init.d
-	#$(INSTALL_BIN) ./files/shadowsocks-libev.init $(1)/etc/init.d/shadowsocks-libev
-endef
+# define Package/shadowsocks-libev-config/install
+# 	$(INSTALL_DIR) $(1)/etc/config
+# 	$(INSTALL_DATA) ./files/shadowsocks-libev.config $(1)/etc/config/shadowsocks-libev
+# 	$(INSTALL_DIR) $(1)/etc/init.d
+# 	$(INSTALL_BIN) ./files/shadowsocks-libev.init $(1)/etc/init.d/shadowsocks-libev
+# endef
 
 
 define Package/shadowsocks-libev/Default
@@ -57,7 +57,7 @@ define Package/shadowsocks-libev/Default
     SUBMENU:=Web Servers/Proxies
     TITLE:=shadowsocks-libev $(1)
     URL:=https://github.com/shadowsocks/shadowsocks-libev
-    DEPENDS:=+libev +libmbedtls +libpthread +libsodium +shadowsocks-libev-config $(DEPENDS_$(1))
+    DEPENDS:=+libev +libmbedtls +libpthread +libsodium $(DEPENDS_$(1)) #+shadowsocks-libev-config
   endef
 
   define Package/shadowsocks-libev-$(1)/install
@@ -85,7 +85,7 @@ define Package/shadowsocks-libev-ss-rules
   SUBMENU:=Web Servers/Proxies
   TITLE:=shadowsocks-libev ss-rules
   URL:=https://github.com/shadowsocks/shadowsocks-libev
-  DEPENDS:=+ip +ipset +iptables-mod-tproxy +resolveip +shadowsocks-libev-ss-redir +shadowsocks-libev-config
+  DEPENDS:=+ip +ipset +iptables-mod-tproxy +resolveip +shadowsocks-libev-ss-redir #+shadowsocks-libev-config
 endef
 
 define Package/shadowsocks-libev-ss-rules/install
@@ -125,7 +125,7 @@ CONFIGURE_ARGS += \
 TARGET_CFLAGS += -flto
 TARGET_LDFLAGS += -Wl,--gc-sections,--as-needed
 
-$(eval $(call BuildPackage,shadowsocks-libev-config))
+# $(eval $(call BuildPackage,shadowsocks-libev-config))
 $(eval $(call BuildPackage,shadowsocks-libev-ss-rules))
 $(foreach component,$(SHADOWSOCKS_COMPONENTS), \
   $(eval $(call BuildPackage,shadowsocks-libev-$(component))) \
