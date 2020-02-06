@@ -8,24 +8,28 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libxslt
-PKG_VERSION:=1.1.32
-PKG_RELEASE:=2
+PKG_VERSION:=1.1.33
+PKG_RELEASE:=4
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:= \
 	http://xmlsoft.org/sources/ \
 	ftp://fr.rpmfind.net/pub/libxml/
-PKG_HASH:=526ecd0abaf4a7789041622c3950c0e7f2c4c8835471515fd77eec684a355460
+PKG_HASH:=8e36605144409df979cab43d835002f63988f3dc94d5d3537c12796db90e38c8
 
 PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=COPYING
+PKG_CPE_ID:=cpe:/a:xmlsoft:libxslt
 
 PKG_MAINTAINER:=Jiri Slachta <jiri@slachta.eu>
 
 PKG_FIXUP:=autoreconf
 PKG_INSTALL:=1
 
+HOST_BUILD_DEPENDS:=libxml2/host
+
 include $(INCLUDE_DIR)/package.mk
+include $(INCLUDE_DIR)/host-build.mk
 
 define Package/libxslt
   SECTION:=libs
@@ -125,6 +129,16 @@ define Build/InstallDev
 	 $(if $(CONFIG_PACKAGE_libexslt),$(call Build/InstallDev/Exslt,$(1),$(2)))
 endef
 
+HOST_CONFIGURE_ARGS+= \
+	--disable-silent-rules \
+	--enable-static \
+	--with-libxml-prefix=$(STAGING_DIR_HOSTPKG) \
+	--without-python \
+	--without-crypto \
+	--without-debug \
+	--without-mem-debug \
+	--without-debugger
+
 define Package/libxslt/install
 	$(INSTALL_DIR) $(1)/usr/lib
 	$(CP) \
@@ -149,3 +163,4 @@ endef
 $(eval $(call BuildPackage,libxslt))
 $(eval $(call BuildPackage,libexslt))
 $(eval $(call BuildPackage,xsltproc))
+$(eval $(call HostBuild))
