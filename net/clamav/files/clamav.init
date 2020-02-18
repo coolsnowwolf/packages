@@ -9,7 +9,7 @@ PROG=/usr/sbin/clamd
 CLAMD_CONFIGFILE="/tmp/clamav/clamd.conf"
 
 validate_clamav_section() {
-	uci_validate_section clamav clamav "${1}" \
+	uci_load_validate clamav clamav "$1" "$2" \
 		'clamd_config_file:string' \
 		'LogFile:string' \
 		'LogFileMaxSize:string' \
@@ -30,7 +30,7 @@ validate_clamav_section() {
 		'ScanPE:string' \
 		'DisableCertCheck:string' \
 		'ScanELF:string' \
-		'DetectBrokenExecutables:string' \
+		'AlertBrokenExecutables:string' \
 		'ScanOLE2:string' \
 		'ScanPDF:string' \
 		'ScanSWF:string' \
@@ -38,7 +38,7 @@ validate_clamav_section() {
 		'ScanPartialMessages:string' \
 		'ScanArchive:string' \
 		'TemporaryDirectory:string' \
-		'ArchiveBlockEncrypted:string' \
+		'AlertEncrypted:string' \
 		'MaxFileSize:string' \
 		'LocalSocket:string' \
 		'User:string' \
@@ -46,15 +46,8 @@ validate_clamav_section() {
 		'DatabaseDirectory:string'
 }
 
-start_service() {
-	local clamd_config_file LogFile LogTime StreamMinPort \
-		StreamMaxPort MaxThreads ReadTimeout CommandReadTimeout MaxDirectoryRecursion \
-		FollowFileSymlinks FollowDirectorySymlinks SelfCheck DetectPUA ScanPE DisableCertCheck \
-		ScanELF DetectBrokenExecutables ScanOLE2 ScanPDF ScanSWF ScanMail ScanPartialMessages \
-		ScanArchive TemporaryDirectory ArchiveBlockEncrypted MaxFileSize LocalSocket User \
-		DatabaseDirectory
-
-	validate_clamav_section clamav || {
+start_clamav_instance() {
+	[ "$2" = 0 ] || {
 		echo "validation failed"
 		return 1
 	}
@@ -86,7 +79,7 @@ start_service() {
 	echo "ScanPE " $ScanPE >> $CLAMD_CONFIGFILE
 	echo "DisableCertCheck " $DisableCertCheck >> $CLAMD_CONFIGFILE
 	echo "ScanELF " $ScanELF >> $CLAMD_CONFIGFILE
-	echo "DetectBrokenExecutables " $DetectBrokenExecutables >> $CLAMD_CONFIGFILE
+	echo "AlertBrokenExecutables " $AlertBrokenExecutables >> $CLAMD_CONFIGFILE
 	echo "ScanOLE2 " $ScanOLE2 >> $CLAMD_CONFIGFILE
 	echo "ScanPDF " $ScanPDF >> $CLAMD_CONFIGFILE
 	echo "ScanSWF " $ScanSWF >> $CLAMD_CONFIGFILE
@@ -94,7 +87,7 @@ start_service() {
 	echo "ScanPartialMessages " $ScanPartialMessages >> $CLAMD_CONFIGFILE
 	echo "ScanArchive " $ScanArchive >> $CLAMD_CONFIGFILE
 	echo "TemporaryDirectory " $TemporaryDirectory >> $CLAMD_CONFIGFILE
-	echo "ArchiveBlockEncrypted " $ArchiveBlockEncrypted >> $CLAMD_CONFIGFILE
+	echo "AlertEncrypted " $AlertEncrypted >> $CLAMD_CONFIGFILE
 	echo "MaxFileSize " $MaxFileSize >> $CLAMD_CONFIGFILE
 	echo "LocalSocket " $LocalSocket >> $CLAMD_CONFIGFILE
 	echo "User " $User >> $CLAMD_CONFIGFILE
@@ -107,9 +100,14 @@ start_service() {
 	procd_close_instance
 }
 
+start_service()
+{
+	validate_clamav_section clamav start_clamav_instance
+}
+
 stop_service()
 {
-	service_stop ${PROG}
+	service_stop $PROG
 }
 
 service_triggers()
