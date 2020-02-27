@@ -75,6 +75,7 @@ endef
 # Avoid installing binaries
 define Build/InstallDev
 	$(call Build/Compile/Default,clean)
+	rm -f $(STAMP_BUILT)
 	$(call GoPackage/Build/InstallDev,$(1))
 endef
 
