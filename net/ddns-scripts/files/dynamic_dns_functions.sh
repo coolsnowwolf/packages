@@ -1,4 +1,4 @@
-F#!/bin/sh
+#!/bin/sh
 # /usr/lib/ddns/dynamic_dns_functions.sh
 #
 #.Distributed under the terms of the GNU General Public License (GPL) version 2.0
