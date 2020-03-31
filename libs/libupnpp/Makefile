@@ -8,24 +8,26 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libupnpp
-PKG_VERSION:=0.14.0
+PKG_VERSION:=0.17.2
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=http://www.lesbonscomptes.com/upmpdcli/downloads
-PKG_HASH:=13027f8e2b5341d00370ccf34eb8845f1bce73ec58890c02a38dc639e9f91b13
+PKG_SOURCE_URL:=https://www.lesbonscomptes.com/upmpdcli/downloads
+PKG_HASH:=5abaaf353a1e9c3482d61ef2627b650285d59f27c1ee60d35b8951952261374f
+
 PKG_MAINTAINER:=Petko Bordjukov <bordjukov@gmail.com>
-PKG_LICENSE:=GPL-2.0
+PKG_LICENSE:=LGPL-2.1-or-later
 PKG_LICENSE_FILES:=COPYING
 
 PKG_INSTALL:=1
+PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
 
 define Package/libupnpp
   SECTION:=libs
   CATEGORY:=Libraries
-  URL:=http://www.lesbonscomptes.com/upmpdcli
+  URL:=https://www.lesbonscomptes.com/upmpdcli
   DEPENDS+= +libstdcpp +libexpat +librt +libcurl +libupnp
   TITLE:=The libupnpp C++ library wraps libupnp for easier use by upmpdcli and upplay
 endef
@@ -35,12 +37,15 @@ libupnpp defines useful objects over libupnp and can be used to create both devi
 and control points. It is shared by upmpdcli and upplay.
 endef
 
+TARGET_LDFLAGS += $(if $(CONFIG_USE_GLIBC),-lm)
+
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include
 	$(CP) $(PKG_INSTALL_DIR)/usr/include/libupnpp $(1)/usr/include/
 	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libupnpp.so* $(1)/usr/lib/
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libupnpp.la $(1)/usr/lib/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libupnpp.{la,so*} $(1)/usr/lib/
+	$(INSTALL_DIR) $(1)/usr/lib/pkgconfig
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/libupnpp.pc $(1)/usr/lib/pkgconfig/
 endef
 
 define Package/libupnpp/install
