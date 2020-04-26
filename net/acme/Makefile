@@ -80,7 +80,7 @@ define Package/luci-app-acme
   SECTION:=luci
   CATEGORY:=LuCI
   TITLE:=ACME package - LuCI interface
-  DEPENDS:= +luci-compat +acme
+  DEPENDS:= +acme
   SUBMENU:=3. Applications
   PKGARCH:=all
 endef
