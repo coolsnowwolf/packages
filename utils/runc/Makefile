@@ -1,18 +1,15 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=runc
-PKG_VERSION:=1.0.0-rc8+91-3e425f80
+PKG_VERSION:=1.0.0-rc10
 PKG_RELEASE:=1
 PKG_LICENSE:=Apache-2.0
 PKG_LICENSE_FILES:=LICENSE
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://github.com/opencontainers/runc
-PKG_MIRROR_HASH:=361658b3c61b9c727091aa10ba693f234a64aae592bb683005244a22e2778cfc
-PKG_HASH:=efe4ff9bbe49b19074346d65c914d809c0a3e90d062ea9619fe240f931f0b700
-PKG_SOURCE_VERSION:=3e425f80a8c931f88e6d94a8c831b9d5aa481657
-PKG_SOURCE_PROTO:=git
-PKG_SOURCE_DATE:=2019-10-15
+PKG_SOURCE_URL:=https://codeload.github.com/opencontainers/runc/tar.gz/v${PKG_VERSION}?
+PKG_HASH:=6b44985023347fb9c5a2cc6f761df8c41cc2c84a7a68a6e6acf834dff6653a9a
+PKG_SOURCE_VERSION:=dc9208a3303feef5b3839f4323d9beb36df0a9dd
 
 PKG_MAINTAINER:=Gerard Ryan <G.M0N3Y.2503@gmail.com>
 
@@ -42,7 +39,7 @@ define Package/runc
   CATEGORY:=Utilities
   TITLE:=runc container runtime
   URL:=https://www.opencontainers.org/
-  DEPENDS:=$(GO_ARCH_DEPENDS) @HAS_FPU @TARGET_x86_64||arm||aarch64 +RUNC_SECCOMP:libseccomp
+  DEPENDS:=$(GO_ARCH_DEPENDS) @(aarch64||arm||x86_64) +RUNC_SECCOMP:libseccomp
   MENU:=1
 endef
 
@@ -52,14 +49,7 @@ endef
 
 GO_PKG_INSTALL_ALL:=1
 MAKE_PATH:=$(GO_PKG_WORK_DIR_NAME)/build/src/$(GO_PKG)
-MAKE_VARS += \
-	GOPATH=$(GO_PKG_BUILD_DIR) \
-	GOCACHE=$(GO_PKG_CACHE_DIR) \
-	GOTMPDIR=$(GO_PKG_TMP_DIR) \
-	GOROOT_FINAL=$(GO_TARGET_ROOT) \
-	CC=$(TARGET_CC) \
-	CXX=$(TARGET_CXX) \
-	$(call GoPackage/Environment)
+MAKE_VARS += $(call GoPackage/Environment)
 MAKE_FLAGS += \
 	COMMIT=$(PKG_SOURCE_VERSION)
 
