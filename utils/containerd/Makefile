@@ -1,15 +1,15 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=containerd
-PKG_VERSION:=1.2.10
+PKG_VERSION:=1.2.13
 PKG_RELEASE:=1
 PKG_LICENSE:=Apache-2.0
 PKG_LICENSE_FILES:=LICENSE
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/containerd/containerd/tar.gz/v${PKG_VERSION}?
-PKG_HASH:=a0965e1492fca558629826f1aa89a9675de3d451cec67540400b30c0bf6ac387
-PKG_SOURCE_VERSION:=b34a5c8af56e510852c35414db4c1f4fa6172339
+PKG_HASH:=0811057ab67b78ce911416e793edaeb14b3f1e105d67b8e67b6302e0eab572e4
+PKG_SOURCE_VERSION:=7ad184331fa3e55e52b890ea95e65ba581ae3429
 
 PKG_MAINTAINER:=Gerard Ryan <G.M0N3Y.2503@gmail.com>
 
@@ -39,7 +39,7 @@ define Package/containerd
   CATEGORY:=Utilities
   TITLE:=containerd container runtime
   URL:=https://containerd.io/
-  DEPENDS:=$(GO_ARCH_DEPENDS) @HAS_FPU @TARGET_x86_64||arm||aarch64 +btrfs-progs +runc +CONTAINERD_SECCOMP:libseccomp
+  DEPENDS:=$(GO_ARCH_DEPENDS) @(aarch64||arm||x86_64) +btrfs-progs +runc +CONTAINERD_SECCOMP:libseccomp
   MENU:=1
 endef
 
@@ -49,14 +49,7 @@ endef
 
 GO_PKG_INSTALL_ALL:=1
 MAKE_PATH:=$(GO_PKG_WORK_DIR_NAME)/build/src/$(GO_PKG)
-MAKE_VARS += \
-	GOPATH=$(GO_PKG_BUILD_DIR) \
-	GOCACHE=$(GO_PKG_CACHE_DIR) \
-	GOTMPDIR=$(GO_PKG_TMP_DIR) \
-	GOROOT_FINAL=$(GO_TARGET_ROOT) \
-	CC=$(TARGET_CC) \
-	CXX=$(TARGET_CXX) \
-	$(call GoPackage/Environment)
+MAKE_VARS += $(call GoPackage/Environment)
 MAKE_FLAGS += \
 	DESTDIR="$(PKG_INSTALL_DIR)" \
 	VERSION=$(PKG_VERSION) \

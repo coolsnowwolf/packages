@@ -1,7 +1,7 @@
 menu "Kernel features for Docker"
 	config DOCKER_KERNEL_OPTIONS
 		bool "Enable Basic kernel support for Docker"
-		default n
+		default y
 		select KERNEL_CGROUPS
 		select KERNEL_CGROUP_CPUACCT
 		select KERNEL_CGROUP_SCHED
