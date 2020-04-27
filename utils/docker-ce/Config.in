@@ -1,9 +1,10 @@
 menu "Kernel features for Docker"
-        depends on PACKAGE_docker-ce
-
 	config DOCKER_KERNEL_OPTIONS
 		bool "Enable Basic kernel support for Docker"
 		default y
+		select KERNEL_CGROUPS
+		select KERNEL_CGROUP_CPUACCT
+		select KERNEL_CGROUP_SCHED
 		select KERNEL_NAMESPACES
 		select KERNEL_CPUSETS
 		select KERNEL_MEMCG
@@ -26,7 +27,7 @@ menu "Kernel features for Docker"
 
 	config DOCKER_RES_SHAPE
 		bool "Enables support for resource shaping"
-		default y
+		default n
 		select KERNEL_MEMCG_SWAP
 		select KERNEL_MEMCG_SWAP_ENABLED
 		select KERNEL_BLK_DEV_THROTTLING
@@ -58,7 +59,7 @@ menu "Kernel features for Docker"
 
 		config DOCKER_NET_MACVLAN
 			bool "Enables macvlan kernel support"
-			default y
+			default n
 			select PACKAGE_kmod-macvlan
 			select PACKAGE_kmod-dummy
 
@@ -72,7 +73,7 @@ menu "Kernel features for Docker"
 	menu "Storage"
 		config DOCKER_STO_EXT4
 			bool "Enables support for ext3 or ext4 as the backing filesystem"
-			default y
+			default n
 			select KERNEL_EXT4_FS_POSIX_ACL
 
 		config DOCKER_STO_BTRFS
