@@ -10,7 +10,7 @@ include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/kernel.mk
 
 PKG_NAME:=exfat-nofuse
-PKG_RELEASE:=2
+PKG_RELEASE:=3
 
 PKG_SOURCE_URL:=https://github.com/dorimanx/exfat-nofuse.git
 PKG_SOURCE_PROTO:=git
@@ -24,28 +24,23 @@ PKG_LICENSE_FILES:=LICENSE
 
 include $(INCLUDE_DIR)/package.mk
 
-define KernelPackage/fs-exfat
+define KernelPackage/fs-exfat0
 	SUBMENU:=Filesystems
-	TITLE:=ExFAT Kernel driver
+	TITLE:=ExFAT Kernel driver (deprecated)
 	FILES:=$(PKG_BUILD_DIR)/exfat.ko
 	AUTOLOAD:=$(call AutoLoad,30,exfat,1)
-	DEPENDS:=+kmod-nls-base @BUILD_PATENTED
+	DEPENDS:=+kmod-nls-base @(LINUX_4_14||LINUX_4_19)
 endef
 
-define KernelPackage/fs-exfat/description
+define KernelPackage/fs-exfat0/description
 	Kernel module for ExFAT Filesytems
 endef
 
-MAKE_OPTS:= \
-	ARCH="$(LINUX_KARCH)" \
-	CROSS_COMPILE="$(TARGET_CROSS)" \
-	M="$(PKG_BUILD_DIR)"
-
 define Build/Compile
-	$(MAKE) -C "$(LINUX_DIR)" \
-		$(MAKE_OPTS) \
+	$(KERNEL_MAKE) \
 		CONFIG_EXFAT_FS=m \
+		M="$(PKG_BUILD_DIR)" \
 		modules
 endef
 
-$(eval $(call KernelPackage,fs-exfat))
+$(eval $(call KernelPackage,fs-exfat0))

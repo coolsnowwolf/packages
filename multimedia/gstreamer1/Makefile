@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=gstreamer1
 PKG_VERSION:=1.12.4
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_MAINTAINER:=W. Michael Petullo <mike@flyn.org> \
 		Ted Hess <thess@kitschensync.net>
@@ -35,7 +35,7 @@ define Package/gstreamer1/Default
   SECTION:=multimedia
   TITLE:=GStreamer
   URL:=http://gstreamer.freedesktop.org/
-  DEPENDS:= $(ICONV_DEPENDS) $(INTL_DEPENDS)
+  DEPENDS:= $(ICONV_DEPENDS) $(INTL_DEPENDS) +libdw +libelf
 endef
 
 define Package/gstreamer1/description/Default
