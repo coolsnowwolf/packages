@@ -8,34 +8,33 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=gstreamer1
-PKG_VERSION:=1.12.4
-PKG_RELEASE:=2
+PKG_VERSION:=1.16.2
+PKG_RELEASE:=1
+
+PKG_SOURCE:=gstreamer-$(PKG_VERSION).tar.xz
+PKG_SOURCE_URL:=https://gstreamer.freedesktop.org/src/gstreamer
+PKG_HASH:=e3f044246783fd685439647373fa13ba14f7ab0b346eadd06437092f8419e94e
+PKG_BUILD_DIR:=$(BUILD_DIR)/gstreamer-$(PKG_VERSION)
 
 PKG_MAINTAINER:=W. Michael Petullo <mike@flyn.org> \
 		Ted Hess <thess@kitschensync.net>
-
-PKG_LICENSE:=LGPLv2
+PKG_LICENSE:=LGPL-2.1-or-later
 PKG_LICENSE_FILES:=COPYING
-
-PKG_BUILD_DIR:=$(BUILD_DIR)/gstreamer-$(PKG_VERSION)
-PKG_SOURCE:=gstreamer-$(PKG_VERSION).tar.xz
-PKG_SOURCE_URL:=http://gstreamer.freedesktop.org/src/gstreamer/
-PKG_HASH:=5a8704aa4c2eeb04da192c4a9942f94f860ac1a585de90d9f914bac26a970674
-
-PKG_FIXUP:=autoreconf
-PKG_REMOVE_FILES:=autogen.sh aclocal.m4
+PKG_CPE_ID:=cpe:/a:gstreamer_project:gstreamer
 
 PKG_INSTALL:=1
+PKG_BUILD_DEPENDS:=meson/host glib2/host
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/nls.mk
+include ../../devel/meson/meson.mk
 
 define Package/gstreamer1/Default
   CATEGORY:=Multimedia
   SECTION:=multimedia
   TITLE:=GStreamer
-  URL:=http://gstreamer.freedesktop.org/
-  DEPENDS:= $(ICONV_DEPENDS) $(INTL_DEPENDS) +libdw +libelf
+  URL:=https://gstreamer.freedesktop.org/
+  DEPENDS:= $(ICONV_DEPENDS) $(INTL_DEPENDS)
 endef
 
 define Package/gstreamer1/description/Default
@@ -112,24 +111,32 @@ define Package/libgstreamer1/description
  .
  This package contains the GStreamer core library.
 endef
-  
+
 
 GST_VERSION:=1.0
 
-CONFIGURE_ARGS += \
-	--enable-static \
-	--disable-examples \
-	--disable-tests \
-	--disable-valgrind \
-	--disable-gst-tracer-hooks \
-	--with-unwind=no \
-	--without-libiconv-prefix \
-	--without-libintl-prefix \
-	--without-x \
-
-EXTRA_LDFLAGS+= \
-	-Wl,-rpath-link=$(STAGING_DIR)/usr/lib \
-	$(if $(ICONV_FULL),-liconv)
+MESON_ARGS += \
+	-Dgst_debug=false \
+	-Dgst_parse=true \
+	-Dregistry=false \
+	-Dtracer_hooks=false \
+	-Dptp-helper-setuid-user=none \
+	-Dextra-checks=false \
+	-Doption-parsing=false \
+	-Dpoisoning=false \
+	-Dcheck=enabled \
+	-Dlibunwind=disabled \
+	-Dlibdw=disabled \
+	-Ddbghelp=disabled \
+	-Dbash-completion=disabled \
+	-Dexamples=disabled \
+	-Dbenchmarks=disabled \
+	-Dtools=enabled \
+	-Dgtk_doc=disabled \
+	-Dintrospection=disabled \
+	-Dnls=enabled \
+	-Dgobject-cast-checks=disabled \
+	-Dglib-asserts=disabled
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include/gstreamer-$(GST_VERSION)
@@ -139,12 +146,12 @@ define Build/InstallDev
 	)
 	$(INSTALL_DIR) $(1)/usr/lib
 	( cd $(PKG_INSTALL_DIR); $(CP) \
-		./usr/lib/libgst*-$(GST_VERSION).{a,la,so*} \
+		./usr/lib/libgst*-$(GST_VERSION).so* \
 		$(1)/usr/lib/ \
 	)
 	$(INSTALL_DIR) $(1)/usr/lib/gstreamer-$(GST_VERSION)
 	( cd $(PKG_INSTALL_DIR); $(CP) \
-		./usr/lib/gstreamer-$(GST_VERSION)/libgst*.{la,so} \
+		./usr/lib/gstreamer-$(GST_VERSION)/libgst*.so \
 		$(1)/usr/lib/gstreamer-$(GST_VERSION)/ \
 	)
 	$(INSTALL_DIR) $(1)/usr/lib/pkgconfig
@@ -189,7 +196,7 @@ define Package/libgstreamer1/install
 		./usr/lib/gstreamer-$(GST_VERSION)/libgst*.so \
 		$(1)/usr/lib/gstreamer-$(GST_VERSION)/ \
 	)
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/lib/gstreamer-$(GST_VERSION)/gst-plugin-scanner \
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/libexec/gstreamer-$(GST_VERSION)/gst-plugin-scanner \
 		       $(1)/usr/lib/gstreamer-$(GST_VERSION)
 endef
 

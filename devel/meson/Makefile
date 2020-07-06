@@ -1,12 +1,11 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=meson
-PKG_VERSION:=0.52.0
+PKG_VERSION:=0.54.2
 PKG_RELEASE:=1
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://github.com/mesonbuild/meson/releases/download/$(PKG_VERSION)/
-PKG_HASH:=d60f75f0dedcc4fd249dbc7519d6f3ce6df490033d276ef1cf27453ef4938d32
+PYPI_NAME:=meson
+PKG_HASH:=a7716eeae8f8dff002e4147642589ab6496ff839e4376a5aed761f83c1fa0455
 
 PKG_MAINTAINER:=Andre Heider <a.heider@gmail.com>
 PKG_LICENSE:=Apache-2.0
@@ -14,6 +13,7 @@ PKG_LICENSE_FILES:=COPYING
 
 HOST_BUILD_DEPENDS:=ninja/host
 
+include ../../lang/python/pypi.mk
 include $(INCLUDE_DIR)/host-build.mk
 include $(INCLUDE_DIR)/package.mk
 include ../../lang/python/python3-package.mk
