@@ -8,20 +8,24 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=liblo
-PKG_VERSION:=0.28
-PKG_RELEASE:=1
+PKG_VERSION:=0.31
+PKG_RELEASE:=2
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=@SF/liblo
-PKG_HASH:=da94a9b67b93625354dd89ff7fe31e5297fc9400b6eaf7378c82ee1caf7db909
+PKG_HASH:=2b4f446e1220dcd624ecd8405248b08b7601e9a0d87a0b94730c2907dbccc750
 
-PKG_LICENSE:=LGPL-2.1+
+PKG_MAINTAINER:=
+PKG_LICENSE:=LGPL-2.1-or-later
 PKG_LICENSE_FILES:=COPYING
-PKG_MAINTAINER:=Nicolas Thill <nico@openwrt.org>
 
-PKG_INSTALL:=1
+CMAKE_INSTALL:=1
+CMAKE_SOURCE_SUBDIR:=cmake
+PKG_BUILD_PARALLEL:=1
+PKG_CONFIG_DEPENDS:=CONFIG_PACKAGE_liblo-utils
 
 include $(INCLUDE_DIR)/package.mk
+include $(INCLUDE_DIR)/cmake.mk
 
 define Package/liblo/Default
   TITLE:=Lightweight Open Sound Control (OSC)
@@ -44,17 +48,13 @@ $(call Package/liblo/Default)
   DEPENDS:= +liblo
 endef
 
-TARGET_CFLAGS += \
-	-Wno-error=maybe-uninitialized \
-
-define Build/InstallDev
-	$(INSTALL_DIR) $(1)/usr/include
-	$(CP) $(PKG_INSTALL_DIR)/usr/include/lo $(1)/usr/include/
-	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/liblo.* $(1)/usr/lib/
-	$(INSTALL_DIR) $(1)/usr/lib/pkgconfig
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/liblo.pc $(1)/usr/lib/pkgconfig/
-endef
+CMAKE_OPTIONS += \
+	-DWITH_TOOLS=O$(if $(CONFIG_PACKAGE_liblo-utils),N,FF) \
+	-DWITH_TESTS=OFF \
+	-DWITH_EXAMPLES=OFF \
+	-DWITH_CPP_TESTS=OFF \
+	-DWITH_STATIC=OFF \
+	-DTHREADING=ON
 
 define Package/liblo/install
 	$(INSTALL_DIR) $(1)/usr/lib

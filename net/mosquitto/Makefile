@@ -9,15 +9,15 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=mosquitto
-PKG_VERSION:=1.5.3
-PKG_RELEASE:=3
+PKG_VERSION:=1.6.10
+PKG_RELEASE:=1
 PKG_LICENSE:=BSD-3-Clause
 PKG_LICENSE_FILES:=LICENSE.txt
+PKG_CPE_ID:=cpe:/a:eclipse:mosquitto
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://mosquitto.org/files/source/
-PKG_HASH:=3081a998d303a883b1cd064009beabc88aa9159e26f5258a4ae6007160491d10
-PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(BUILD_VARIANT)/$(PKG_NAME)-$(PKG_VERSION)
+PKG_HASH:=92d1807717f0f6d57d1ac1207ffdb952e8377e916c7b0bb4718f745239774232
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -27,7 +27,7 @@ define Package/mosquitto/default
   TITLE:=mosquitto - an MQTT message broker
   URL:=http://www.mosquitto.org/
   MAINTAINER:=Karl Palsson <karlp@etactica.com>
-  DEPENDS:= +librt +libuuid
+  DEPENDS:= +librt
   USERID:=mosquitto=200:mosquitto=200
 endef
 
@@ -192,11 +192,22 @@ define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include
 	$(CP) $(PKG_BUILD_DIR)/lib/mosquitto.h $(1)/usr/include
 	$(CP) $(PKG_BUILD_DIR)/lib/cpp/mosquittopp.h $(1)/usr/include
+	$(CP) $(PKG_BUILD_DIR)/src/mosquitto_plugin.h $(1)/usr/include
+	$(CP) $(PKG_BUILD_DIR)/src/mosquitto_broker.h $(1)/usr/include
 	$(INSTALL_DIR) $(1)/usr/lib
 	$(CP) $(PKG_BUILD_DIR)/lib/libmosquitto.so.1 $(1)/usr/lib/
 	$(CP) $(PKG_BUILD_DIR)/lib/cpp/libmosquittopp.so.1 $(1)/usr/lib/
 	$(LN) libmosquitto.so.1 $(1)/usr/lib/libmosquitto.so
 	$(LN) libmosquittopp.so.1 $(1)/usr/lib/libmosquittopp.so
+	$(INSTALL_DIR) $(1)/usr/lib/pkgconfig
+	$(CP) $(PKG_BUILD_DIR)/libmosquitto.pc.in $(1)/usr/lib/pkgconfig/libmosquitto.pc
+	sed -i -e "s#@CMAKE_INSTALL_PREFIX@#/usr#" \
+	       -e "s#@VERSION@#$(PKG_VERSION)#" \
+	    $(1)/usr/lib/pkgconfig/libmosquitto.pc
+	$(CP) $(PKG_BUILD_DIR)/libmosquittopp.pc.in $(1)/usr/lib/pkgconfig/libmosquittopp.pc
+	sed -i -e "s#@CMAKE_INSTALL_PREFIX@#/usr#" \
+	       -e "s#@VERSION@#$(PKG_VERSION)#" \
+	    $(1)/usr/lib/pkgconfig/libmosquittopp.pc
 endef
 
 # This installs files on the target.  Compare with Build/InstallDev

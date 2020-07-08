@@ -8,11 +8,11 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=python-zope-interface
-PKG_VERSION:=5.0.1
+PKG_VERSION:=5.1.0
 PKG_RELEASE:=1
 
 PYPI_NAME:=zope.interface
-PKG_HASH:=dd0bc4016ec9ffa6d327bf3ba2f044c3ff376880661e5cc38c622e1ae023076f
+PKG_HASH:=40e4c42bd27ed3c11b2c983fecfb03356fae1209de10686d03c02c8696a1d90e
 
 PKG_LICENSE:=ZPL-2.1
 PKG_LICENSE_FILES:=LICENSE.txt
@@ -20,45 +20,23 @@ PKG_MAINTAINER:=Jeffery To <jeffery.to@gmail.com>
 
 include ../pypi.mk
 include $(INCLUDE_DIR)/package.mk
-include ../python-package.mk
 include ../python3-package.mk
 
-define Package/python-zope-interface/Default
+define Package/python3-zope-interface
   SECTION:=lang
   CATEGORY:=Languages
   SUBMENU:=Python
   TITLE:=Interfaces for Python
   URL:=https://github.com/zopefoundation/zope.interface
+  DEPENDS:=+python3-light
 endef
 
-define Package/python-zope-interface
-$(call Package/python-zope-interface/Default)
-  DEPENDS:=+PACKAGE_python-zope-interface:python-light
-  VARIANT:=python
-endef
-
-define Package/python3-zope-interface
-$(call Package/python-zope-interface/Default)
-  DEPENDS:=+PACKAGE_python3-zope-interface:python3-light
-  VARIANT:=python3
-endef
-
-define Package/python-zope-interface/description
+define Package/python3-zope-interface/description
 This package provides an implementation of "object interfaces" for
 Python. Interfaces are a mechanism for labeling objects as conforming to
 a given API or contract. So, this package can be considered as
 implementation of the Design By Contract methodology support in Python.
 endef
-
-define Package/python3-zope-interface/description
-$(call Package/python-zope-interface/description)
-.
-(Variant for Python3)
-endef
-
-$(eval $(call PyPackage,python-zope-interface))
-$(eval $(call BuildPackage,python-zope-interface))
-$(eval $(call BuildPackage,python-zope-interface-src))
 
 $(eval $(call Py3Package,python3-zope-interface))
 $(eval $(call BuildPackage,python3-zope-interface))

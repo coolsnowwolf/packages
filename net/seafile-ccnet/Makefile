@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=seafile-ccnet
-PKG_VERSION:=7.1.2
+PKG_VERSION:=7.1.4
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/haiwen/ccnet-server/tar.gz/v$(PKG_VERSION)-server?
-PKG_HASH:=32d3d7290415497c52ab407a64468538662dde81ccd139b6e4499e3f2c5b8d4b
+PKG_HASH:=b46508a686e7fe8eb9e1515e5384c7d9aca25cf596ef4b8383646e587f1032eb
 
 PKG_MAINTAINER:=Alexandru Ardelean <ardeleanalex@gmail.com>, Jeffery To <jeffery.to@gmail.com>
 PKG_LICENSE:=AGPL-3.0-only
@@ -25,10 +25,10 @@ PKG_BUILD_DEPENDS:=vala/host
 PKG_FIXUP:=autoreconf
 PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
+PYTHON3_PKG_BUILD:=0
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/nls.mk
-include ../../lang/python/python-package.mk
 include ../../lang/python/python3-package.mk
 
 define Package/seafile-ccnet
@@ -59,7 +59,6 @@ define Package/python3-seafile-ccnet
   SUBMENU:=Python
   TITLE:=Python bindings for Seafile Ccnet
   DEPENDS:=+seafile-ccnet +python3-light +python3-searpc
-  VARIANT:=python3
 endef
 
 define Package/python3-seafile-ccnet/description
@@ -74,12 +73,12 @@ CONFIGURE_ARGS += \
 	--enable-python \
 	--with-mysql="$(STAGING_DIR)/usr/bin/mysql_config"
 
-# Include Python 2 bindings in this package to maintain compatibility with previous versions
+CONFIGURE_VARS += \
+	PYTHON="$(HOST_PYTHON3_BIN)"
+
 define Package/seafile-ccnet/install
 	$(INSTALL_DIR) $(1)/usr/{lib,libexec}
-	$(INSTALL_DIR) $(1)$(PYTHON_PKG_DIR)/ccnet
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/* $(1)/usr/libexec/
-	$(INSTALL_DATA) $(PKG_BUILD_DIR)/python/ccnet/*.py $(1)$(PYTHON_PKG_DIR)/ccnet/
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libccnet.so* $(1)/usr/lib/
 endef
 
@@ -90,12 +89,6 @@ define Build/InstallDev
 	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/include/ccnet/*.h $(1)/usr/include/ccnet/
 	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/libccnet.pc $(1)/usr/lib/pkgconfig/
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libccnet.{a,la,so*} $(1)/usr/lib/
-endef
-
-define Py3Build/Compile
-	rm -rf $(PKG_INSTALL_DIR)$(PYTHON3_PKG_DIR)/ccnet
-	$(INSTALL_DIR) $(PKG_INSTALL_DIR)$(PYTHON3_PKG_DIR)/ccnet
-	$(INSTALL_DATA) $(PKG_BUILD_DIR)/python/ccnet/*.py $(PKG_INSTALL_DIR)$(PYTHON3_PKG_DIR)/ccnet/
 endef
 
 Py3Package/python3-seafile-ccnet/install:=:

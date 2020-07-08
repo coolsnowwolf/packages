@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=netatalk
 PKG_VERSION:=3.1.12
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
 PKG_SOURCE_URL:=@SF/netatalk
@@ -18,6 +18,8 @@ PKG_HASH:=1560f83a3da41be97e0b70a96e2402159b8ddc631d38538360b14784beada5d1
 PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
 PKG_FIXUP:=autoreconf
+
+PKG_CPE_ID:=cpe:/a:netatalk:netatalk
 
 PKG_BUILD_DEPENDS:=libevent2
 

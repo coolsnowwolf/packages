@@ -8,16 +8,17 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=bash
-PKG_VERSION:=4.4.18
-PKG_RELEASE:=2
+PKG_VERSION:=5.0
+PKG_RELEASE:=4
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=@GNU/bash
-PKG_HASH:=604d9eec5e4ed5fd2180ee44dd756ddca92e0b6aa4217bbab2b6227380317f23
+PKG_HASH:=b4a80f2ac66170b2913efbfb9f2594f1f76c7b1afd11f799e22035d63077fb4d
 
-PKG_LICENSE:=GPL-3.0+
+PKG_LICENSE:=GPL-3.0-or-later
 PKG_LICENSE_FILES:=COPYING
 PKG_MAINTAINER:=Marcel Denia <naoir@gmx.net>
+PKG_CPE_ID:=cpe:/a:gnu:bash
 
 PKG_INSTALL:=1
 
@@ -38,6 +39,11 @@ define Package/bash/description
   incorporates useful features from the Korn and C shells (ksh and csh).
 endef
 
+define Package/bash/conffiles
+/etc/bash.bashrc
+/etc/bash.bash_logout
+endef
+
 # Bash detects and enables certain features by runtest simple piece of code
 # which is not viable when doing cross compilation and default to no in many
 # cases.  Grep for 'cross.compil' in aclocal.m4 and config-bot.h for details
@@ -55,7 +61,7 @@ endef
 # bash_cv_sys_named_pipes: Required for process substituion
 CONFIGURE_VARS += \
 	ac_cv_rl_prefix="$(STAGING_DIR)/usr" \
-	ac_cv_rl_version="7.0" \
+	ac_cv_rl_version="8.0" \
 	bash_cv_getcwd_malloc=yes \
 	bash_cv_job_control_missing=present \
 	bash_cv_dev_fd=whacky \
@@ -72,6 +78,9 @@ CONFIGURE_ARGS+= \
 	--without-bash-malloc \
 	--bindir=/bin \
 	--disable-rpath \
+	--enable-direxpand-default \
+	--enable-job-control \
+	--enable-readline
 
 define Package/bash/postinst
 #!/bin/sh
@@ -85,7 +94,7 @@ define Package/bash/install
 	$(INSTALL_DIR) $(1)/bin
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/bin/bash $(1)/bin/
 	$(LN) bash $(1)/bin/rbash
+	$(CP) ./files/* $(1)/
 endef
-
 
 $(eval $(call BuildPackage,bash))

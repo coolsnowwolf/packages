@@ -11,28 +11,33 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libevhtp
-PKG_VERSION:=1.1.6
-PKG_RELEASE:=1
+PKG_VERSION:=1.2.18
+PKG_RELEASE:=3
+# This package is building a static library, used by seafile-server
+# Every time the built library changes (metadata changes are exempt),
+# seafile-server needs a release bump to ensure the update is used.
+
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
+PKG_SOURCE_URL:=https://codeload.github.com/criticalstack/libevhtp/tar.gz/$(PKG_VERSION)?
+PKG_HASH:=316ede0d672be3ae6fe489d4ac1c8c53a1db7d4fe05edaff3c7c853933e02795
+
+PKG_MAINTAINER:=Eneas U de Queiroz <cotequeiroz@gmail.com>, Jeffery To <jeffery.to@gmail.com>
 PKG_LICENSE:=BSD-3-Clause
+PKG_LICENSE_FILES:=LICENSE
 
-PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=https://chromium.googlesource.com/external/github.com/ellzey/libevhtp
-PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE_VERSION:=91071e2f20749cd469b87ac2ef1c158dc2a6806f
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
-PKG_MIRROR_HASH:=c9c4415539e78ac9021a8507cd16b9101564dd03286bc84428cc1ee11f0df1fd
+PKG_BUILD_DEPENDS:=libevent2 oniguruma
+CMAKE_INSTALL:=1
 
-PKG_INSTALL:=1
+PKG_CONFIG_DEPENDS:=LIBEVHTP_BUILD_DEPENDS
 
 include $(INCLUDE_DIR)/package.mk
+include $(INCLUDE_DIR)/cmake.mk
 
 define Package/libevhtp
     SECTION:=libs
     CATEGORY:=Libraries
     TITLE:=A more flexible replacement for libevent's httpd API
-    MAINTAINER:=Gergely Kiss <mail.gery@gmail.com>
-    URL:=https://github.com/ellzey/libevhtp
-    DEPENDS:=+libevent2 +libevent2-openssl +libevent2-pthreads +libopenssl +libpthread
+    URL:=https://github.com/criticalstack/libevhtp
 endef
 
 define Package/libevhtp/description
@@ -41,12 +46,21 @@ define Package/libevhtp/description
    meaning the developer never thought of it being used for creating a full-fledged HTTP service.
 endef
 
-include $(INCLUDE_DIR)/cmake.mk
+define Package/libevhtp/config
+config LIBEVHTP_BUILD_DEPENDS
+	bool
+	default PACKAGE_libevhtp
+
+config LIBEVHTP_BUILD_SELECT
+	tristate
+	default m if LIBEVHTP_BUILD_DEPENDS
+	select PACKAGE_libevent2-openssl
+	select PACKAGE_libevent2-pthreads
+endef
 
 define Build/InstallDev
-	$(INSTALL_DIR) $(1)/usr/{include,lib}
-	$(CP) $(PKG_INSTALL_DIR)/usr/include/* $(1)/usr/include/
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/* $(1)/usr/lib/
+	$(call Build/InstallDev/cmake,$(1))
+	$(SED) 's,^\(include\|lib\)dir=,\0$(STAGING_DIR)/usr/\1,' "$(1)/usr/lib/pkgconfig/evhtp.pc"
 endef
 
 $(eval $(call BuildPackage,libevhtp))

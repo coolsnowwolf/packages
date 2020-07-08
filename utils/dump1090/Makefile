@@ -8,21 +8,19 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=dump1090
-PKG_VERSION:=2017-06-01
-PKG_RELEASE:=1
+PKG_VERSION:=3.8.1
+PKG_RELEASE:=3
 
-PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=https://github.com/mutability/dump1090.git
-PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE_VERSION:=b155fdb458c3241ab375d1f2b12fbb6a9f8a8a3a
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.xz
-PKG_MIRROR_HASH:=ff1bc142107d367c6c58ccc5dbcec822c251a683e43e3b771ab4a33a9012f602 
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
+PKG_SOURCE_URL:=https://codeload.github.com/flightaware/dump1090/tar.gz/v${PKG_VERSION}?
+PKG_HASH:=9f43fdc7761f19cf9c6439eeb8c8ab04d811d29d97e36b80671fcf8547be7e43
+
 PKG_MAINTAINER:=Álvaro Fernández Rojas <noltari@gmail.com>
-
-PKG_LICENSE:=GPL-2.0
+PKG_LICENSE:=GPL-2.0-or-later
 PKG_LICENSE_FILES:=COPYING LICENSE
 
 PKG_BUILD_DEPENDS:=libusb
+PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -30,19 +28,19 @@ define Package/dump1090/Default
   SECTION:=utils
   CATEGORY:=Utilities
   TITLE:=Mode S decoder for the Realtek RTL2832U
-  URL:=https://github.com/mutability/dump1090
-  DEPENDS:=+libpthread
+  URL:=https://github.com/flightaware/dump1090
 endef
 
 define Package/dump1090
   $(call Package/dump1090/Default)
   TITLE+= (dump1090)
-  DEPENDS+= +librtlsdr +uhttpd
+  DEPENDS+=+librtlsdr +uhttpd +libncurses
 endef
 
 define Package/view1090
   $(call Package/dump1090/Default)
   TITLE+= (view1090)
+  DEPENDS+=+libncurses
 endef
 
 define Package/dump1090/description
@@ -54,8 +52,16 @@ define Package/view1090/description
 endef
 
 MAKE_FLAGS += \
+	BLADERF=no \
 	CFLAGS="$(TARGET_CFLAGS)" \
 	UNAME="Linux"
+
+TARGET_CFLAGS += -ffunction-sections -fdata-sections -flto
+TARGET_LDFLAGS += -Wl,--gc-sections,--as-needed
+
+define Package/dump1090/conffiles
+/etc/config/dump1090
+endef
 
 define Package/dump1090/install
 	$(INSTALL_DIR) $(1)/etc/init.d

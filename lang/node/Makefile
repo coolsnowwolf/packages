@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=node
-PKG_VERSION:=v12.15.0
-PKG_RELEASE:=1
+PKG_VERSION:=v12.16.1
+PKG_RELEASE:=2
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=https://nodejs.org/dist/$(PKG_VERSION)
-PKG_HASH:=d2fb4fa80ccf321570552b0a6e6b5f2aedeb281a8450207b057cf54c54d5a81b
+PKG_HASH:=0a95845ba02c46102b5671d0c5732460073f2d397488337e18d1fc30146d412d
 
 PKG_MAINTAINER:=John Crispin <blogic@openwrt.org>, Adrian Panella <ianchi74@outlook.com>
 PKG_LICENSE:=MIT
@@ -47,7 +47,11 @@ define Package/node/description
   Node.js® is a JavaScript runtime built on Chrome's V8 JavaScript engine. Node.js uses
   an event-driven, non-blocking I/O model that makes it lightweight and efficient. Node.js'
    package ecosystem, npm, is the largest ecosystem of open source libraries in the world.
-  *** Requires GCC/G++ Multilib on host system to build 32-bit target ***
+  *** The following preparations must be made on the host side. ***
+      1. gcc 6.3 or higher is required.
+      2. To build a 32-bit target, gcc-multilib, g++-multilib are required.
+      3. Requires libatomic package. (If necessary, install the 32-bit library at the same time.)
+     ex) sudo apt-get install gcc-multilib g++-multilib
 endef
 
 define Package/node-npm
@@ -93,7 +97,7 @@ endif
 
 MAKE_VARS+= \
 	DESTCPU=$(NODEJS_CPU) \
-	LD_LIBRARY_PATH=$(STAGING_DIR_HOSTPKG)/share/icu/65.1/lib
+	LD_LIBRARY_PATH=$(STAGING_DIR_HOSTPKG)/share/icu/current/lib
 
 CONFIGURE_VARS:= \
 	CC="$(TARGET_CC) $(TARGET_OPTIMIZATION)" \

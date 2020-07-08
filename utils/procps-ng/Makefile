@@ -8,21 +8,20 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=procps-ng
-PKG_VERSION:=3.3.15
-PKG_RELEASE:=3
+PKG_VERSION:=3.3.16
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=@SF/procps-ng
-PKG_HASH:=10bd744ffcb3de2d591d2f6acf1a54a7ba070fdcc432a855931a5057149f0465
+PKG_HASH:=925eacd65dedcf9c98eb94e8978bbfb63f5de37294cc1047d81462ed477a20af
 
-PKG_MAINTAINER:=Gergely Kiss <mail.gery@gmail.com>
-PKG_LICENSE:=GPL-2.0
+PKG_MAINTAINER:=
+PKG_LICENSE:=GPL-2.0-or-later
 PKG_LICENSE_FILES:=COPYING COPYING.LIB
 
 PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
 PKG_FIXUP:=autoreconf
-PKG_BUILD_DEPENDS:=gettext libiconv
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -73,7 +72,6 @@ define GenPlugin
    $(call Package/procps-ng/Default)
    DEPENDS:=procps-ng
    TITLE:=Applet $(2) from the procps-ng package
-   DEFAULT:=n
    ALTERNATIVES:=200:$(3)/$(2):$(3)/$(1)
  endef
 

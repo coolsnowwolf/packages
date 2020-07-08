@@ -9,13 +9,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=reaver
-PKG_VERSION:=1.6.4
+PKG_VERSION:=1.6.6
 PKG_RELEASE:=1
 PKG_MAINTAINER:=Yousong Zhou <yszhou4tech@gmail.com>
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=https://github.com/t6x/reaver-wps-fork-t6x/releases/download/v$(PKG_VERSION)
-PKG_HASH:=bf63b3d5a5596b0bd292a995f778dc99b0b89af88237cc2cfd7c4abbce942bb2
+PKG_HASH:=e329a0da0b6dd888916046535ff86a6aa144644561937954e560bb1810ab6702
 
 PKG_LICENSE:=GPL-2.0
 PKG_LICENSE_FILES:=docs/LICENSE
@@ -23,6 +23,7 @@ PKG_LICENSE_FILES:=docs/LICENSE
 PKG_USE_MIPS16:=0
 PKG_AUTOMAKE_PATHS:=src
 PKG_FIXUP:=autoreconf
+PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
 CONFIGURE_PATH:=src
@@ -33,7 +34,7 @@ CONFIGURE_ARGS += --enable-savetocurrent
 define Package/reaver
   SECTION:=net
   CATEGORY:=Network
-  SUBMENU:=wireless
+  SUBMENU:=Wireless
   TITLE:=Efficient brute force attack against Wifi Protected Setup
   URL:=https://github.com/t6x/reaver-wps-fork-t6x
   DEPENDS:=+libpcap
