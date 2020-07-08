@@ -1,26 +1,20 @@
-# 
-# Copyright (C) 2006-2018 OpenWrt.org
-#
-# This is free software, licensed under the GNU General Public License v2.
-# See /LICENSE for more information.
-#
-
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libtirpc
-PKG_VERSION:=1.1.4
-PKG_RELEASE:=1
+PKG_VERSION:=1.2.6
+PKG_RELEASE:=2
 
 PKG_SOURCE_URL:=@SF/libtirpc
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
-PKG_HASH:=2ca529f02292e10c158562295a1ffd95d2ce8af97820e3534fe1b0e3aec7561d
+PKG_HASH:=4278e9a5181d5af9cd7885322fdecebc444f9a3da87c526e7d47f7a12a37d1cc
 
 PKG_MAINTAINER:=Andy Walsh <andy.walsh44+github@gmail.com>
 PKG_LICENSE:=BSD-3-Clause
+PKG_LICENSE_FILES:=COPYING
 
-PKG_FIXUP:=autoreconf
-PKG_REMOVE_FILES:=autogen.sh aclocal.m4
 PKG_INSTALL:=1
+PKG_BUILD_PARALLEL:=1
+HOST_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/host-build.mk
@@ -52,7 +46,6 @@ define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/lib/pkgconfig
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libtirpc.{a,so*} $(1)/usr/lib
 	$(CP) $(PKG_INSTALL_DIR)/usr/include/* $(1)/usr/include
-	$(SED) 's,/usr,${STAGING_DIR}/usr,g' $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/libtirpc.pc
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/libtirpc.pc $(1)/usr/lib/pkgconfig/libtirpc.pc
 endef
 

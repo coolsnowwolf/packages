@@ -11,6 +11,11 @@ NICEPRIO=5
 
 CONFIG_STRING=""
 
+[ -d /usr/libexec/collectd ] && {
+	find /usr/libexec/collectd ! -perm 0500 -exec chmod 0500 '{}' '+'
+	find /usr/libexec/collectd ! \( -user nobody -a -group nogroup \) -exec chown nobody:nogroup '{}' '+'
+}
+
 process_exec() {
 	printf "<Plugin exec>\n" >> "$COLLECTD_CONF"
 	config_foreach process_exec_sections exec_input "Exec"
@@ -305,10 +310,6 @@ process_config() {
 	config_get BaseDir globals BaseDir "/var/run/collectd"
 	printf "BaseDir \"%s\"\n" "$BaseDir" >> "$COLLECTD_CONF"
 
-	config_get Include globals Include "/tmp/collectd.d"
-	printf "Include \"%s\"\n" "$Include" >> "$COLLECTD_CONF"
-	mkdir -p "$Include"
-
 	config_get PIDFile globals PIDFile "/var/run/collectd.pid"
 	printf "PIDFile \"%s\"\n" "$PIDFile" >> "$COLLECTD_CONF"
 
@@ -319,13 +320,17 @@ process_config() {
 	printf "TypesDB \"%s\"\n" "$TypesDB" >> "$COLLECTD_CONF"
 
 	config_get Interval globals Interval 30
-	printf "Interval \"%s\"\n" "$Interval" >> "$COLLECTD_CONF"
+	printf "Interval %s\n" "$Interval" >> "$COLLECTD_CONF"
 
 	config_get ReadThreads globals ReadThreads 2
 	printf "ReadThreads \"%s\"\n" "$ReadThreads" >> "$COLLECTD_CONF"
 
 	config_get Hostname globals Hostname "$(uname -n)"
 	printf "Hostname \"%s\"\n" "$Hostname" >> "$COLLECTD_CONF"
+
+	config_get Include globals Include "/tmp/collectd.d"
+	printf "Include \"%s\"\n" "$Include" >> "$COLLECTD_CONF"
+	mkdir -p "$Include"
 
 	printf "\n" >> "$COLLECTD_CONF"
 

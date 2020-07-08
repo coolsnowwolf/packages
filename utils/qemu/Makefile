@@ -9,10 +9,10 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=qemu
-PKG_VERSION:=4.1.1
-PKG_RELEASE:=4
+PKG_VERSION:=5.0.0
+PKG_RELEASE:=1
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
-PKG_HASH:=ed6fdbbdd272611446ff8036991e9b9f04a2ab2e3ffa9e79f3bab0eb9a95a1d2
+PKG_HASH:=2f13a92a0fa5c8b69ff0796b59b86b080bbb92ebad5d301a7724dd06b5e78cb6
 PKG_SOURCE_URL:=http://download.qemu.org/
 PKG_LICENSE:=GPL-2.0
 PKG_LICENSE_FILES:=LICENSE tcg/LICENSE
@@ -31,6 +31,7 @@ include $(INCLUDE_DIR)/package.mk
 
 QEMU_DEPS_IN_GUEST := @(TARGET_x86_64||TARGET_armvirt||TARGET_arm64||TARGET_malta)
 QEMU_DEPS_IN_HOST := @(TARGET_x86_64||TARGET_sunxi)
+QEMU_DEPS_IN_HOST += $(CXX_DEPENDS)
 
 define Package/virtio-console-helper
   SECTION:=utils
@@ -57,13 +58,11 @@ endef
 
 define Package/qemu-ga/install
 	$(INSTALL_DIR) $(1)/usr/bin
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/qemu-ga $(1)/usr/bin
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/qemu-ga $(1)/usr/bin
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/qemu-ga.init $(1)/etc/init.d/qemu-ga
 	$(INSTALL_DIR) $(1)/etc/hotplug.d/virtio-ports
 	$(INSTALL_BIN) ./files/10-qemu-ga.hotplug $(1)/etc/hotplug.d/virtio-ports/10-qemu-ga
-	$(INSTALL_DIR) $(1)/sbin
-	$(INSTALL_BIN) ./files/shutdown $(1)/sbin/shutdown
 endef
 
 PKG_CONFIG_DEPENDS += CONFIG_PACKAGE_qemu-ga
@@ -75,7 +74,7 @@ define Package/qemu-bridge-helper
   SUBMENU:=Virtualization
   TITLE:=QEMU bridge helper
   URL:=http://www.qemu.org
-  DEPENDS:=+glib2 $(CXX_DEPENDS) $(QEMU_DEPS_IN_HOST)
+  DEPENDS:=+glib2 $(QEMU_DEPS_IN_HOST)
 endef
 
 define Package/qemu-bridge-helper/install
@@ -191,7 +190,7 @@ define qemu-target
     SUBMENU:=Virtualization
     TITLE:=QEMU target $(1)
     URL:=http://www.qemu.org
-    DEPENDS:= +glib2 +libpthread +zlib $(CXX_DEPENDS) $(QEMU_DEPS_IN_HOST) $(qemu-target-$(1)-deps) \
+    DEPENDS:= +glib2 +libpthread +zlib $(QEMU_DEPS_IN_HOST) $(qemu-target-$(1)-deps) \
 	+QEMU_UI_VNC:qemu-keymaps \
 	+QEMU_UI_VNC_JPEG:libjpeg \
 	+QEMU_UI_VNC_PNG:libpng \
@@ -261,6 +260,13 @@ config QEMU_UI_SPICE
 endif
 endef
 
+PKG_CONFIG_DEPENDS += \
+	CONFIG_QEMU_UI_VNC \
+	CONFIG_QEMU_UI_VNC_JPEG \
+	CONFIG_QEMU_UI_VNC_PNG \
+	CONFIG_QEMU_UI_VNC_SASL \
+	CONFIG_QEMU_UI_SPICE \
+
 
 # QEMU configure script does not recognize these options
 CONFIGURE_ARGS:=$(filter-out	\
@@ -270,7 +276,8 @@ CONFIGURE_ARGS:=$(filter-out	\
 	--program-prefix=%	\
 	--program-suffix=%	\
 	--exec-prefix=%		\
-	--disable-nls		\
+	$(DISABLE_NLS)		\
+	$(DISABLE_IPV6)		\
 	, $(CONFIGURE_ARGS))
 
 # Tell build system of qemu to not add _FORTIFY_SOURCE options and let the base
@@ -291,6 +298,7 @@ CONFIGURE_ARGS +=			\
 	--enable-vhost-net		\
 	--enable-vhost-scsi		\
 	--enable-vhost-user		\
+	--enable-vhost-user-fs		\
 	--enable-vhost-vsock		\
 
 # Image formats support
@@ -356,11 +364,11 @@ CONFIGURE_ARGS +=			\
 	--audio-drv-list=''		\
 	--disable-attr			\
 	--disable-auth-pam		\
-	--disable-bluez			\
 	--disable-brlapi		\
 	--disable-bzip2			\
 	--disable-cap-ng		\
 	--disable-capstone		\
+	--disable-containers		\
 	--disable-curl			\
 	--disable-debug-info		\
 	--disable-debug-mutex		\
@@ -383,11 +391,13 @@ CONFIGURE_ARGS +=			\
 	--disable-lzfse			\
 	--disable-lzo			\
 	--disable-modules		\
+	--disable-module-upgrades	\
 	--disable-mpath			\
 	--disable-netmap		\
 	--disable-nettle		\
 	--disable-numa			\
 	--disable-opengl		\
+	--disable-plugins		\
 	--disable-pvrdma		\
 	--disable-qom-cast-debug	\
 	--disable-rbd			\
@@ -409,7 +419,9 @@ CONFIGURE_ARGS +=			\
 	--disable-vxhs			\
 	--disable-werror		\
 	--disable-xen-pci-passthrough	\
+	--disable-xkbcommon		\
 	--disable-xfsctl		\
+	--disable-zstd			\
 
 CONFIGURE_ARGS += --target-list='$(foreach target,$(qemu-target-list),$(if $(CONFIG_PACKAGE_qemu-$(target)),$(target)))'
 CONFIGURE_ARGS += $(if $(CONFIG_PACKAGE_qemu-ga),--enable-guest-agent)

@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2016 - 2017  Stijn Tintel <stijn@linux-ipv6.be>
+# Copyright (C) 2016 - 2020  Stijn Tintel <stijn@linux-ipv6.be>
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -8,26 +8,17 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=domoticz
-PKG_VERSION_MAJOR:=4
-PKG_VERSION_PATCH:=9700
-PKG_COMMIT:=
-PKG_VERSION:=$(PKG_VERSION_MAJOR).$(PKG_VERSION_PATCH)
-PKG_RELEASE:=2
+PKG_VERSION:=2020.2
+PKG_RELEASE:=1
 
-ifeq ($(PKG_COMMIT),)
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://github.com/domoticz/domoticz/archive/$(PKG_VERSION)/$(PKG_SOURCE)
-else
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_COMMIT).tar.gz
-PKG_SOURCE_URL:=https://github.com/domoticz/domoticz/archive/$(PKG_COMMIT)/$(PKG_SOURCE)
-PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_COMMIT)
-endif
-PKG_HASH:=c31f185a1ffac01b86a77bf33e059a4403d814e826c9d6639c63c2e9afa55a46
+PKG_HASH:=a02f589daad4eebff1f5e93815c1acd1864cf068f8f5c3185bcdd20207ae395e
 
 PKG_LICENSE:=GPL-3.0
 PKG_LICENSE_FILES:=License.txt
 
-PKG_BUILD_DEPENDS:=python3
+PKG_BUILD_DEPENDS:=python3 minizip cereal
 PKG_BUILD_PARALLEL:=1
 PKG_USE_MIPS16:=0
 
@@ -41,19 +32,23 @@ define Package/domoticz
   CATEGORY:=Utilities
   TITLE:=Open Source Home Automation System
   URL:=http://domoticz.com/
-  MAINTAINER:=Stijn Tintel <stijn@linux-ipv6.be>
+  MAINTAINER:=David Woodhouse <dwmw2@infradead.org>
   USERID:=domoticz=6144:domoticz=6144
   DEPENDS:= \
 	+boost \
 	+boost-date_time \
 	+boost-system \
 	+boost-thread \
+	+jsoncpp \
 	+libcurl \
-	+libmosquittopp \
+	+minizip \
+	+lua5.3 \
+	+libmosquitto \
 	+libopenssl \
 	+libopenzwave \
 	+libsqlite3 \
 	+libstdcpp \
+	+telldus-core \
 	+zlib
 endef
 
@@ -62,9 +57,14 @@ define Package/domoticz/description
 endef
 
 CMAKE_OPTIONS += \
+	-DBUILD_SHARED_LIBS=yes \
+	-DBoost_NO_BOOST_CMAKE=yes \
 	-DCMAKE_BUILD_TYPE=Release \
 	-DUSE_BUILTIN_MQTT=no \
 	-DUSE_BUILTIN_SQLITE=no \
+	-DUSE_BUILTIN_JSONCPP=no \
+	-DUSE_BUILTIN_MINIZIP=no \
+	-DUSE_LUA_STATIC=no \
 	-DUSE_STATIC_BOOST=no \
 	-DUSE_STATIC_LIBSTDCXX=no \
 	-DUSE_STATIC_OPENZWAVE=no \
@@ -72,20 +72,11 @@ CMAKE_OPTIONS += \
 	-DUSE_PYTHON=yes \
 	-DWITH_LIBUSB=no
 
-TARGET_CFLAGS+=-flto
-TARGET_CXXFLAGS+=-DWITH_GPIO -flto
+TARGET_CFLAGS += -flto -DBOOST_BIND_GLOBAL_PLACEHOLDERS
+TARGET_CXXFLAGS += -DWITH_GPIO -flto
 
 define Build/Prepare
 	$(call Build/Prepare/Default)
-	# Fix APPVERSION/APPDATE since we don't build from a git tree
-	sed -i 's/#define APPVERSION.*/#define APPVERSION $(PKG_VERSION_PATCH)/' \
-		 $(PKG_BUILD_DIR)/appversion.default
-	COMMITDATE=`tar tvfz $(DL_DIR)/$(PKG_SOURCE) --full-time | sed 's/.* \(20..-..-.. ..:..:..\) domoticz-.*/\1/;q'`; \
-	COMMITTS=`date --date="$$$${COMMITDATE}" +%s`; \
-	sed -i "s/#define APPDATE.*/#define APPDATE $$$${COMMITTS}/" $(PKG_BUILD_DIR)/appversion.default
-ifneq ($(PKG_COMMIT),)
-	sed -i "s/#define APPHASH.*/#define APPHASH \"$(shell echo $(PKG_COMMIT) | cut -c1-8)\"/" $(PKG_BUILD_DIR)/appversion.default
-endif
 	# Remove unwanted scripts
 	cd $(PKG_BUILD_DIR)/scripts && rm -rf \
 		buienradar_rain_example.pl \

@@ -8,14 +8,15 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=strongswan
-PKG_VERSION:=5.6.3
-PKG_RELEASE:=2
+PKG_VERSION:=5.8.4
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
-PKG_HASH:=c3c7dc8201f40625bba92ffd32eb602a8909210d8b3fac4d214c737ce079bf24
-PKG_SOURCE_URL:=http://download.strongswan.org/ http://download2.strongswan.org/
-PKG_LICENSE:=GPL-2.0+
+PKG_SOURCE_URL:=https://download.strongswan.org/ https://download2.strongswan.org/
+PKG_HASH:=2d9a57e33813b62d58cba07531c4d5a35c6b823dfe9b8ff7c623b6571f02553c
+PKG_LICENSE:=GPL-2.0-or-later
 PKG_MAINTAINER:=Stijn Tintel <stijn@linux-ipv6.be>
+PKG_CPE_ID:=cpe:/a:strongswan:strongswan
 
 PKG_MOD_AVAILABLE:= \
 	addrblock \
@@ -120,6 +121,7 @@ endef
 
 define Package/strongswan
 $(call Package/strongswan/Default)
+  MENU:=1
   DEPENDS:= +libpthread +ip \
 	+kmod-crypto-authenc \
 	+kmod-ipsec +kmod-ipsec4 +IPV6:kmod-ipsec6 \
@@ -138,7 +140,7 @@ endef
 define Package/strongswan-full
 $(call Package/strongswan/Default)
   TITLE+= (full)
-  DEPENDS:= +strongswan \
+  DEPENDS:= strongswan \
 	+strongswan-charon \
 	+strongswan-charon-cmd \
 	+strongswan-ipsec \
@@ -231,7 +233,7 @@ endef
 define Package/strongswan-default
 $(call Package/strongswan/Default)
   TITLE+= (default)
-  DEPENDS:= +strongswan \
+  DEPENDS:= strongswan \
 	+strongswan-charon \
 	+strongswan-ipsec \
 	+strongswan-mod-aes \
@@ -274,7 +276,7 @@ endef
 define Package/strongswan-isakmp
 $(call Package/strongswan/Default)
   TITLE+= (isakmp)
-  DEPENDS:= +strongswan \
+  DEPENDS:= strongswan \
 	+strongswan-charon \
 	+strongswan-ipsec \
 	+strongswan-mod-aes \
@@ -304,7 +306,7 @@ endef
 define Package/strongswan-minimal
 $(call Package/strongswan/Default)
   TITLE+= (minimal)
-  DEPENDS:= +strongswan \
+  DEPENDS:= strongswan \
 	+strongswan-charon \
 	+strongswan-mod-aes \
 	+strongswan-mod-gmp \
@@ -329,7 +331,7 @@ endef
 define Package/strongswan-charon
 $(call Package/strongswan/Default)
   TITLE+= IKEv1/IKEv2 keying daemon
-  DEPENDS:= +strongswan
+  DEPENDS:= strongswan
 endef
 
 define Package/strongswan-charon/description
@@ -340,7 +342,7 @@ endef
 define Package/strongswan-charon-cmd
 $(call Package/strongswan/Default)
   TITLE+= charon-cmd utility
-  DEPENDS:= +strongswan +strongswan-charon
+  DEPENDS:= strongswan +strongswan-charon
 endef
 
 define Package/strongswan-charon-cmd/description
@@ -351,7 +353,7 @@ endef
 define Package/strongswan-ipsec
 $(call Package/strongswan/Default)
   TITLE+= utilities
-  DEPENDS:= +strongswan
+  DEPENDS:= strongswan
 endef
 
 define Package/strongswan-ipsec/description
@@ -362,7 +364,7 @@ endef
 define Package/strongswan-pki
 $(call Package/strongswan/Default)
   TITLE+= PKI tool
-  DEPENDS:= +strongswan
+  DEPENDS:= strongswan
 endef
 
 define Package/strongswan-pki/description
@@ -373,7 +375,7 @@ endef
 define Package/strongswan-scepclient
 $(call Package/strongswan/Default)
   TITLE+= SCEP client
-  DEPENDS:= +strongswan
+  DEPENDS:= strongswan
 endef
 
 define Package/strongswan-scepclient/description
@@ -384,7 +386,7 @@ endef
 define Package/strongswan-swanctl
 $(call Package/strongswan/Default)
   TITLE+= swanctl utility
-  DEPENDS:= +strongswan +strongswan-mod-vici
+  DEPENDS:= strongswan +strongswan-mod-vici
 endef
 
 define Package/strongswan-swanctl/description
@@ -395,7 +397,7 @@ endef
 define Package/strongswan-libtls
 $(call Package/strongswan/Default)
   TITLE+= libtls
-  DEPENDS:= +strongswan
+  DEPENDS:= strongswan
 endef
 
 define Package/strongswan-libtls/description
@@ -408,7 +410,7 @@ define BuildPlugin
   define Package/strongswan-mod-$(1)
     $$(call Package/strongswan/Default)
     TITLE:= StrongSwan $(2) plugin
-    DEPENDS:= +strongswan $(3)
+    DEPENDS:= strongswan $(3)
   endef
 
   define Package/strongswan-mod-$(1)/install
@@ -445,17 +447,12 @@ CONFIGURE_ARGS+= \
 EXTRA_LDFLAGS+= -Wl,-rpath-link,$(STAGING_DIR)/usr/lib
 
 define Package/strongswan/conffiles
-/etc/ipsec.d/
-/etc/ipsec.conf
-/etc/ipsec.secrets
-/etc/ipsec.user
 /etc/strongswan.conf
 /etc/strongswan.d/
 endef
 
 define Package/strongswan/install
 	$(INSTALL_DIR) $(1)/etc
-	$(INSTALL_CONF) $(PKG_INSTALL_DIR)/etc/ipsec.conf $(1)/etc/
 	$(INSTALL_CONF) $(PKG_INSTALL_DIR)/etc/strongswan.conf $(1)/etc/
 	$(INSTALL_DIR) $(1)/usr/lib/ipsec
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/ipsec/libstrongswan.so.* $(1)/usr/lib/ipsec/
@@ -495,8 +492,16 @@ define Package/strongswan-charon-cmd/install
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/charon-cmd $(1)/usr/sbin/
 endef
 
+define Package/strongswan-ipsec/conffiles
+/etc/ipsec.d/
+/etc/ipsec.conf
+/etc/ipsec.secrets
+/etc/ipsec.user
+endef
+
 define Package/strongswan-ipsec/install
-	$(INSTALL_DIR) $(1)/usr/sbin
+	$(INSTALL_DIR) $(1)/etc/ $(1)/usr/sbin
+	$(INSTALL_CONF) $(PKG_INSTALL_DIR)/etc/ipsec.conf $(1)/etc/
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/ipsec $(1)/usr/sbin/
 endef
 
@@ -512,6 +517,10 @@ define Package/strongswan-scepclient/install
 	$(CP) $(PKG_INSTALL_DIR)/etc/strongswan.d/scepclient.conf $(1)/etc/strongswan.d/
 	$(INSTALL_DIR) $(1)/usr/lib/ipsec
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/lib/ipsec/scepclient $(1)/usr/lib/ipsec/
+endef
+
+define Package/strongswan-swanctl/conffiles
+/etc/swanctl/
 endef
 
 define Package/strongswan-swanctl/install

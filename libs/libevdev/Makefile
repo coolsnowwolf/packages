@@ -5,27 +5,28 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libevdev
-PKG_VERSION:=1.5.6
-PKG_RELEASE:=1
+PKG_VERSION:=1.9.0
+PKG_RELEASE:=2
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
-PKG_SOURCE_URL:=http://www.freedesktop.org/software/libevdev/
-PKG_HASH:=ecec7e9d66b1d3692f10b3b20aa97fb25e874a784c5552a7b1698091fef5a688
+PKG_SOURCE_URL:=https://www.freedesktop.org/software/libevdev/
+PKG_HASH:=e7e18a64264f2dea19b6c50a481f8c062529d42919ccda0bc861495bce28eb9e
 
+PKG_MAINTAINER:=Daniel Golle <daniel@makrotopia.org>
 PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=COPYING
-PKG_MAINTAINER:=Daniel Golle <daniel@makrotopia.org>
 
-PKG_FIXUP:=autoreconf
 PKG_INSTALL:=1
+PKG_BUILD_DEPENDS:=meson/host
 
 include $(INCLUDE_DIR)/package.mk
+include ../../devel/meson/meson.mk
 
 define Package/libevdev
   SECTION:=libs
   CATEGORY:=Libraries
   TITLE:=a wrapper library for evdev devices
-  URL:=http://www.freedesktop.org/wiki/Software/libevdev/
+  URL:=https://www.freedesktop.org/wiki/Software/libevdev/
 endef
 
 define Package/libevdev/description
@@ -37,11 +38,16 @@ define Package/libevdev/description
   evdev devices, thus making direct access unnecessary.
 endef
 
+MESON_ARGS += \
+	-Dtests=disabled \
+	-Ddocumentation=disabled \
+	-Dcoverity=false
+
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include
 	$(CP) $(PKG_INSTALL_DIR)/usr/include/* $(1)/usr/include/
 	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/*.{a,so*} $(1)/usr/lib/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/*.so* $(1)/usr/lib/
 	$(INSTALL_DIR) $(1)/usr/lib/pkgconfig
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/* $(1)/usr/lib/pkgconfig/
 endef

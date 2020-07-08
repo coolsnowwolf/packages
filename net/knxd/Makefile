@@ -11,27 +11,21 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=knxd
-PKG_VERSION:=0.14.24
-PKG_RELEASE:=2
+PKG_VERSION:=0.14.39
+PKG_RELEASE:=1
 
-PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=https://github.com/knxd/knxd.git
-PKG_SOURCE_VERSION:=d29f7047a8b20a7ac57c3c9ad349c12be60f9fee
-PKG_SOURCE_SUBDIR:=$(PKG_NAME)
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_SOURCE_VERSION).tar.gz
-PKG_MIRROR_HASH:=07857ce8c7c8be965b1baf81566671ab89c3ae8bbcd8f1fe05df0c38a4465664
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
+PKG_SOURCE_URL:=https://codeload.github.com/knxd/knxd/tar.gz/$(PKG_VERSION)?
+PKG_HASH:=9ed920fa3c4f12ededd4d413f27f149c91ce0846c561a7d19478502c06ac95f1
 
 PKG_MAINTAINER:=Othmar Truniger <github@truniger.ch>
-
-PKG_LICENSE:=GPL-2.0+
+PKG_LICENSE:=GPL-2.0-or-later
 PKG_LICENSE_FILES:=LICENSE
-
-PKG_BUILD_PARALLEL:=1
-PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)
-PKG_BUILD_DEPENDS:=argp-standalone
 
 PKG_FIXUP:=autoreconf
 PKG_INSTALL:=1
+PKG_BUILD_PARALLEL:=1
+PKG_BUILD_DEPENDS:=!USE_GLIBC:argp-standalone
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -39,7 +33,7 @@ define Package/knxd
   SECTION:=net
   CATEGORY:=Network
   TITLE:=EIB KNX daemon
-  DEPENDS:=+libusb-1.0 +libstdcpp +libev +libfmt
+  DEPENDS:=+libusb-1.0 +libev +libfmt
 endef
 
 define Package/knxd/description
@@ -51,14 +45,10 @@ define Package/knxd/conffiles
 /etc/config/knxd
 endef
 
-TARGET_CXXFLAGS+= -std=c++0x
-TARGET_CXX=$(TARGET_CC)
-
 CONFIGURE_ARGS+= \
 	--disable-systemd
 
-EXTRA_LDFLAGS+= \
-	-largp -lstdc++
+TARGET_LDFLAGS += $(if $(CONFIG_USE_GLIBC),-lm)
 
 define Package/knxd/install
 	$(INSTALL_DIR) $(1)/usr/lib

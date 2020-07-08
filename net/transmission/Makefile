@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=transmission
-PKG_VERSION:=2.94
-PKG_RELEASE:=8
+PKG_VERSION:=3.00
+PKG_RELEASE:=4
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=@GITHUB/transmission/transmission-releases/master
-PKG_HASH:=35442cc849f91f8df982c3d0d479d650c6ca19310a994eccdaa79a4af3916b7d
+PKG_HASH:=9144652fe742f7f7dd6657716e378da60b751aaeda8bef8344b3eefc4db255f2
 
 PKG_MAINTAINER:=Rosen Penev <rosenp@gmail.com>
 PKG_LICENSE:=GPL-2.0-or-later
@@ -24,6 +24,7 @@ PKG_INSTALL:=1
 PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
+include $(INCLUDE_DIR)/package-seccomp.mk
 
 define Package/transmission/template
   SUBMENU:=BitTorrent
@@ -84,7 +85,7 @@ endef
 define Package/transmission-web
   $(call Package/transmission/template)
   TITLE+= (webinterface)
-  DEPENDS:=+transmission-daemon-openssl
+  DEPENDS:=@(PACKAGE_transmission-daemon-openssl||PACKAGE_transmission-daemon-mbedtls)
   PKGARCH:=all
 endef
 
@@ -150,6 +151,7 @@ define Package/transmission-daemon-openssl/install
 	$(INSTALL_CONF) files/transmission.config $(1)/etc/config/transmission
 	$(INSTALL_DIR) $(1)/etc/sysctl.d/
 	$(INSTALL_CONF) files/transmission.sysctl $(1)/etc/sysctl.d/20-transmission.conf
+	$(call InstallSeccomp,$(1),./files/transmission-daemon.json)
 endef
 Package/transmission-daemon-mbedtls/install = $(Package/transmission-daemon-openssl/install)
 
@@ -175,9 +177,9 @@ define Package/transmission-web/install
 endef
 
 $(eval $(call BuildPackage,transmission-daemon-openssl))
-#$(eval $(call BuildPackage,transmission-daemon-mbedtls))
+$(eval $(call BuildPackage,transmission-daemon-mbedtls))
 $(eval $(call BuildPackage,transmission-cli-openssl))
-#$(eval $(call BuildPackage,transmission-cli-mbedtls))
+$(eval $(call BuildPackage,transmission-cli-mbedtls))
 $(eval $(call BuildPackage,transmission-remote-openssl))
-#$(eval $(call BuildPackage,transmission-remote-mbedtls))
+$(eval $(call BuildPackage,transmission-remote-mbedtls))
 $(eval $(call BuildPackage,transmission-web))

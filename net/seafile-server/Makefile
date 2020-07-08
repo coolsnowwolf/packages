@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=seafile-server
-PKG_VERSION:=7.1.2
-PKG_RELEASE:=1
+PKG_VERSION:=7.1.4
+PKG_RELEASE:=2
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/haiwen/seafile-server/tar.gz/v$(PKG_VERSION)-server?
-PKG_HASH:=30b972d17eb13da28f4dffcbabd2a2a4a7426a017f694e0fb8440e93fd5bd355
+PKG_HASH:=cc5aaf76044f907758a75a43e321fef499482d7b57d9e61d0297a4bba66dcce4
 
 PKG_MAINTAINER:=Alexandru Ardelean <ardeleanalex@gmail.com>, Jeffery To <jeffery.to@gmail.com>
 PKG_LICENSE:=AGPL-3.0-only
@@ -25,10 +25,10 @@ PKG_BUILD_DEPENDS:=vala/host libevhtp
 PKG_FIXUP:=autoreconf
 PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
+PYTHON3_PKG_BUILD:=0
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/nls.mk
-include ../../lang/python/python-package.mk
 include ../../lang/python/python3-package.mk
 
 # Check that the actual Makefile version-relase match the above.
@@ -59,6 +59,7 @@ define Package/seafile-server
     +libsqlite3 \
     +libuuid \
     +oniguruma \
+    +procps-ng \
     +procps-ng-pkill \
     +python3-pymysql \
     +python3-seafile-server \
@@ -72,6 +73,10 @@ endef
 define Package/seafile-server/description
   Open source cloud storage with advanced features on privacy
   protection and teamwork.
+endef
+
+define Package/seafile-server/config
+  select LIBEVHTP_BUILD_DEPENDS
 endef
 
 define Package/seafile-server-fuse
@@ -92,6 +97,7 @@ define Package/seafile-server-fuse
     +libsearpc \
     +libsqlite3 \
     +libuuid \
+    +procps-ng \
     +procps-ng-pkill \
     +seafile-ccnet \
     +seafile-server \
@@ -112,7 +118,6 @@ define Package/python3-seafile-server
   SUBMENU:=Python
   TITLE:=Python bindings for Seafile server
   DEPENDS:=+python3-light +python3-logging +python3-searpc +python3-seafile-ccnet
-  VARIANT:=python3
 endef
 
 define Package/python3-seafile-server/description
@@ -127,14 +132,8 @@ CONFIGURE_ARGS += \
 	--enable-python \
 	--with-mysql="$(STAGING_DIR)/usr/bin/mysql_config"
 
-# This is required as python[3]-package.mk overrides the default setting of having interlinking enabled
-ifdef CONFIG_USE_MIPS16
-  TARGET_CFLAGS += -minterlink-mips16
-endif
-
-ifdef CONFIG_GCC_LIBSSP
-  TARGET_LDFLAGS += -lssp
-endif
+CONFIGURE_VARS += \
+	PYTHON="$(HOST_PYTHON3_BIN)"
 
 define Package/seafile-server/conffiles
 /etc/config/seafile-server
@@ -162,10 +161,8 @@ SEAFILE_SERVER_PYTHON_SCRIPTS:= \
 	setup-seafile-mysql.py \
 	sqlite2mysql.py
 
-# Include Python 2 bindings in this package to maintain compatibility with previous versions
 define Package/seafile-server/install
 	$(INSTALL_DIR) $(1)/usr/{bin,libexec}
-	$(INSTALL_DIR) $(1)$(PYTHON_PKG_DIR)/{seafile,seaserv}
 	$(INSTALL_DIR) $(1)/usr/share/seafile/seafile-server
 	$(INSTALL_DIR) $(1)/etc/{config,init.d,seafile}
 	$(INSTALL_DIR) $(1)/lib/upgrade/keep.d
@@ -173,9 +170,6 @@ define Package/seafile-server/install
 	for bin in $(SEAFILE_SERVER_BINARIES) ; do \
 		$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/$$$$bin $(1)/usr/libexec/ ; \
 	done
-
-	$(INSTALL_DATA) $(PKG_BUILD_DIR)/python/seafile/*.py $(1)$(PYTHON_PKG_DIR)/seafile/
-	$(INSTALL_DATA) $(PKG_BUILD_DIR)/python/seaserv/*.py $(1)$(PYTHON_PKG_DIR)/seaserv/
 
 	for sh in $(SEAFILE_SERVER_SHELL_SCRIPTS) ; do \
 		$(INSTALL_BIN) $(PKG_BUILD_DIR)/scripts/$$$$sh $(1)/usr/bin/$$$${sh%.sh} ; \
@@ -201,16 +195,8 @@ endef
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include/seafile
 	$(INSTALL_DIR) $(1)/usr/lib/pkgconfig
-	$(INSTALL_DIR) $(1)$(PYTHON_PKG_DIR)
 	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/include/seafile/*.h $(1)/usr/include/seafile/
 	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/libseafile.pc $(1)/usr/lib/pkgconfig/
-endef
-
-define Py3Build/Compile
-	rm -rf $(PKG_INSTALL_DIR)$(PYTHON3_PKG_DIR)/{seafile,seaserv}
-	$(INSTALL_DIR) $(PKG_INSTALL_DIR)$(PYTHON3_PKG_DIR)/{seafile,seaserv}
-	$(INSTALL_DATA) $(PKG_BUILD_DIR)/python/seafile/*.py $(PKG_INSTALL_DIR)$(PYTHON3_PKG_DIR)/seafile/
-	$(INSTALL_DATA) $(PKG_BUILD_DIR)/python/seaserv/*.py $(PKG_INSTALL_DIR)$(PYTHON3_PKG_DIR)/seaserv/
 endef
 
 define Package/seafile-server-fuse/install

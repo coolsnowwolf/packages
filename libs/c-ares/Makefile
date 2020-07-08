@@ -9,13 +9,14 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=c-ares
-PKG_VERSION:=1.14.0
+PKG_VERSION:=1.16.1
 PKG_RELEASE:=1
 PKG_LICENSE:=MIT
+PKG_CPE_ID:=cpe:/a:c-ares_project:c-ares
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://c-ares.haxx.se/download
-PKG_HASH:=45d3c1fd29263ceec2afc8ff9cd06d5f8f889636eb4e80ce3cc7f0eaf7aadc6e
+PKG_HASH:=d08312d0ecc3bd48eee0a4cc0d2137c9f194e0a28de2028928c0f6cae85f86ce
 
 PKG_FIXUP:=autoreconf
 PKG_INSTALL:=1

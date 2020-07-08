@@ -1,20 +1,19 @@
-From 39b07d1742475f2c60ae2c80f3f2853bb556e0b1 Mon Sep 17 00:00:00 2001
+From 608b183335725bcc1c2dd8b615551c49ec3b9c88 Mon Sep 17 00:00:00 2001
 From: Yousong Zhou <yszhou4tech@gmail.com>
-Date: Tue, 2 Apr 2019 06:31:31 +0000
-Subject: [PATCH 2/4] configure: allow enabling/disabling libudev from command
- line
+Date: Mon, 11 May 2020 10:46:37 +0800
+Subject: [PATCH] configure: allow enabling/disabling libudev from command line
 
 ---
  configure | 4 ++++
  1 file changed, 4 insertions(+)
 
 diff --git a/configure b/configure
-index f4d949b35b..939f54178b 100755
+index c8d2ac1c3e..cf3f8ffdd7 100755
 --- a/configure
 +++ b/configure
-@@ -1518,6 +1518,10 @@ for opt do
+@@ -1601,6 +1601,10 @@ for opt do
    ;;
-   --disable-libpmem) libpmem=no
+   --gdb=*) gdb_bin="$optarg"
    ;;
 +  --enable-libudev) libudev=yes
 +  ;;

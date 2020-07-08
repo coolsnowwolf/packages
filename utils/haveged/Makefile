@@ -8,13 +8,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=haveged
-PKG_VERSION:=1.9.2
-PKG_RELEASE:=2
+PKG_VERSION:=1.9.12
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=@SF/haveged \
-		http://www.issihosts.com/$(PKG_NAME)
-PKG_HASH:=f77d9adbdf421b61601fa29faa9ce3b479d910f73c66b9e364ba8642ccbfbe70
+PKG_SOURCE_URL:=https://codeload.github.com/jirka-h/haveged/tar.gz/v$(PKG_VERSION)?
+PKG_HASH:=0b8642515ea7189a1772cdb8072b98a6768cf9b963faf3cd664329fd79975ffa
+PKG_BUILD_DIR:=$(BUILD_DIR)/haveged-$(PKG_VERSION)
 PKG_LICENSE:=GPLv3
 
 PKG_MAINTAINER:=Hannu Nyman <hannu.nyman@iki.fi>

@@ -8,13 +8,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=django
-PKG_VERSION:=3.0.4
+PKG_VERSION:=3.0.7
 PKG_RELEASE:=1
 
 PYPI_NAME:=Django
-PKG_HASH:=50b781f6cbeb98f673aa76ed8e572a019a45e52bdd4ad09001072dfd91ab07c8
+PKG_HASH:=5052b34b34b3425233c682e0e11d658fd6efd587d11335a0203d827224ada8f2
 
-PKG_MAINTAINER:=Alexandru Ardelean <ardeleanalex@gmail.com>
+PKG_MAINTAINER:=Alexandru Ardelean <ardeleanalex@gmail.com>, Peter Stadler <peter.stadler@student.uibk.ac.at>
 PKG_LICENSE:=BSD-3-Clause
 PKG_LICENSE_FILES:=LICENSE LICENSE.python
 PKG_CPE_ID:=cpe:/a:djangoproject:django
@@ -30,14 +30,12 @@ define Package/python3-django
   TITLE:=The web framework for perfectionists with deadlines.
   URL:=https://www.djangoproject.com/
   DEPENDS:= +python3 +python3-pytz +python3-sqlparse +python3-asgiref
-  CONFLICTS:=python3-django1 python-django1-common
+  CONFLICTS:=python3-django1
   PROVIDES:=django
-  VARIANT:=python3
 endef
 
 define Package/python3-django/description
-    The web framework for perfectionists with deadlines (LTS 2.2 series).
-    Python3 only.
+    The web framework for perfectionists with deadlines.
 endef
 
 define Py3Package/python3-django/install

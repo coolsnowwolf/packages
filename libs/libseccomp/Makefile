@@ -8,13 +8,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libseccomp
-PKG_VERSION:=2.4.1
-PKG_RELEASE:=1
+PKG_VERSION:=2.4.2
+PKG_RELEASE:=2
 PKG_USE_MIPS16:=0
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://github.com/seccomp/libseccomp/releases/download/v$(PKG_VERSION)/
-PKG_HASH:=1ca3735249af66a1b2f762fe6e710fcc294ad7185f1cc961e5bd83f9988006e8
+PKG_HASH:=b54f27b53884caacc932e75e6b44304ac83586e2abe7a83eca6daecc5440585b
 PKG_MAINTAINER:=Nikos Mavrogiannopoulos <nmav@gnutls.org>
 PKG_CPE_ID:=cpe:/a:libseccomp_project:libseccomp
 
@@ -67,7 +67,7 @@ endef
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include $(1)/usr/lib/pkgconfig
 	$(CP) \
-		$(PKG_INSTALL_DIR)/usr/include/seccomp.h \
+		$(PKG_INSTALL_DIR)/usr/include/seccomp*.h \
 		$(1)/usr/include/
 	$(CP) \
 		$(PKG_INSTALL_DIR)/usr/lib/libseccomp.{a,so*} \

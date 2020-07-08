@@ -20,6 +20,7 @@ DEBUG=0
 NGINX_WEBSERVER=0
 UPDATE_NGINX=0
 UPDATE_UHTTPD=0
+USER_CLEANUP=
 
 . /lib/functions.sh
 
@@ -32,17 +33,17 @@ check_cron()
 
 log()
 {
-    logger -t acme -s -p daemon.info "$@"
+    logger -t acme -s -p daemon.info -- "$@"
 }
 
 err()
 {
-    logger -t acme -s -p daemon.err "$@"
+    logger -t acme -s -p daemon.err -- "$@"
 }
 
 debug()
 {
-    [ "$DEBUG" -eq "1" ] && logger -t acme -s -p daemon.debug "$@"
+    [ "$DEBUG" -eq "1" ] && logger -t acme -s -p daemon.debug -- "$@"
 }
 
 get_listeners() {
@@ -148,6 +149,11 @@ post_checks()
         NGINX_WEBSERVER=0
         /etc/init.d/nginx restart
     fi
+
+    if [ -n "$USER_CLEANUP" ] && [ -f "$USER_CLEANUP" ]; then
+        log "Running user-provided cleanup script from $USER_CLEANUP."
+        "$USER_CLEANUP" || return 1
+    fi
 }
 
 err_out()
@@ -165,9 +171,12 @@ int_out()
 
 is_staging()
 {
-    local main_domain="$1"
+    local main_domain
+    local domain_dir
+    main_domain="$1"
+    domain_dir="$2"
 
-    grep -q "acme-staging" "$STATE_DIR/$main_domain/${main_domain}.conf"
+    grep -q "acme-staging" "${domain_dir}/${main_domain}.conf"
     return $?
 }
 
@@ -180,25 +189,34 @@ issue_cert()
     local update_uhttpd
     local update_nginx
     local keylength
+    local keylength_ecc=0
     local domains
     local main_domain
     local moved_staging=0
     local failed_dir
     local webroot
     local dns
+    local user_setup
+    local user_cleanup
     local ret
+    local domain_dir
 
     config_get_bool enabled "$section" enabled 0
     config_get_bool use_staging "$section" use_staging
     config_get_bool update_uhttpd "$section" update_uhttpd
     config_get_bool update_nginx "$section" update_nginx
+    config_get calias "$section" calias
+    config_get dalias "$section" dalias
     config_get domains "$section" domains
     config_get keylength "$section" keylength
     config_get webroot "$section" webroot
     config_get dns "$section" dns
+    config_get user_setup "$section" user_setup
+    config_get user_cleanup "$section" user_cleanup
 
     UPDATE_NGINX=$update_nginx
     UPDATE_UHTTPD=$update_uhttpd
+    USER_CLEANUP=$user_cleanup
 
     [ "$enabled" -eq "1" ] || return
 
@@ -207,7 +225,19 @@ issue_cert()
     set -- $domains
     main_domain=$1
 
-    [ -n "$webroot" ] || [ -n "$dns" ] || pre_checks "$main_domain" || return 1
+    if [ -n "$user_setup" ] && [ -f "$user_setup" ]; then
+        log "Running user-provided setup script from $user_setup."
+        "$user_setup" "$main_domain" || return 1
+    else
+        [ -n "$webroot" ] || [ -n "$dns" ] || pre_checks "$main_domain" || return 1
+    fi
+
+    if echo $keylength | grep -q "^ec-"; then
+        domain_dir="$STATE_DIR/${main_domain}_ecc"
+        keylength_ecc=1
+    else
+        domain_dir="$STATE_DIR/${main_domain}"
+    fi
 
     log "Running ACME for $main_domain"
 
@@ -217,13 +247,14 @@ issue_cert()
     }
     config_list_foreach "$section" credentials handle_credentials
 
-    if [ -e "$STATE_DIR/$main_domain" ]; then
-        if [ "$use_staging" -eq "0" ] && is_staging "$main_domain"; then
+    if [ -e "$domain_dir" ]; then
+        if [ "$use_staging" -eq "0" ] && is_staging "$main_domain" "$domain_dir"; then
             log "Found previous cert issued using staging server. Moving it out of the way."
-            mv "$STATE_DIR/$main_domain" "$STATE_DIR/$main_domain.staging"
+            mv "$domain_dir" "${domain_dir}.staging"
             moved_staging=1
         else
             log "Found previous cert config. Issuing renew."
+            [ "$keylength_ecc" -eq "1" ] && acme_args="$acme_args --ecc"
             run_acme --home "$STATE_DIR" --renew -d "$main_domain" $acme_args && ret=0 || ret=1
             post_checks
             return $ret
@@ -239,6 +270,16 @@ issue_cert()
     if [ -n "$dns" ]; then
         log "Using dns mode"
         acme_args="$acme_args --dns $dns"
+        if [ -n "$dalias" ]; then
+            log "Using domain alias for dns mode"
+            acme_args="$acme_args --domain-alias $dalias"
+            if [ -n "$calias" ]; then
+                err "Both domain and challenge aliases are defined. Ignoring the challenge alias."
+            fi
+        elif [ -n "$calias" ]; then
+            log "Using challenge alias for dns mode"
+            acme_args="$acme_args --challenge-alias $calias"
+        fi
     elif [ -z "$webroot" ]; then
         log "Using standalone mode"
         acme_args="$acme_args --standalone --listen-v6"
@@ -253,26 +294,26 @@ issue_cert()
     fi
 
     if ! run_acme --home "$STATE_DIR" --issue $acme_args; then
-        failed_dir="$STATE_DIR/${main_domain}.failed-$(date +%s)"
+        failed_dir="${domain_dir}.failed-$(date +%s)"
         err "Issuing cert for $main_domain failed. Moving state to $failed_dir"
-        [ -d "$STATE_DIR/$main_domain" ] && mv "$STATE_DIR/$main_domain" "$failed_dir"
+        [ -d "$domain_dir" ] && mv "$domain_dir" "$failed_dir"
         if [ "$moved_staging" -eq "1" ]; then
             err "Restoring staging certificate"
-            mv "$STATE_DIR/${main_domain}.staging" "$STATE_DIR/${main_domain}"
+            mv "${domain_dir}.staging" "${domain_dir}"
         fi
         post_checks
         return 1
     fi
 
     if [ -e /etc/init.d/uhttpd ] && [ "$update_uhttpd" -eq "1" ]; then
-        uci set uhttpd.main.key="$STATE_DIR/${main_domain}/${main_domain}.key"
-        uci set uhttpd.main.cert="$STATE_DIR/${main_domain}/fullchain.cer"
+        uci set uhttpd.main.key="${domain_dir}/${main_domain}.key"
+        uci set uhttpd.main.cert="${domain_dir}/fullchain.cer"
         # commit and reload is in post_checks
     fi
 
     if [ -e /etc/init.d/nginx ] && [ "$update_nginx" -eq "1" ]; then
-        sed -i "s#ssl_certificate\ .*#ssl_certificate $STATE_DIR/${main_domain}/fullchain.cer;#g" /etc/nginx/nginx.conf
-        sed -i "s#ssl_certificate_key\ .*#ssl_certificate_key $STATE_DIR/${main_domain}/${main_domain}.key;#g" /etc/nginx/nginx.conf
+        sed -i "s#ssl_certificate\ .*#ssl_certificate ${domain_dir}/fullchain.cer;#g" /etc/nginx/nginx.conf
+        sed -i "s#ssl_certificate_key\ .*#ssl_certificate_key ${domain_dir}/${main_domain}.key;#g" /etc/nginx/nginx.conf
         # commit and reload is in post_checks
     fi
 

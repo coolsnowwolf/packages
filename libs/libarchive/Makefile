@@ -8,64 +8,82 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libarchive
-PKG_VERSION:=3.3.2
+PKG_VERSION:=3.4.3
 PKG_RELEASE:=1
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=http://www.libarchive.org/downloads
-PKG_HASH:=ed2dbd6954792b2c054ccf8ec4b330a54b85904a80cef477a1c74643ddafa0ce
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
+PKG_SOURCE_URL:=https://www.libarchive.org/downloads
+PKG_HASH:=0bfc3fd40491768a88af8d9b86bf04a9e95b6d41a94f9292dbc0ec342288c05f
+
 PKG_MAINTAINER:=Johannes Morgenroth <morgenroth@ibr.cs.tu-bs.de>
 PKG_LICENSE:=BSD-2-Clause
+PKG_LICENSE_FILES:=COPYING
+PKG_CPE_ID:=cpe:/a:libarchive:libarchive
 
 PKG_INSTALL:=1
-PKG_FIXUP:=autoreconf
+PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
 
 define Package/libarchive/Default
-	SECTION:=libs
-	CATEGORY:=Libraries
-	DEPENDS:=+zlib +liblzma +libbz2 +libexpat
-	TITLE:=Multi-format archive and compression library
-	URL:=http://www.libarchive.org/
+  SECTION:=libs
+  CATEGORY:=Libraries
+  DEPENDS:=+zlib +liblzma +libbz2 +libexpat
+  TITLE:=Multi-format archive and compression library
+  URL:=https://www.libarchive.org/
 endef
 
 define Package/libarchive
-	$(call Package/libarchive/Default)
-	DEPENDS += +libopenssl
+  $(call Package/libarchive/Default)
+  DEPENDS += +libopenssl
 endef
 
 define Package/libarchive-noopenssl
-	$(call Package/libarchive/Default)
-	TITLE += (without OpenSSL dependency)
-	VARIANT:=noopenssl
+  $(call Package/libarchive/Default)
+  TITLE += (without OpenSSL dependency)
+  VARIANT:=noopenssl
+endef
+
+define Package/bsdtar/Default
+  SECTION:=utils
+  CATEGORY:=Utilities
+  SUBMENU:=Compression
+  TITLE:=tar BSD variant
+  URL:=https://www.libarchive.org/
 endef
 
 define Package/bsdtar
-	SECTION:=utils
-	CATEGORY:=Utilities
-	SUBMENU:=Compression
-	DEPENDS:=+libarchive-noopenssl
-	TITLE:=BSD variant that supports various file compression formats
-	URL:=http://www.libarchive.org/
+  $(call Package/bsdtar/Default)
+  DEPENDS:= +libarchive
+endef
+
+define Package/bsdtar-noopenssl
+  $(call Package/bsdtar/Default)
+  TITLE += (without OpenSSL dependency)
+  DEPENDS:= +libarchive-noopenssl
+  VARIANT:=noopenssl
 endef
 
 define Package/bsdtar/description
-	Reads a variety of formats including tar, pax, zip, xar, lha, ar,
-	cab, mtree, rar, warc, 7z and ISO images. Writes tar, pax, zip,
-	xar, ar, ISO, mtree and shar archives. Automatically handles
-	archives compressed with gzip, bzip2, lzip, xz, lzma or compress.
+  Reads a variety of formats including tar, pax, zip, xar, lha, ar,
+  cab, mtree, rar, warc, 7z and ISO images. Writes tar, pax, zip,
+  xar, ar, ISO, mtree and shar archives. Automatically handles
+  archives compressed with gzip, bzip2, lzip, xz, lzma or compress.
 endef
 
 CONFIGURE_ARGS += \
-	--disable-bsdcpio \
 	--enable-bsdtar=shared \
+	--disable-bsdcpio \
+	--disable-rpath \
 	--disable-acl \
 	--disable-xattr \
+	--without-cng \
+	--without-iconv \
+	--without-lz4 \
+	--without-lzo2 \
 	--without-nettle \
 	--without-xml2 \
-	--without-lz4 \
-	--without-cng \
+	--without-zstd
 
 ifeq ($(BUILD_VARIANT),noopenssl)
 	CONFIGURE_ARGS += --without-openssl
@@ -91,7 +109,9 @@ define Package/bsdtar/install
 endef
 
 Package/libarchive-noopenssl/install = $(Package/libarchive/install)
+Package/bsdtar-noopenssl/install = $(Package/bsdtar/install)
 
 $(eval $(call BuildPackage,libarchive))
 $(eval $(call BuildPackage,libarchive-noopenssl))
 $(eval $(call BuildPackage,bsdtar))
+$(eval $(call BuildPackage,bsdtar-noopenssl))

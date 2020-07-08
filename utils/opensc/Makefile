@@ -8,11 +8,11 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=opensc
-PKG_VERSION:=0.17.0
+PKG_VERSION:=0.20.0
 PKG_RELEASE:=1
-PKG_HASH:=be73c6816867ab4721e6a9ae7dba8e890c5f169f0a2cbb4bf354e0f30a948300
+PKG_HASH:=bbf4b4f4a44463645c90a525e820a8059b2f742a53b7b944f941de3c97ba4863
 
-PKG_LICENSE:=LGPL-2.1+
+PKG_LICENSE:=LGPL-2.1-or-later
 PKG_LICENSE_FILES:=COPYING
 PKG_MAINTAINER:=Daniel Golle <daniel@makrotopia.org>
 PKG_SOURCE_URL:=https://github.com/OpenSC/OpenSC/releases/download/$(PKG_VERSION)/
@@ -97,6 +97,10 @@ define Package/libopensc-profile-$(subst _,-,$(firstword $(subst :, ,$(1))))
   DEPENDS:=libopensc
 endef
 endef
+
+CONFIGURE_ARGS += \
+	--disable-notify \
+	--disable-strict
 
 TOOLS:= \
 	cardos-tool \

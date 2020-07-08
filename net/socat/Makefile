@@ -6,19 +6,20 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=socat
-PKG_VERSION:=1.7.3.2
-PKG_RELEASE:=3
+PKG_VERSION:=1.7.3.4
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
 PKG_SOURCE_URL:=http://www.dest-unreach.org/socat/download
-PKG_HASH:=e3561f808739383eb10fada1e5d4f26883f0311b34fd0af7837d0c95ef379251
+PKG_HASH:=972374ca86f65498e23e3259c2ee1b8f9dbeb04d12c2a78c0c9b5d1cb97dfdfc
 
 PKG_MAINTAINER:=Ted Hess <thess@kitschensync.net>
-
-PKG_LICENSE:=GPL-2.0 OpenSSL
+PKG_LICENSE:=GPL-2.0-or-later OpenSSL
 PKG_LICENSE_FILES:=COPYING COPYING.OpenSSL
+PKG_CPE_ID:=cpe:/a:dest-unreach:socat
 
 PKG_INSTALL:=1
+PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
 

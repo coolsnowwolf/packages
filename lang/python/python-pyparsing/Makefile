@@ -9,11 +9,11 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=python-pyparsing
-PKG_VERSION:=2.4.6
-PKG_RELEASE:=1
+PKG_VERSION:=2.4.7
+PKG_RELEASE:=2
 
 PYPI_NAME:=pyparsing
-PKG_HASH:=4c830582a84fb022400b85429791bc551f1f4871c33f23e44f353119e92f969f
+PKG_HASH:=c203ec8783bf771a155b207279b9bccb8dea02d8f0c9e5f8ead507bc3246ecc1
 
 PKG_MAINTAINER:=Jan Pavlinec <jan.pavlinec@nic.cz>
 PKG_LICENSE:=MIT
@@ -30,7 +30,6 @@ define Package/python3-pyparsing
   TITLE:=Library for constructing grammar directly in python
   URL:=https://github.com/pyparsing/pyparsing/
   DEPENDS:=+python3-light
-  VARIANT:=python3
 endef
 
 define Package/python3-pyparsing/description

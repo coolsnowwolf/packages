@@ -9,21 +9,19 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libvpx
-PKG_VERSION:=1.7.0
+PKG_VERSION:=1.8.2
 PKG_RELEASE:=1
 
-PKG_REV:=v$(PKG_VERSION)
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_REV).tar.gz
-PKG_MIRROR_HASH:=be50ff18464d614a08726597ecbd72d1f11ec69ec04df2d9acdf646ecd9adcca
-PKG_SOURCE_URL:=https://chromium.googlesource.com/webm/libvpx
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_VERSION:=$(PKG_REV)
-PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
+PKG_SOURCE_URL:=https://chromium.googlesource.com/webm/libvpx
+PKG_MIRROR_HASH:=51e871a928fe98f14fd08285cb9b64c0d540b36b630ee7d47bc464e909366db7
+PKG_SOURCE_VERSION:=v$(PKG_VERSION)
 
 PKG_MAINTAINER:=Luiz Angelo Daros de Luca <luizluca@gmail.com>
-
 PKG_LICENSE:=BSD-3-Clause
 PKG_LICENSE_FILES:=LICENSE
+PKG_CPE_ID:=cpe:/a:john_koleszar:libvpx
+PKG_BUILD_PARALLEL:=1
 
 PKG_ABI_VERSION:=$(subst $(space),.,$(wordlist 1, 2, $(subst .,$(space),$(PKG_VERSION))))
 
@@ -35,7 +33,7 @@ define Package/libvpx
   SECTION:=libs
   CATEGORY:=Libraries
   TITLE:=libvpx
-  URL:=http://www.webmproject.org/
+  URL:=https://www.webmproject.org/
   DEPENDS:=+libpthread
   ABI_VERSION:=$(PKG_ABI_VERSION)
 endef
@@ -45,14 +43,14 @@ define Package/libvpx/description
 endef
 
 CONFIGURE_ARGS = \
-		--target=generic-gnu \
-		--prefix=$(CONFIGURE_PREFIX) \
-		--libdir=/usr/lib \
-		--enable-static \
-		--enable-shared \
-        --disable-examples \
-        --disable-docs \
-        --disable-unit-tests \
+	--target=generic-gnu \
+	--prefix=$(CONFIGURE_PREFIX) \
+	--libdir=/usr/lib \
+	--enable-static \
+	--enable-shared \
+	--disable-examples \
+	--disable-docs \
+	--disable-unit-tests \
 
 # Add --enable-small as openwrt gcc flags are overwritten
 ifneq ($(findstring -Os,$(TARGET_CFLAGS)),)
@@ -61,12 +59,9 @@ endif
 
 # libvpx expects gcc as linker but uses $LD if provided
 # However, OpenWRT defines LD as *-uclibc-ld and not *-gcc
-CONFIGURE_VARS += \
-    CROSS=$(GNU_TARGET_NAME) \
-	LD="$(TARGET_CC)" \
-
-MAKE_FLAGS += \
-	LD="$(TARGET_CC)" \
+CONFIGURE_VARS := $(filter-out LD=%,$(CONFIGURE_VARS)) LD="$(TARGET_CC)" \
+       CROSS=$(GNU_TARGET_NAME)
+MAKE_FLAGS := $(filter-out LD=%,$(MAKE_FLAGS)) LD="$(TARGET_CC)"
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include/vpx/

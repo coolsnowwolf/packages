@@ -190,3 +190,4 @@ __RUNPROG="$__PRGBASE --request PUT --data @$DATFILE '$__URLBASE/zones/$__ZONEID
 cloudflare_transfer || return 1
 
 return 0
+

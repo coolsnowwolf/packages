@@ -8,11 +8,11 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=python-more-itertools
-PKG_VERSION:=8.2.0
+PKG_VERSION:=8.4.0
 PKG_RELEASE:=1
 
 PYPI_NAME:=more-itertools
-PKG_HASH:=b1ddb932186d8a6ac451e1d95844b382f55e12686d51ca0c68b6f61f2ab7a507
+PKG_HASH:=68c70cc7167bdf5c7c9d8f6954a7837089c6a36bf565383919bb595efb8a17e5
 
 PKG_MAINTAINER:=Jan Pavlinec <jan.pavlinec@nic.cz>
 PKG_LICENSE:=MIT
@@ -29,7 +29,6 @@ define Package/python3-more-itertools
   TITLE:=More routines for operating on iterables, beyond itertools
   URL:=https://github.com/erikrose/more-itertools
   DEPENDS:=+python3-light
-  VARIANT:=python3
 endef
 
 define Package/python3-more-itertools/description

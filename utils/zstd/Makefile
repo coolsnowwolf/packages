@@ -1,53 +1,47 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=zstd
-PKG_VERSION:=1.3.8
-PKG_RELEASE:=1
+PKG_VERSION:=1.4.5
+PKG_RELEASE:=2
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://codeload.github.com/facebook/zstd/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=90d902a1282cc4e197a8023b6d6e8d331c1fd1dfe60f7f8e4ee9da40da886dc3
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.zst
+PKG_SOURCE_URL:=https://github.com/facebook/zstd/releases/download/v$(PKG_VERSION)
+PKG_HASH:=2c2366874bc449ff539614266d8c0d6ecdb4baf30bb65609c239ab4ed23c03c7
 
+PKG_MAINTAINER:=
 PKG_LICENSE:=GPL-2.0-or-later
-PKG_LICENSE_FILE:=COPYING
+PKG_LICENSE_FILES:=COPYING
+
+PKG_BUILD_DEPENDS:=meson/host
+PKG_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk
-include $(INCLUDE_DIR)/host-build.mk
-include $(INCLUDE_DIR)/cmake.mk
+include ../../devel/meson/meson.mk
 
-PKG_BUILD_PARALLEL:=1
-HOST_BUILD_PARALLEL:=1
-CMAKE_SOURCE_SUBDIR:=build/cmake
-CMAKE_INSTALL:=1
-
-ifeq ($(CONFIG_ZSTD_OPTIMIZE_O3),y)
-	TARGET_CFLAGS := $(filter-out -O%,$(TARGET_CFLAGS))
-	TARGET_CFLAGS += -O3
-	TARGET_CXXFLAGS := $(filter-out -O%,$(TARGET_CXXFLAGS))
-	TARGET_CXXFLAGS += -O3
-endif
+MESON_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)/build/meson/openwrt-build
 
 define Package/zstd/Default
-	SUBMENU:=Compression
-	URL:=https://github.com/facebook/zstd
-	MAINTAINER:=Amol Bhave <ambhave@fb.com>
+  SUBMENU:=Compression
+  URL:=https://github.com/facebook/zstd
 endef
 
 define Package/libzstd
 $(call Package/zstd/Default)
-	SECTION:=libs
-	CATEGORY:=Libraries
-	TITLE:=zstd library.
+  SECTION:=libs
+  CATEGORY:=Libraries
+  TITLE:=zstd library.
+  MENU:=1
 endef
 
 define Package/libzstd/description
-	Zstandard - Fast real-time compression algorithm.
-	This package provides libzstd library.
+  Zstandard - Fast real-time compression algorithm.
+  This package provides libzstd library.
 endef
 
 define Package/libzstd/config
 	config ZSTD_OPTIMIZE_O3
 		bool "Use all optimizations (-O3)"
+		depends on PACKAGE_libzstd
 		default y
 		help
 			This enables additional optmizations using the -O3 compilation flag.
@@ -55,27 +49,54 @@ endef
 
 define Package/zstd
 $(call Package/zstd/Default)
-	SECTION:=utils
-	CATEGORY:=Utilities
-	DEPENDS:=+libzstd
-	TITLE:=Fast real-time compression algorithm.
+  SECTION:=utils
+  CATEGORY:=Utilities
+  DEPENDS:=+libzstd
+  TITLE:=Fast real-time compression algorithm.
 endef
 
 define Package/zstd/description
-	Zstandard - Fast real-time compression algorithm.
-	This package provides the zstd binaries.
+  Zstandard - Fast real-time compression algorithm.
+  This package provides the zstd binaries.
+endef
+
+ifeq ($(CONFIG_ZSTD_OPTIMIZE_O3),y)
+TARGET_CFLAGS:= $(filter-out -O%,$(TARGET_CFLAGS)) -O3
+endif
+
+TARGET_CFLAGS += $(if $(CONFIG_USE_UCLIBC),-D_BSD_SOURCE)
+
+MESON_ARGS += \
+	-Dlegacy_level=1 \
+	-Ddebug_level=0 \
+	-Dbacktrace=false \
+	-Dstatic_runtime=false \
+	-Dbin_programs=true \
+	-Dbin_tests=false \
+	-Dbin_control=false \
+	-Dzlib=disabled \
+	-Dlzma=disabled \
+	-Dlz4=disabled \
+	-Db_lto=true
+
+define Build/InstallDev
+	$(INSTALL_DIR) $(1)/usr/include
+	$(CP) $(PKG_INSTALL_DIR)/usr/include/*.h $(1)/usr/include
+	$(INSTALL_DIR) $(1)/usr/lib
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libzstd.so* $(1)/usr/lib
+	$(INSTALL_DIR) $(1)/usr/lib/pkgconfig
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/libzstd.pc $(1)/usr/lib/pkgconfig
 endef
 
 define Package/libzstd/install
 	$(INSTALL_DIR) $(1)/usr/lib
-	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/lib/libzstd.so* $(1)/usr/lib/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libzstd.so* $(1)/usr/lib
 endef
 
 define Package/zstd/install
 	$(INSTALL_DIR) $(1)/usr/bin
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/{unzstd,zstd,zstdcat,zstdmt} $(1)/usr/bin/
+	$(CP) $(PKG_INSTALL_DIR)/usr/bin/{unzstd,zstd,zstdcat,zstdgrep,zstdless,zstdmt} $(1)/usr/bin
 endef
 
 $(eval $(call BuildPackage,libzstd))
 $(eval $(call BuildPackage,zstd))
-$(eval $(call HostBuild))
