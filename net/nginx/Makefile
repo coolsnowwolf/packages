@@ -411,6 +411,8 @@ endif
 ifneq ($(CONFIG_IPV6),y)
 	$(SED) '/listen\s*\[/d' $(1)/etc/nginx/conf.d/*.conf # without IPv6 [::]
 endif
+	$(INSTALL_DIR) $(1)/etc/uci-defaults
+	$(INSTALL_BIN) ./root/etc/uci-defaults/* $(1)/etc/uci-defaults/
 endef
 
 define Package/nginx-ssl/install
@@ -418,6 +420,9 @@ define Package/nginx-ssl/install
 	$(INSTALL_CONF) ./files/_redirect2ssl.conf $(1)/etc/nginx/conf.d/
 ifneq ($(CONFIG_IPV6),y)
 	$(SED) '/listen\s*\[/d' $(1)/etc/nginx/conf.d/*.conf # without IPv6 [::]
+	
+	$(INSTALL_DIR) $(1)/etc/uci-defaults
+	$(INSTALL_BIN) ./root/etc/uci-defaults/* $(1)/etc/uci-defaults/
 endif
 endef
 
