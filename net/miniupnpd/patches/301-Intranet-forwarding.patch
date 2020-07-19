@@ -1,0 +1,11 @@
+--- a/getifaddr.c
++++ b/getifaddr.c
+@@ -297,7 +297,7 @@
+ 
+ 	for (i = 0; i < sizeof(reserved)/sizeof(reserved[0]); ++i) {
+ 		if ((address >> reserved[i].rmask) == (reserved[i].address >> reserved[i].rmask))
+-			return 1;
++			return 0;
+ 	}
+ 
+ 	return 0;
