@@ -1,182 +1,150 @@
 #
 # Copyright (C) 2006-2010 OpenWrt.org
+# Copyright (C) 2019 Noah Meyerhans <frodo@morgul.net>
+#
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
-#
 
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=iputils
-PKG_VERSION:=20101006
+PKG_VERSION:=20190709
 PKG_RELEASE:=1
 
-PKG_SOURCE:=$(PKG_NAME)-s$(PKG_VERSION).tar.bz2
-PKG_SOURCE_URL:=http://www.skbuff.net/iputils
-PKG_HASH:=fd3af46c80ebb99607c2ca1f2a3608b6fe828e25bbec6e54f2afd25f6ddb6ee7
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
+PKG_SOURCE_URL:=https://codeload.github.com/iputils/iputils/tar.gz/s$(PKG_VERSION)?
+PKG_HASH:=a15720dd741d7538dd2645f9f516d193636ae4300ff7dbc8bfca757bf166490a
 
-PKG_MAINTAINER:=Jo-Philipp Wich <jo@mein.io>
-PKG_LICENSE:=GPL-2.0+
-PKG_CPE_ID:=cpe:/a:skbuff:iputils
+PKG_MAINTAINER:=Noah Meyerhans <frodo@morgul.net>
+PKG_LICENSE:=BSD-3-Clause
+PKG_LICENSE_FILES:=LICENSE
+PKG_CPE_ID:=cpe:/a:iputils_project:iputils
 
-PKG_BUILD_DEPENDS:=sysfsutils
-PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-s$(PKG_VERSION)
-
+PKG_BUILD_DIR:=$(BUILD_DIR)/iputils-s$(PKG_VERSION)
+PKG_BUILD_DEPENDS:=meson/host
 include $(INCLUDE_DIR)/package.mk
+include ../../devel/meson/meson.mk
 
+MESON_ARGS:=-DBUILD_MANS=false \
+            -DBUILD_HTML_MANS=false \
+            -DUSE_CAP=false \
+            -DUSE_CRYPTO=kernel \
+            -DUSE_IDN=false \
+            -DUSE_GETTEXT=false \
+            -DNO_SETCAP_OR_SUID=true \
+            -DBUILD_PING=true \
+            -DBUILD_ARPING=true \
+            -DBUILD_CLOCKDIFF=true \
+            -DBUILD_TRACEPATH=true \
+            -DBUILD_TFTPD=true
 
 define Package/iputils/Default
   SECTION:=net
   CATEGORY:=Network
-  URL:=http://www.skbuff.net/iputils
+  TITLE:=iputils
+  URL:=https://github.com/iputils/iputils
 endef
 
-
-define Package/iputils-arping
-$(call Package/iputils/Default)
-  TITLE:=iputils - arping
-  DEPENDS+= +libsysfs
-endef
-
-define Package/iputils-arping/description
-  Program arping from iputils.
-  Sends ARP REQUEST to a neighbour host.
-endef
-
-
-define Package/iputils-clockdiff
-$(call Package/iputils/Default)
-  TITLE:=iputils - clockdiff
-endef
-
-define Package/iputils-clockdiff/description
-  Program clockdiff from iputils.
-  Measures clock difference between hosts.
-endef
-
+### ping
 
 define Package/iputils-ping
-$(call Package/iputils/Default)
-  TITLE:=iputils - ping
+  $(call Package/iputils/Default)
+  TITLE:=iputils-ping
+  DEPENDS:=+kmod-crypto-md5
+endef
+
+define Package/iputils-ping/config
+	source "$(SOURCE)/Config_ping.in"
 endef
 
 define Package/iputils-ping/description
-  Program ping from iputils.
-  Sends ICMP ECHO_REQUEST to network hosts (IPv4).
-endef
-
-
-define Package/iputils-ping6
-$(call Package/iputils/Default)
-  TITLE:=iputils - ping6
-  DEPENDS+= @IPV6 +USE_GLIBC:libopenssl
-endef
-
-define Package/iputils-ping6/description
-  Program ping6 from iputils.
-  Sends ICMP ECHO_REQUEST to network hosts (IPv6).
-endef
-
-
-define Package/iputils-tftpd
-$(call Package/iputils/Default)
-  TITLE:=iputils - tftpd
-endef
-
-define Package/iputils-tftpd/description
-  Program tftpd from iputils
-  Trivial File Transfer Protocol server.
-endef
-
-
-define Package/iputils-tracepath
-$(call Package/iputils/Default)
-  TITLE:=iputils - tracepath
-endef
-
-define Package/iputils-tracepath/description
-  Program tracepath from iputils.
-  Traces path to a network host discovering MTU along this path (IPv4).
-endef
-
-
-define Package/iputils-tracepath6
-$(call Package/iputils/Default)
-  TITLE:=iputils - tracepath6
-  DEPENDS+= @IPV6
-endef
-
-define Package/iputils-tracepath6/description
-  Program tracepath6 from iputils.
-  Traces path to a network host discovering MTU along this path (IPv6).
-endef
-
-
-define Package/iputils-traceroute6
-$(call Package/iputils/Default)
-  TITLE:=iputils - traceroute6
-  DEPENDS+= @IPV6
-endef
-
-define Package/iputils-traceroute6/description
-  Program traceroute6 from iputils.
-  Traces path to a network host (IPv6).
-endef
-
-ifdef CONFIG_USE_MUSL
-  TARGET_CFLAGS += -D__UCLIBC__
-endif
-
-MAKE_FLAGS += \
-	CFLAGS="$(TARGET_CFLAGS) $(TARGET_CPPFLAGS) $(TARGET_LDFLAGS)" \
-	CONFIG_IPV6="$(CONFIG_IPV6)" \
-	CONFIG_USE_UCLIBC="$(CONFIG_USE_UCLIBC)$(CONFIG_USE_MUSL)" \
-
-define Package/iputils-arping/install
-	$(INSTALL_DIR) $(1)/usr/bin
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/arping $(1)/usr/bin/
-endef
-
-define Package/iputils-clockdiff/install
-	$(INSTALL_DIR) $(1)/usr/bin
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/clockdiff $(1)/usr/bin/
+  Send ICMP_ECHOREQUEST packets to IP hosts and report on replies
 endef
 
 define Package/iputils-ping/install
 	$(INSTALL_DIR) $(1)/usr/bin
-	$(INSTALL_SUID) $(PKG_BUILD_DIR)/ping $(1)/usr/bin/
+	$(INSTALL_SUID) $(MESON_BUILD_DIR)/ping $(1)/usr/bin/
+ifdef CONFIG_PING_LEGACY_SYMLINKS
+	ln -s ping $(1)/usr/bin/ping4
+	ln -s ping $(1)/usr/bin/ping6
+endif
 endef
 
-define Package/iputils-ping6/install
+### arping
+
+define Package/iputils-arping
+  $(call Package/iputils/Default)
+  TITLE:=iputils-arping
+endef
+
+define Package/iputils-arping/description
+  Send ARP REQUEST packets to a neighbor host
+endef
+
+define Package/iputils-arping/install
 	$(INSTALL_DIR) $(1)/usr/bin
-	$(INSTALL_SUID) $(PKG_BUILD_DIR)/ping6 $(1)/usr/bin/
+	$(INSTALL_BIN) $(MESON_BUILD_DIR)/arping $(1)/usr/bin/
 endef
 
-define Package/iputils-tftpd/install
-	$(INSTALL_DIR) $(1)/usr/sbin
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/tftpd $(1)/usr/sbin/
+### clockdiff
+
+define Package/iputils-clockdiff
+  $(call Package/iputils/Default)
+  TITLE:=iputils-clockdiff
+endef
+
+define Package/iputils-clockdiff/description
+  Measure the clock difference between two hosts
+endef
+
+define Package/iputils-clockdiff/install
+	$(INSTALL_DIR) $(1)/usr/bin
+	$(INSTALL_BIN) $(MESON_BUILD_DIR)/clockdiff $(1)/usr/bin/
+endef
+
+### tracepath
+
+define Package/iputils-tracepath
+  $(call Package/iputils/Default)
+  TITLE:=iputils-tracepath
+endef
+
+define Package/iputils-tracepath/description
+  trace network path to a host, discovering PMTU
+endef
+
+define Package/iputils-tracepath/config
+	source "$(SOURCE)/Config_tracepath.in"
 endef
 
 define Package/iputils-tracepath/install
 	$(INSTALL_DIR) $(1)/usr/bin
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/tracepath $(1)/usr/bin/
+	$(INSTALL_BIN) $(MESON_BUILD_DIR)/tracepath $(1)/usr/bin/
+ifdef CONFIG_TRACEPATH_LEGACY_SYMLINKS
+	ln -s tracepath $(1)/usr/bin/tracepath4
+	ln -s tracepath $(1)/usr/bin/tracepath6
+endif
 endef
 
-define Package/iputils-tracepath6/install
+### tftp
+
+define Package/iputils-tftpd
+  $(call Package/iputils/Default)
+  TITLE:=iputils-tftpd
+endef
+
+define Package/iputils-tftpd/description
+  Trivial File Transfer Protocol server
+endef
+
+define Package/iputils-tftpd/install
 	$(INSTALL_DIR) $(1)/usr/bin
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/tracepath6 $(1)/usr/bin/
+	$(INSTALL_BIN) $(MESON_BUILD_DIR)/tftpd $(1)/usr/bin/
 endef
 
-define Package/iputils-traceroute6/install
-	$(INSTALL_DIR) $(1)/usr/bin
-	$(INSTALL_SUID) $(PKG_BUILD_DIR)/traceroute6 $(1)/usr/bin/
-endef
-
+$(eval $(call BuildPackage,iputils-ping))
 $(eval $(call BuildPackage,iputils-arping))
 $(eval $(call BuildPackage,iputils-clockdiff))
-$(eval $(call BuildPackage,iputils-ping))
-$(eval $(call BuildPackage,iputils-tftpd))
 $(eval $(call BuildPackage,iputils-tracepath))
-$(eval $(call BuildPackage,iputils-ping6))
-$(eval $(call BuildPackage,iputils-tracepath6))
-$(eval $(call BuildPackage,iputils-traceroute6))
+$(eval $(call BuildPackage,iputils-tftpd))
