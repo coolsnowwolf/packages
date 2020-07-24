@@ -52,7 +52,7 @@ CONFIGURE_ARGS += \
 	--with-math \
 	--disable-x86-sse \
 	--enable-lto \
-        --disable-cloud\
+	--disable-cloud\
 	--without-libcap \
 	--disable-https \
 	--disable-dbengine \
