@@ -113,6 +113,7 @@ define Build/Compile
 endef
 
 define Package/docker-ce/install
+	$(CP) ./files/* $(1)/
 	$(INSTALL_DIR) $(1)/usr/bin/
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/cli/build/docker $(1)/usr/bin/
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/engine/bundles/binary-daemon/dockerd $(1)/usr/bin/
