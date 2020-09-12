@@ -42,4 +42,11 @@ define Package/https-dns-proxy/install
 	$(INSTALL_CONF) ./files/https-dns-proxy.config $(1)/etc/config/https-dns-proxy
 endef
 
+define Package/https-dns-proxy/postinst
+#!/bin/sh
+/etc/init.d/https-dns-proxy disable 
+/etc/init.d/https-dns-proxy stop
+exit 0
+endef
+
 $(eval $(call BuildPackage,https-dns-proxy))
