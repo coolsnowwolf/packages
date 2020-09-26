@@ -14,7 +14,9 @@ PKG_NAME:=golang
 PKG_VERSION:=$(GO_VERSION_MAJOR_MINOR)$(if $(GO_VERSION_PATCH),.$(GO_VERSION_PATCH))
 PKG_RELEASE:=1
 
-GO_SOURCE_URLS:=https://dl.google.com/go/ \
+GO_SOURCE_URLS:=https://golang.google.cn/dl/ \
+                https://dl.google.com/go/ \
+                https://golang.org/dl/ \
                 https://mirrors.ustc.edu.cn/golang/ \
                 https://mirrors.nju.edu.cn/golang/
 
