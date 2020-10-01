@@ -1,15 +1,15 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=docker-ce
-PKG_VERSION:=19.03.12
-PKG_RELEASE:=2
+PKG_VERSION:=19.03.13
+PKG_RELEASE:=1
 PKG_LICENSE:=Apache-2.0
 PKG_LICENSE_FILES:=components/cli/LICENSE components/engine/LICENSE
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/docker/docker-ce/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=d321f959e41fd9b24c23d95779d30d9ead1120bfddedf157ef5c047cf3d997a1
-PKG_SOURCE_VERSION:=48a66213fe # SHA1 used within the docker executables
+PKG_HASH:=b2ff08675738031b6d6d59a90226657c16726851957c11b5fb85a4598b933b92
+PKG_SOURCE_VERSION:=4484c46d9d # SHA1 used within the docker executables
 
 PKG_MAINTAINER:=Gerard Ryan <G.M0N3Y.2503@gmail.com>
 
@@ -113,7 +113,6 @@ define Build/Compile
 endef
 
 define Package/docker-ce/install
-	$(CP) ./files/* $(1)/
 	$(INSTALL_DIR) $(1)/usr/bin/
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/cli/build/docker $(1)/usr/bin/
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/engine/bundles/binary-daemon/dockerd $(1)/usr/bin/
@@ -132,6 +131,24 @@ define Package/docker-ce/install
 	$(INSTALL_DIR) $(1)/etc/sysctl.d
 	$(INSTALL_DATA) ./files/etc/sysctl.d/sysctl-br-netfilter-ip.conf \
 		$(1)/etc/sysctl.d/12-br-netfilter-ip.conf
+endef
+
+define Package/docker-ce/postinst
+#!/bin/sh
+[ -n "$$IPKG_INSTROOT" ] || {
+	/etc/init.d/dockerd enable
+	/etc/init.d/dockerd uciadd
+	/etc/init.d/dockerd start
+}
+endef
+
+define Package/docker-ce/prerm
+#!/bin/sh
+[ -n "$$IPKG_INSTROOT" ] || {
+	/etc/init.d/dockerd disable
+	/etc/init.d/dockerd stop
+	/etc/init.d/dockerd ucidel
+}
 endef
 
 $(eval $(call BuildPackage,docker-ce))
