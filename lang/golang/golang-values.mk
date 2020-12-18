@@ -21,6 +21,7 @@ unexport \
   GOARCH \
   GOBIN \
   GOCACHE \
+  GOMODCACHE \
   GODEBUG \
   GOENV \
   GOFLAGS \
@@ -29,6 +30,7 @@ unexport \
   GOROOT \
   GOTMPDIR
 # Unmodified:
+#   GOINSECURE
 #   GOPRIVATE
 #   GOPROXY
 #   GONOPROXY
@@ -109,13 +111,13 @@ unexport \
   BOOT_GO_GCFLAGS \
   BOOT_GO_LDFLAGS
 
+# From https://golang.org/src/cmd/dist/buildruntime.go
+unexport \
+  GOEXPERIMENT
+
 # From https://golang.org/src/cmd/dist/buildtool.go
 unexport \
   GOBOOTSTRAP_TOOLEXEC
-
-# From https://golang.org/src/cmd/internal/objabi/util.go
-unexport \
-  GOEXPERIMENT
 
 
 # GOOS / GOARCH
@@ -155,32 +157,15 @@ ifeq ($(GO_ARCH),386)
 else ifeq ($(GO_ARCH),arm)
   GO_TARGET_FPU:=$(word 2,$(subst +,$(space),$(call qstrip,$(CONFIG_CPU_TYPE))))
 
-  # FPU names from https://gcc.gnu.org/onlinedocs/gcc-8.3.0/gcc/ARM-Options.html#index-mfpu-1
-  # see also https://github.com/gcc-mirror/gcc/blob/gcc-8_3_0-release/gcc/config/arm/arm-cpus.in
-  #
-  # Assumptions:
-  #
-  # * -d16 variants (16 instead of 32 double-precision registers) acceptable
-  #   Go doesn't appear to check the HWCAP_VFPv3D16 flag in
-  #   https://github.com/golang/go/blob/release-branch.go1.13/src/runtime/os_linux_arm.go
-  #
-  # * Double-precision required
-  #   Based on no evidence(!)
-  #   Excludes vfpv3xd, vfpv3xd-fp16, fpv4-sp-d16, fpv5-sp-d16
+  # FPU names from https://gcc.gnu.org/onlinedocs/gcc-8.4.0/gcc/ARM-Options.html#index-mfpu-1
+  # see also https://github.com/gcc-mirror/gcc/blob/releases/gcc-8.4.0/gcc/config/arm/arm-cpus.in
 
-  GO_ARM_7_FPUS:= \
-    vfpv3 vfpv3-fp16 vfpv3-d16 vfpv3-d16-fp16 neon neon-vfpv3 neon-fp16 \
-    vfpv4 vfpv4-d16 neon-vfpv4 \
-    fpv5-d16 fp-armv8 neon-fp-armv8 crypto-neon-fp-armv8
-
-  GO_ARM_6_FPUS:=vfp vfpv2
-
-  ifneq ($(filter $(GO_TARGET_FPU),$(GO_ARM_7_FPUS)),)
-    GO_ARM:=7
-  else ifneq ($(filter $(GO_TARGET_FPU),$(GO_ARM_6_FPUS)),)
+  ifeq ($(GO_TARGET_FPU),)
+    GO_ARM:=5
+  else ifneq ($(filter $(GO_TARGET_FPU),vfp vfpv2),)
     GO_ARM:=6
   else
-    GO_ARM:=5
+    GO_ARM:=7
   endif
 
 else ifneq ($(filter $(GO_ARCH),mips mipsle),)
@@ -214,6 +199,8 @@ GO_PIE_SUPPORTED_OS_ARCH:= \
   android_386 android_amd64 android_arm android_arm64 \
   linux_386   linux_amd64   linux_arm   linux_arm64 \
   \
+  windows_386 windows_amd64 windows_arm \
+  \
   darwin_amd64 \
   freebsd_amd64 \
   \
@@ -221,7 +208,7 @@ GO_PIE_SUPPORTED_OS_ARCH:= \
   \
   linux_ppc64le linux_s390x
 
-go_pie_install_suffix=$(if $(filter $(1),aix_ppc64),,shared)
+go_pie_install_suffix=$(if $(filter $(1),aix_ppc64 windows_386 windows_amd64 windows_arm),,shared)
 
 ifneq ($(filter $(GO_HOST_OS_ARCH),$(GO_PIE_SUPPORTED_OS_ARCH)),)
   GO_HOST_PIE_SUPPORTED:=1
@@ -232,3 +219,36 @@ ifneq ($(filter $(GO_OS_ARCH),$(GO_PIE_SUPPORTED_OS_ARCH)),)
   GO_TARGET_PIE_SUPPORTED:=1
   GO_TARGET_PIE_INSTALL_SUFFIX:=$(call go_pie_install_suffix,$(GO_OS_ARCH))
 endif
+
+
+# Spectre mitigations
+
+GO_SPECTRE_SUPPORTED_ARCH:=amd64
+
+ifneq ($(filter $(GO_HOST_ARCH),$(GO_SPECTRE_SUPPORTED_ARCH)),)
+  GO_HOST_SPECTRE_SUPPORTED:=1
+endif
+
+ifneq ($(filter $(GO_ARCH),$(GO_SPECTRE_SUPPORTED_ARCH)),)
+  GO_TARGET_SPECTRE_SUPPORTED:=1
+endif
+
+
+# General build info
+
+GO_BUILD_CACHE_DIR:=$(or $(call qstrip,$(CONFIG_GOLANG_BUILD_CACHE_DIR)),$(TMP_DIR)/go-build)
+GO_MOD_CACHE_DIR:=$(DL_DIR)/go-mod-cache
+
+GO_MOD_ARGS= \
+	-modcacherw
+
+GO_GENERAL_BUILD_CONFIG_VARS= \
+	CONFIG_GOLANG_MOD_CACHE_WORLD_READABLE="$(CONFIG_GOLANG_MOD_CACHE_WORLD_READABLE)" \
+	GO_BUILD_CACHE_DIR="$(GO_BUILD_CACHE_DIR)" \
+	GO_MOD_CACHE_DIR="$(GO_MOD_CACHE_DIR)" \
+	GO_MOD_ARGS="$(GO_MOD_ARGS)"
+
+define Go/CacheCleanup
+	$(GO_GENERAL_BUILD_CONFIG_VARS) \
+	$(SHELL) $(GO_INCLUDE_DIR)/golang-build.sh cache_cleanup
+endef
