@@ -1,5 +1,6 @@
-# Please consider creating files in /etc/nginx/conf.d/ instead of editing this.
-# For details see https://openwrt.org/docs/guide-user/services/webserver/nginx
+# Consider using UCI or creating files in /etc/nginx/conf.d/ for configuration.
+# Parsing UCI configuration is skipped if uci set nginx.global.uci_enable=false
+# For details see: https://openwrt.org/docs/guide-user/services/webserver/nginx
 
 worker_processes auto;
 
@@ -26,5 +27,6 @@ http {
 
 	root /www;
 
+	#UCI_HTTP_CONFIG
 	include conf.d/*.conf;
 }
