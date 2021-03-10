@@ -37,6 +37,8 @@ Libnetwork provides a native Go implementation for connecting containers.
 The goal of libnetwork is to deliver a robust Container Network Model that provides a consistent programming interface and the required network abstractions for applications.
 endef
 
+GO_PKG_BUILD_VARS += GO111MODULE=auto
+
 define Package/libnetwork/install
 	$(call GoPackage/Package/Install/Bin,$(PKG_INSTALL_DIR))
 

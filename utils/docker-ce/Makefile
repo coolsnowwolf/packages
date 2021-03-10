@@ -1,8 +1,8 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=docker-ce
-PKG_VERSION:=19.03.13
-PKG_RELEASE:=1
+PKG_VERSION:=19.03.12
+PKG_RELEASE:=4
 PKG_LICENSE:=Apache-2.0
 PKG_LICENSE_FILES:=components/cli/LICENSE components/engine/LICENSE
 
@@ -83,6 +83,7 @@ define Build/Configure
 	$(LN) $(PKG_BUILD_DIR)/engine $(GO_PKG_BUILD_DIR)/src/$(GO_PKG)/docker
 endef
 
+GO_PKG_BUILD_VARS += GO111MODULE=auto
 ifeq ($(CONFIG_DOCKER_SECCOMP),y)
 BUILDTAGS:=seccomp
 else
