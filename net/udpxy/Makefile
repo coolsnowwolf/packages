@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=udpxy
-PKG_VERSION:=1.0-24.1
+PKG_VERSION:=1.0-25.1
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/pcherenkov/udpxy/tar.gz/$(PKG_VERSION)?
-PKG_HASH:=27e5d3d2bae29522354d1505a3cc931c96953846d68eeb25bb99fe9b0cb6cbe0
+PKG_HASH:=a1a16e60895c6b2fd151321db47f5d5373843116f1b98ed9749e6c25a6c44497
 
 PKG_MAINTAINER:=Álvaro Fernández Rojas <noltari@gmail.com>
 PKG_LICENSE:=GPL-3.0-or-later
