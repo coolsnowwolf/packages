@@ -11,7 +11,7 @@ PKG_MAINTAINER:=Andre Heider <a.heider@gmail.com>
 PKG_LICENSE:=Apache-2.0
 PKG_LICENSE_FILES:=COPYING
 
-HOST_BUILD_DEPENDS:=ninja/host
+HOST_BUILD_DEPENDS:=ninja/host python3/host
 
 include ../../lang/python/pypi.mk
 include $(INCLUDE_DIR)/host-build.mk
