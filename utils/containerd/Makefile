@@ -1,45 +1,34 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=containerd
-PKG_VERSION:=1.2.13
-PKG_RELEASE:=2
+PKG_VERSION:=1.4.6
+PKG_RELEASE:=1
 PKG_LICENSE:=Apache-2.0
 PKG_LICENSE_FILES:=LICENSE
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/containerd/containerd/tar.gz/v${PKG_VERSION}?
-PKG_HASH:=0811057ab67b78ce911416e793edaeb14b3f1e105d67b8e67b6302e0eab572e4
-PKG_SOURCE_VERSION:=7ad184331fa3e55e52b890ea95e65ba581ae3429
+PKG_HASH:=285a3f4c00a87538bd7d0a82a0a8a758458c02b925349f44f3189f480c326038
+PKG_SOURCE_VERSION:=d71fcd7d8303cbf684402823e425e9dd2e99285d
 
 PKG_MAINTAINER:=Gerard Ryan <G.M0N3Y.2503@gmail.com>
 
 PKG_BUILD_DEPENDS:=golang/host
 PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
+PKG_USE_MIPS16:=0
 
 GO_PKG:=github.com/containerd/containerd
 
 include $(INCLUDE_DIR)/package.mk
 include ../../lang/golang/golang-package.mk
 
-define Package/containerd/config
-config CONTAINERD_SECCOMP
-	depends on PACKAGE_containerd
-	bool "Enable support for seccomp in containerd"
-	default DOCKER_SECCOMP
-	select KERNEL_SECCOMP
-	select PACKAGE_libseccomp
-	help
-	  Build containerd with support for seccomp filters.
-	  Select libseccomp which also pulls-in the needed kernel features.
-endef
-
 define Package/containerd
   SECTION:=utils
   CATEGORY:=Utilities
   TITLE:=containerd container runtime
   URL:=https://containerd.io/
-  DEPENDS:=$(GO_ARCH_DEPENDS) @(aarch64||arm||x86_64) +btrfs-progs +runc +CONTAINERD_SECCOMP:libseccomp
+  DEPENDS:=$(GO_ARCH_DEPENDS) +btrfs-progs +runc
   MENU:=1
 endef
 
@@ -52,30 +41,21 @@ GO_PKG_INSTALL_ALL:=1
 MAKE_PATH:=$(GO_PKG_WORK_DIR_NAME)/build/src/$(GO_PKG)
 MAKE_VARS += $(GO_PKG_VARS)
 MAKE_FLAGS += \
-	DESTDIR="$(PKG_INSTALL_DIR)" \
 	VERSION=$(PKG_VERSION) \
 	REVISION=$(PKG_SOURCE_VERSION)
 
-ifeq ($(CONFIG_CONTAINERD_SECCOMP),y)
-MAKE_FLAGS += BUILDTAGS='seccomp'
+ifeq ($(CONFIG_SELINUX),y)
+MAKE_FLAGS += BUILDTAGS='selinux'
 else
 MAKE_FLAGS += BUILDTAGS=''
 endif
 
-define Build/Compile
-	$(call Build/Compile/Default)
-endef
-
-# Avoid installing binaries
-define Build/InstallDev
-	$(call Build/Compile/Default,clean)
-	rm -f $(STAMP_BUILT)
-	$(call GoPackage/Build/InstallDev,$(1))
-endef
+# Reset golang-package.mk overrides so we can use the Makefile
+Build/Compile=$(call Build/Compile/Default)
 
 define Package/containerd/install
 	$(INSTALL_DIR) $(1)/usr/bin/
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/bin/{ctr,containerd,containerd-stress,containerd-shim} $(1)/usr/bin/
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/bin/{ctr,containerd,containerd-stress,containerd-shim,containerd-shim-runc-v1,containerd-shim-runc-v2} $(1)/usr/bin/
 endef
 
 $(eval $(call BuildPackage,containerd))
