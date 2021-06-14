@@ -8,15 +8,15 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=python-openpyxl
-PKG_VERSION:=3.0.3
-PKG_RELEASE:=2
+PKG_VERSION:=3.0.7
+PKG_RELEASE:=1
 
 PKG_MAINTAINER:=Alexandru Ardelean <ardeleanalex@gmail.com>
 PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=LICENCE.rst
 
 PYPI_NAME:=openpyxl
-PKG_HASH:=547a9fc6aafcf44abe358b89ed4438d077e9d92e4f182c87e2dc294186dc4b64
+PKG_HASH:=6456a3b472e1ef0facb1129f3c6ef00713cebf62e736cd7a75bcc3247432f251
 
 include ../pypi.mk
 include $(INCLUDE_DIR)/package.mk
