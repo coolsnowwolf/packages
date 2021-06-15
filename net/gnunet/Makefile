@@ -2,11 +2,11 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=gnunet
 
-PKG_VERSION:=0.12.2
-PKG_RELEASE:=1
+PKG_VERSION:=0.14.1
+PKG_RELEASE:=$(AUTORELEASE)
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=@GNU/gnunet
-PKG_HASH:=ac288b047d1156fc5e739062b11242bad0487993631e79781aede620ddf18cd7
+PKG_HASH:=4a3205c570c30756f1a8b1ad0f1a63d078a92f0fac8e543471d54f4552da18c2
 
 PKG_LICENSE:=AGPL-3.0
 PKG_LICENSE_FILES:=COPYING
@@ -54,10 +54,12 @@ endef
 define Package/gnunet
 $(call Package/gnunet/Default)
   TITLE+= - a peer-to-peer framework focusing on security
-  DEPENDS:=+libatomic +libgcrypt +libgpg-error +libidn2 +libltdl +libunistring \
-           +librt +zlib $(ICONV_DEPENDS) $(INTL_DEPENDS)
+  DEPENDS:=+libatomic +libgcrypt +libgpg-error +libidn2 +libltdl +libsodium \
+           +libunistring +librt +zlib $(ICONV_DEPENDS) $(INTL_DEPENDS)
   USERID:=gnunet=958:gnunet=958
   MENU:=1
+  FILE_MODES:=/usr/lib/gnunet/libexec/gnunet-helper-nat-server:root:gnunet:4750 \
+              /usr/lib/gnunet/libexec/gnunet-helper-nat-client:root:gnunet:4750
 endef
 
 define Package/gnunet/description
@@ -84,6 +86,7 @@ define BuildComponent
     $(if $(3),DEFAULT:=y if PACKAGE_gnunet)
     $(if $(USERID_$(1)),USERID:=$(USERID_$(1)))
     $(if $(CONFLICTS_$(1)),CONFLICTS:=$(CONFLICTS_$(1)))
+    $(if $(FILE_MODES_$(1)),FILE_MODES:=$(FILE_MODES_$(1)))
   endef
 
   define Package/gnunet-$(1)/install
@@ -135,20 +138,20 @@ define Package/gnunet/install
 	$(INSTALL_DIR) $(1)/usr/bin $(1)/usr/lib/gnunet/libexec
 	$(INSTALL_DIR) $(1)/usr/share/gnunet/config.d $(1)/usr/share/gnunet/hellos
 
-	( for bin in arm ats ats-new cadet core config ecc identity nat nat-auto nat-server nse \
+	( for bin in arm ats cadet core config ecc identity nat nat-auto nat-server nse \
 	    peerinfo peerstore revocation scalarproduct scrypt statistics transport uri; do \
 		$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/gnunet-$$$$bin $(1)/usr/bin/ ; \
 	done )
 
-	( for lib in arm ats atsapplication atstransport block blockgroup cadet \
-	    core datacache dht dns dnsparser fragmentation friends hello \
+	( for lib in arm ats block blockgroup cadet \
+	    core datacache dht dns fragmentation friends hello \
 	    identity natauto natnew nse nt peerinfo peerstore regexblock regex revocation \
-	    scalarproduct set statistics transport transportaddress transportapplication \
-	    transportcommunicator transportcore transportmonitor util; do \
+	    scalarproduct set seti setu statistics transport transportapplication \
+	    transportcore transportmonitor util; do \
 		$(CP) $(PKG_INSTALL_DIR)/usr/lib/libgnunet$$$$lib.so* $(1)/usr/lib/ ; \
 	done )
 
-	( for plug in ats_proportional ats2_simple block_dht block_regex block_revocation transport_unix; do \
+	( for plug in ats_proportional block_dht block_regex block_revocation transport_unix; do \
 		$(CP) $(PKG_INSTALL_DIR)/usr/lib/gnunet/libgnunet_plugin_$$$$plug*.so $(1)/usr/lib/gnunet ; \
 	done )
 
@@ -158,14 +161,14 @@ define Package/gnunet/install
 	    service-nse service-peerinfo service-peerstore service-regex \
 	    service-revocation service-scalarproduct-alice \
 	    service-scalarproduct-bob service-scalarproduct-ecc-alice \
-	    service-scalarproduct-ecc-bob service-set service-statistics \
+	    service-scalarproduct-ecc-bob service-set service-seti service-setu service-statistics \
 	    service-transport timeout; do \
 		$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/lib/gnunet/libexec/gnunet-$$$$lex $(1)/usr/lib/gnunet/libexec ; \
 	done )
 
-	( for conf in arm ats cadet communicator-unix core datacache dht identity \
-	    identity-provider nat nat-auto nse peerinfo peerstore regex revocation \
-	    scalarproduct set statistics topology transport util; do \
+	( for conf in arm ats cadet core datacache dht identity \
+	    nat nat-auto nse peerinfo peerstore regex revocation \
+	    scalarproduct set seti setu statistics topology transport util; do \
 		$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/share/gnunet/config.d/$$$$conf.conf $(1)/usr/share/gnunet/config.d ; \
 	done )
 
@@ -186,6 +189,13 @@ define Build/InstallDev
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/*.pc $(1)/usr/lib/pkgconfig
 	$(CP) $(PKG_INSTALL_DIR)/usr/include/gnunet/*.h $(1)/usr/include/gnunet
 endef
+
+BIN_abd:=abd
+LIB_abd:=abd
+PLUGIN_abd:=gnsrecord_abd
+LIBEXEC_abd:=service-abd
+CONF_abd:=abd
+DEPENDS_abd:=+gnunet-gns
 
 BIN_auction:=auction-create auction-info auction-join
 LIBEXEC_auction:=service-auction
@@ -212,6 +222,7 @@ CONF_hostlist:=hostlist
 DEPENDS_transport-bluetooth:=+bluez-libs
 PLUGIN_transport-bluetooth:=transport_bluetooth
 LIBEXEC_transport-bluetooth:=helper-transport-bluetooth
+FILE_MODES_transport-bluetooth:=/usr/lib/gnunet/libexec/gnunet-helper-transport-bluetooth:root:gnunet:4750
 
 DEPENDS_transport-http_client:=+gnunet-curl +ca-certificates
 PLUGIN_transport-http_client:=transport_http_client transport_https_client
@@ -225,6 +236,7 @@ PLUGIN_transport-udp:=transport_udp
 
 PLUGIN_transport-wlan:=transport_wlan
 LIBEXEC_transport-wlan:=helper-transport-wlan
+FILE_MODES_transport-wlan:=/usr/lib/gnunet/libexec/gnunet-helper-transport-wlan:root:gnunet:4750
 
 # BIN_dv:=dv
 LIB_dv:=dv
@@ -240,17 +252,18 @@ LIBEXEC_fs:=helper-fs-publish service-fs
 CONF_fs:=fs
 
 DEPENDS_gns:=+gnunet-vpn +iptables-mod-extra
-USERID_gns:=gnunet=958:gnunetdns=452
+USERID_gns:=:gnunetdns=452
 BIN_gns:=gns gns-import.sh namecache namestore resolver zoneimport 
 LIB_gns:=gns gnsrecord namecache namestore
 PLUGIN_gns:=block_dns block_gns gnsrecord_conversation gnsrecord_dns gnsrecord_gns
 LIBEXEC_gns:=dns2gns helper-dns service-dns service-gns service-namecache service-namestore service-resolver service-zonemaster
 CONF_gns:=dns gns namecache namestore resolver zonemaster
+FILE_MODES_gns:=/usr/lib/gnunet/libexec/gnunet-helper-dns:root:gnunetdns:4750 /usr/lib/gnunet/libexec/gnunet-service-dns:gnunet:gnunetdns:2750
 
 DEPENDS_namestore-fcfsd:=+gnunet-gns +libmicrohttpd-ssl
 LIBEXEC_namestore-fcfsd:=namestore-fcfsd
 
-DEPENDS_gns-proxy:=+gnunet-gns +gnunet-curl +libmicrohttpd-ssl
+DEPENDS_gns-proxy:=+gnunet-gns +gnunet-curl +libmicrohttpd-ssl +PACKAGE_libgnutls-dane:libgnutls-dane
 LIBEXEC_gns-proxy:=gns-proxy
 
 DEPENDS_datastore:=+gnunet-gns
@@ -259,17 +272,21 @@ LIB_datastore:=datastore
 LIBEXEC_datastore:=service-datastore
 CONF_datastore:=datastore
 
+BIN_messenger:=messenger
+LIB_messenger:=messenger
+LIBEXEC_messenger:=service-messenger
+CONF_messenger:=messenger
 
-DEPENDS_reclaim:=+gnunet-gns +gnunet-sqlite +libpbc +libgabe
-BIN_reclaim:=credential reclaim
-LIB_reclaim:=consensus credential abe reclaim reclaimattribute secretsharing
-LIBEXEC_reclaim:=service-consensus service-credential service-reclaim service-secretsharing
-CONF_reclaim:=consensus credential reclaim secretsharing
-PLUGIN_reclaim:=block_consensus gnsrecord_credential gnsrecord_reclaim reclaim_attribute_gnuid
+DEPENDS_reclaim:=+gnunet-gns +gnunet-sqlite +libpbc +libgabe +jansson
+BIN_reclaim:=reclaim
+LIB_reclaim:=consensus abe reclaim reclaimattribute secretsharing
+LIBEXEC_reclaim:=service-consensus service-reclaim service-secretsharing
+CONF_reclaim:=consensus reclaim secretsharing
+PLUGIN_reclaim:=block_consensus gnsrecord_reclaim reclaim_credential_jwt reclaim_attribute_basic
 
 DEPENDS_rest:=+gnunet-gns +gnunet-reclaim +libmicrohttpd-ssl +jansson
-LIB_rest:=rest json
-PLUGIN_rest:=rest_copying rest_gns rest_identity rest_namestore rest_peerinfo rest_openid_connect rest_reclaim
+LIB_rest:=rest json gnsrecordjson
+PLUGIN_rest:=rest_config rest_copying rest_gns rest_identity rest_namestore rest_peerinfo rest_openid_connect rest_reclaim
 LIBEXEC_rest:=rest-server
 CONF_rest:=rest
 
@@ -313,7 +330,6 @@ DEPENDS_gns-pgsql:=+gnunet-pgsql +gnunet-gns
 PLUGIN_gns-pgsql:=namecache_postgres namestore_postgres
 CONFLICTS_gns-pgsql:=gnunet-gns-sqlite gnunet-gns-flat
 
-
 DEPENDS_sqlite:=+libsqlite3
 LIB_sqlite:=sq
 
@@ -331,17 +347,15 @@ PLUGIN_dhtcache-sqlite:=datacache_sqlite
 DEPENDS_fs-sqlite:=+gnunet-datastore +gnunet-sqlite
 PLUGIN_fs-sqlite:=datastore_sqlite
 
-
-
 DEPENDS_utils:=+certtool +openssl-util
 BIN_utils:=gns-proxy-setup-ca transport-certificate-creation
 
 DEPENDS_vpn:=+kmod-tun +iptables +firewall
 BIN_vpn:=vpn
+FILE_MODES_vpn:=/usr/lib/gnunet/libexec/gnunet-helper-exit:root:gnunet:4750 /usr/lib/gnunet/libexec/gnunet-helper-vpn:root:gnunet:4750
 LIB_vpn:=dnsstub tun vpn
 LIBEXEC_vpn:=daemon-exit daemon-pt helper-exit helper-vpn service-vpn
 CONF_vpn:=exit pt vpn
-
 
 define Package/gnunet-gns/prerm
 #!/bin/sh
@@ -388,6 +402,7 @@ $(eval $(call PostInstFixSUIDPerms,gnunet-transport-wlan))
 $(eval $(call PostInstFixSUIDPerms,gnunet-vpn))
 
 $(eval $(call BuildPackage,gnunet))
+#$(eval $(call BuildComponent,abd,credential service components,))
 $(eval $(call BuildComponent,auction,auction components,))
 $(eval $(call BuildComponent,conversation,conversation component,))
 $(eval $(call BuildComponent,curl,cURL wrapper component,))
@@ -398,6 +413,7 @@ $(eval $(call BuildComponent,fs,file-sharing components,))
 $(eval $(call BuildComponent,gns,name resolution components,y))
 $(eval $(call BuildComponent,gns-proxy,gns-proxy component,))
 $(eval $(call BuildComponent,hostlist,HTTP bootstrap hostlist client and server,y))
+$(eval $(call BuildComponent,messenger,group chat messenger,))
 $(eval $(call BuildComponent,reclaim,reclaim identity-provider subsystem,))
 $(eval $(call BuildComponent,rest,REST interface,))
 $(eval $(call BuildComponent,rps,RPS routing component,y))

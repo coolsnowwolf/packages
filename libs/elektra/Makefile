@@ -15,7 +15,7 @@ PKG_NAME:=elektra
 PKG_LICENSE:=BSD-3-Clause
 PKG_LICENSE_FILES:=LICENSE.md
 PKG_VERSION:=0.9.2
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 # Use this for official releasees
 PKG_HASH:=6f2fcf8aaed8863e1cc323265ca2617751ca50dac974b43a0811bcfd4a511f2e
@@ -286,8 +286,9 @@ endef
 
 CMAKE_BINARY_SUBDIR=build
 
-CMAKE_OPTIONS = \
+CMAKE_OPTIONS += \
 	-DTARGET_PLUGIN_FOLDER="" \
+	-DCARGO_EXECUTABLE=OFF \
 	-DBUILD_FULL=OFF \
 	-DBUILD_STATIC=OFF \
 	-DBUILD_DOCUMENTATION=OFF \
@@ -296,7 +297,7 @@ CMAKE_OPTIONS = \
 	-DKDB_DEFAULT_RESOLVER=resolver_fm_pb_b \
 	-DKDB_DEFAULT_STORAGE=ini \
 	-DENABLE_OPTIMIZATIONS=OFF \
-	-DPLUGINS="ALL;-multifile;-simpleini;-internalnotification" \
+	-DPLUGINS="ALL;-gpgme;-internalnotification;-multifile;-simpleini" \
 	-DIconv_INCLUDE_DIR="$(ICONV_PREFIX)/include" \
 	-DIconv_LIBRARY="$(ICONV_PREFIX)/lib/libiconv.$(if $(CONFIG_BUILD_NLS),so,a)" \
 	-DBINDINGS="MAINTAINED;-intercept_env;-intercept_fs;-io_uv;-io_ev;-io_glib"

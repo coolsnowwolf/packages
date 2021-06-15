@@ -8,18 +8,17 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libuhttpd
-PKG_VERSION:=3.1.0
+PKG_VERSION:=3.12.1
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL=https://github.com/zhaojh329/libuhttpd/releases/download/v$(PKG_VERSION)
-PKG_HASH:=733fdb2183fe4984e2f909c41e24d81989a748265a75ef288018568e67a9cd49
+PKG_HASH:=c234dd3d491c4daa047e28870c6e740529b2eff2dd027dafb6bf02d8dba286b0
 
 PKG_MAINTAINER:=Jianhui Zhao <zhaojh329@gmail.com>
 PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=LICENSE
 
-PKG_BUILD_PARALLEL:=1
 CMAKE_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk
@@ -38,17 +37,17 @@ endef
 
 Package/libuhttpd-openssl=$(call Package/libuhttpd/Default,openssl,+PACKAGE_libuhttpd-openssl:libopenssl)
 Package/libuhttpd-wolfssl=$(call Package/libuhttpd/Default,wolfssl,+PACKAGE_libuhttpd-wolfssl:libwolfssl)
-Package/libuhttpd-mbedtls=$(call Package/libuhttpd/Default,mbedtls,+PACKAGE_libuhttpd-mbedtls:libmbedtls)
+Package/libuhttpd-mbedtls=$(call Package/libuhttpd/Default,mbedtls,+PACKAGE_libuhttpd-mbedtls:libmbedtls +PACKAGE_libuhttpd-mbedtls:zlib)
 Package/libuhttpd-nossl=$(call Package/libuhttpd/Default,nossl)
 
 ifeq ($(BUILD_VARIANT),openssl)
-  CMAKE_OPTIONS += -DUHTTPD_USE_OPENSSL=ON
+  CMAKE_OPTIONS += -DUSE_OPENSSL=ON
 else ifeq ($(BUILD_VARIANT),wolfssl)
-  CMAKE_OPTIONS += -DUHTTPD_USE_WOLFSSL=ON
+  CMAKE_OPTIONS += -DUSE_WOLFSSL=ON
 else ifeq ($(BUILD_VARIANT),mbedtls)
-  CMAKE_OPTIONS += -DUHTTPD_USE_MBEDTLS=ON
+  CMAKE_OPTIONS += -DUSE_MBEDTLS=ON
 else
-  CMAKE_OPTIONS += -DUHTTPD_SSL_SUPPORT=OFF
+  CMAKE_OPTIONS += -DSSL_SUPPORT=OFF
 endif
 
 define Package/libuhttpd-$(BUILD_VARIANT)/install

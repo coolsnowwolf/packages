@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=bwping
-PKG_VERSION:=1.17
+PKG_VERSION:=2.3
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=@SF/bwping
-PKG_HASH:=4bbbadcfa5a06ef57c673136731dd92c1b79389c8287f75108c5f1000420daf8
+PKG_HASH:=6417af412b68ebb77c45047fef8ced40db3b5dc646c9dd503a7855535a02f7d5
 
 PKG_MAINTAINER:=Oleg Derevenetz <oleg.derevenetz@gmail.com>
 PKG_LICENSE:=BSD-2-Clause

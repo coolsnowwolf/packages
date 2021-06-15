@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=logrotate
-PKG_VERSION:=3.16.0
+PKG_VERSION:=3.17.0
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=https://github.com/logrotate/logrotate/releases/download/$(PKG_VERSION)
-PKG_HASH:=442f6fdf61c349eeae5f76799878b88fe45a11c8863a38b618bac6988f4a7ce5
+PKG_HASH:=58cc2178ff57faa3c0490181cce041345aeca6cff18dba1c5cd1398bf1c19294
 
 PKG_MAINTAINER:=Christian Beier <cb@shoutrlabs.com>
 PKG_LICENSE:=GPL-2.0-or-later
@@ -51,7 +51,9 @@ define Package/logrotate/conffiles
 /etc/logrotate.conf
 endef
 
-CONFIGURE_ARGS += $(if $(CONFIG_LOGROTATE_ACL),--with,--without)-acl
+CONFIGURE_ARGS += \
+	$(if $(CONFIG_LOGROTATE_ACL),--with,--without)-acl \
+	--without-selinux
 
 define Build/Compile
 	$(call Build/Compile/Default, \

@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=cryptsetup
-PKG_VERSION:=2.3.3
-PKG_RELEASE:=1
+PKG_VERSION:=2.3.5
+PKG_RELEASE:=$(AUTORELEASE)
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=@KERNEL/linux/utils/cryptsetup/v2.3
-PKG_HASH:=3bca4ffe39e2f94cef50f6ea65acb873a6dbce5db34fc6bcefe38b6d095e82df
+PKG_HASH:=ced9946f444d132536daf92fc8aca4277638a3c2d96e20540b2bae4d36fd70c1
 
 PKG_MAINTAINER:=Daniel Golle <daniel@makrotopia.org>
 PKG_LICENSE:=GPL-2.0-or-later LGPL-2.1-or-later
@@ -30,7 +30,7 @@ define Package/cryptsetup
   CATEGORY:=Utilities
   SUBMENU:=Encryption
   TITLE:=Cryptsetup
-  DEPENDS:=$(ICONV_DEPENDS) +libblkid +libuuid +libpopt +lvm2 +libdevmapper +libjson-c +@KERNEL_DIRECT_IO +kmod-crypto-user
+  DEPENDS:=$(ICONV_DEPENDS) $(INTL_DEPENDS) +libblkid +libuuid +libpopt +lvm2 +libdevmapper +libjson-c +@KERNEL_DIRECT_IO +kmod-crypto-user
   URL:=https://gitlab.com/cryptsetup/cryptsetup/
 endef
 
@@ -48,8 +48,6 @@ CONFIGURE_ARGS += \
 	--with-default-luks-format=LUKS2 \
 	--with-luks2-lock-path=/var/run/cryptsetup \
 	--with-crypto_backend=kernel
-
-TARGET_LDFLAGS += -liconv
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include

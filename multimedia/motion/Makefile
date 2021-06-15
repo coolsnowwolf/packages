@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=motion
-PKG_VERSION:=4.3.1
-PKG_RELEASE:=2
+PKG_VERSION:=4.3.2
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-release-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/Motion-Project/motion/tar.gz/release-$(PKG_VERSION)?
-PKG_HASH:=545712b10fc4a0134e994b7d8a3773c1c22f0bf4bd7afea7d7ffff357aca9ea5
+PKG_HASH:=dafa4264b2d8e4778f8be5871f09b6c0ec710d5a836182c583469c18db944d70
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-release-$(PKG_VERSION)
 
 PKG_MAINTAINER:=Roger D <rogerdammit@gmail.com>
@@ -31,7 +31,7 @@ include $(INCLUDE_DIR)/nls.mk
 define Package/motion
   SECTION:=multimedia
   CATEGORY:=Multimedia
-  DEPENDS:=+libjpeg +libpthread +libmicrohttpd $(INTL_DEPENDS) +TARGET_bcm27xx:bcm27xx-userland
+  DEPENDS:=+libjpeg +libpthread +libmicrohttpd $(INTL_DEPENDS)
   TITLE:=webcam motion sensing and logging
   URL:=https://motion-project.github.io/
 endef
@@ -44,7 +44,7 @@ endef
 CONFIGURE_ARGS += \
 	--without-bktr \
 	--without-webp \
-	--with$(if $(CONFIG_TARGET_bcm27xx),,out)-mmal \
+	--without-mmal \
 	--without-ffmpeg \
 	--without-mariadb \
 	--without-mysql \

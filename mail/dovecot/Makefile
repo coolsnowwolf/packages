@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=dovecot
-PKG_VERSION:=2.3.10.1
-PKG_RELEASE:=1
+PKG_VERSION:=2.3.13
+PKG_RELEASE:=$(AUTORELEASE)
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://dovecot.org/releases/2.3
-PKG_HASH:=6642e62f23b1b23cfac235007ca6e21cb67460cca834689fad450724456eb10c
+PKG_HASH:=a3f875b80ec11a452480690108660030978c94fa8e796ad6d943a874b496f1c4
 
 PKG_MAINTAINER:=Lucian Cristian <lucian.cristian@gmail.com>
 PKG_LICENSE:=LGPL-2.1-only MIT BSD-3-Clause
@@ -74,6 +74,7 @@ CONFIGURE_ARGS += \
 	--without-lzma \
 	--without-lz4 \
 	--without-sodium \
+	--without-zstd \
 	$(if $(CONFIG_DOVECOT_GSSAPI),--with-gssapi=yes,--with-gssapi=no) \
 	$(if $(CONFIG_DOVECOT_LDAP),--with-ldap=yes,--with-ldap=no) \
 	$(if $(CONFIG_DOVECOT_MYSQL),--with-mysql=yes,--with-mysql=no) \

@@ -5,8 +5,8 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=simple-adblock
-PKG_VERSION:=1.8.3
-PKG_RELEASE:=13
+PKG_VERSION:=1.8.7
+PKG_RELEASE:=3
 PKG_MAINTAINER:=Stan Grishin <stangri@melmac.net>
 PKG_LICENSE:=GPL-3.0-or-later
 
@@ -16,25 +16,19 @@ define Package/simple-adblock
 	SECTION:=net
 	CATEGORY:=Network
 	TITLE:=Simple AdBlock Service
-	DEPENDS:=+jshn +jsonfilter
+	URL:=https://docs.openwrt.melmac.net/simple-adblock/
+	DEPENDS:=+jshn +wget
 	PKGARCH:=all
 endef
 
 define Package/simple-adblock/description
 Simple adblock script to block ad or abuse/malware domains with DNSMASQ or Unbound.
-Script supports local/remote list of domains and hosts-files for both black- and white-listing.
-Please see https://github.com/openwrt/packages/blob/master/net/simple-adblock/files/README.md for more information.
-
+Script supports local/remote list of domains and hosts-files for both block-listing and allow-listing.
+Please see https://docs.openwrt.melmac.net/simple-adblock/ for more information.
 endef
 
 define Package/simple-adblock/conffiles
 /etc/config/simple-adblock
-endef
-
-define Build/Prepare
-	mkdir -p $(PKG_BUILD_DIR)/files/
-	$(CP) ./files/simple-adblock.init $(PKG_BUILD_DIR)/files/simple-adblock.init
-	sed -i "s|^\(PKG_VERSION\).*|\1='$(PKG_VERSION)-$(PKG_RELEASE)'|" $(PKG_BUILD_DIR)/files/simple-adblock.init
 endef
 
 define Build/Configure
@@ -44,14 +38,11 @@ define Build/Compile
 endef
 
 define Package/simple-adblock/install
-	$(INSTALL_DIR) $(1)/etc/init.d
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/files/simple-adblock.init $(1)/etc/init.d/simple-adblock
-	$(INSTALL_DIR) $(1)/etc/config
+	$(INSTALL_DIR) $(1)/etc/init.d $(1)/etc/config $(1)/tmp
+	$(INSTALL_BIN) ./files/simple-adblock.init $(1)/etc/init.d/simple-adblock
+	$(SED) "s|^\(PKG_VERSION\).*|\1='$(PKG_VERSION)-$(PKG_RELEASE)'|" $(1)/etc/init.d/simple-adblock
 	$(INSTALL_CONF) ./files/simple-adblock.conf $(1)/etc/config/simple-adblock
-	$(INSTALL_DIR) $(1)/tmp
-	$(INSTALL_CONF) ./files/simple-adblock.conf.update $(1)/tmp/simple-adblock.conf.update
-	$(INSTALL_DIR) $(1)/etc/hotplug.d/iface
-	$(INSTALL_BIN) ./files/simple-adblock.hotplug $(1)/etc/hotplug.d/iface/80-simple-adblock
+	$(INSTALL_DATA) ./files/simple-adblock.conf.update $(1)/tmp/simple-adblock.conf.update
 endef
 
 define Package/simple-adblock/postinst

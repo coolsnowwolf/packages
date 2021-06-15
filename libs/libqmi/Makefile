@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libqmi
-PKG_VERSION:=1.26.0
+PKG_VERSION:=1.28.6
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=https://www.freedesktop.org/software/libqmi
-PKG_HASH:=7f0429e0ae58792e21512d09ca2412537840ea42696762795af1284a65fd6e40
+PKG_HASH:=cbb890893de1dee06ea5ebdac2d22f0469314a6f93f15f61f2f1206a1c9ae5fd
 
 PKG_MAINTAINER:=Nicholas Smith <nicholas.smith@telcoantennas.com.au>
 
@@ -23,10 +23,17 @@ PKG_BUILD_PARALLEL:=1
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/nls.mk
 
+define Package/libqmi/config
+  source "$(SOURCE)/Config.in"
+endef
+
 define Package/libqmi
   SECTION:=libs
   CATEGORY:=Libraries
-  DEPENDS:=+libmbim
+  DEPENDS:= \
+    +glib2 \
+    +LIBQMI_WITH_MBIM_QMUX:libmbim \
+    +LIBQMI_WITH_QRTR_GLIB:libqrtr-glib
   TITLE:=Helper library to talk to QMI enabled modems
   URL:=https://www.freedesktop.org/wiki/Software/libqmi
   LICENSE:=LGPL-2.0-or-later
@@ -59,7 +66,8 @@ CONFIGURE_ARGS += \
 	--disable-gtk-doc-pdf \
 	--disable-silent-rules \
 	--enable-firmware-update \
-	--enable-mbim-qmux \
+	--$(if $(LIBQMI_WITH_MBIM_QMUX),en,dis)able-mbim-qmux \
+	--$(if $(LIBQMI_WITH_QRTR_GLIB),en,dis)able-qrtr \
 	--enable-more-warnings=yes \
 	--without-udev \
 	--without-udev-base-dir

@@ -8,7 +8,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=netdata
-PKG_VERSION:=1.23.2
+PKG_VERSION:=1.30.1
 PKG_RELEASE:=1
 
 PKG_MAINTAINER:=Josef Schlehofer <pepe.schlehofer@gmail.com>, Daniel Engberg <daniel.engberg.lists@pyret.net>
@@ -18,7 +18,7 @@ PKG_CPE_ID:=cpe:/a:my-netdata:netdata
 
 PKG_SOURCE:=$(PKG_NAME)-v$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/netdata/netdata/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=b6dd13292e0b1fb4137b1f7c0dc3d7c5e8a1bf408b82c2b8394f3751800e0eb5
+PKG_HASH:=e05f8b59d283fb2844280455b9481a2f9104730fd77f535312ff2fec40a6bc11
 
 PKG_INSTALL:=1
 PKG_BUILD_PARALLEL:=1
@@ -52,7 +52,7 @@ CONFIGURE_ARGS += \
 	--with-math \
 	--disable-x86-sse \
 	--enable-lto \
-        --disable-cloud\
+	--disable-ebpf \
 	--without-libcap \
 	--disable-https \
 	--disable-dbengine \
@@ -61,7 +61,8 @@ CONFIGURE_ARGS += \
 	--disable-plugin-cups \
 	--disable-plugin-xenstat \
 	--disable-backend-prometheus-remote-write \
-	--enable-jsonc
+	--disable-unit-tests \
+	--disable-cloud
 
 define Package/netdata/conffiles
 /etc/netdata/

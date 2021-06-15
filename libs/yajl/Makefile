@@ -20,7 +20,6 @@ PKG_MAINTAINER:=Charles Southerland <charlie@stuphlabs.com>
 PKG_LICENSE:=ISC
 PKG_LICENSE_FILES:=COPYING
 
-PKG_BUILD_PARALLEL:=1
 CMAKE_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk

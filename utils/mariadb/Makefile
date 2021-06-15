@@ -8,8 +8,8 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=mariadb
-PKG_VERSION:=10.4.13
-PKG_RELEASE:=2
+PKG_VERSION:=10.4.18
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL := \
@@ -18,22 +18,18 @@ PKG_SOURCE_URL := \
 	https://ftp.yz.yamagata-u.ac.jp/pub/dbms/mariadb/$(PKG_NAME)-$(PKG_VERSION)/source \
 	https://downloads.mariadb.org/interstitial/$(PKG_NAME)-$(PKG_VERSION)/source
 
-PKG_HASH:=45bbbb12d1de8febd9edf630e940c23cf14efd60570c743b268069516a5d91df
-PKG_MAINTAINER:=Sebastian Kemper <sebastian_ml@gmx.net>
+PKG_HASH:=330d9e8273002fc92f0f3f3f9b08157a3cab1265a0f114adeb6235e4283a0d3e
+PKG_MAINTAINER:=Michal Hrusecky <Michal@Hrusecky.net>
 PKG_LICENSE:=GPL-2.0
 PKG_LICENSE_FILES:=COPYING THIRDPARTY
 
 PKG_CPE_ID:=cpe:/a:mariadb:mariadb
 
-HOST_BUILD_PARALLEL:=1
-PKG_BUILD_PARALLEL:=1
 PKG_USE_MIPS16:=0
 
 HOST_BUILD_DEPENDS:=libxml2/host
 # Without libevent2 tests/async_queries sporadically fails on the bots
 PKG_BUILD_DEPENDS:=libevent2 mariadb/host
-
-CMAKE_INSTALL:=1
 
 CONF_DIR:=/etc/mysql
 PLUGIN_DIR:=/usr/lib/mariadb/plugin
@@ -137,8 +133,7 @@ MARIADB_SERVER := \
 	mysql_install_db \
 	mysql_upgrade \
 	mysqladmin \
-	mysqld \
-	mysqld_safe
+	mysqld
 
 MARIADB_SERVER_EXTRA := \
 	aria_chk \
@@ -157,6 +152,7 @@ MARIADB_SERVER_EXTRA := \
 	mysql_setpermission \
 	mysql_tzinfo_to_sql \
 	mysqld_multi \
+	mysqld_safe \
 	mysqld_safe_helper \
 	mysqldumpslow \
 	mysqlhotcopy \
@@ -170,16 +166,15 @@ MARIADB_SERVER_EXTRA := \
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/host-build.mk
-include $(INCLUDE_DIR)/cmake.mk
 include $(INCLUDE_DIR)/nls.mk
+include $(INCLUDE_DIR)/cmake.mk
 
 MARIADB_COMMON_DEPENDS := \
 	$(ICONV_DEPENDS) \
 	+libatomic \
 	+libopenssl \
 	+libstdcpp \
-	+zlib \
-	@!USE_UCLIBC
+	+zlib
 
 # Pass CPPFLAGS in the CFLAGS as otherwise the build system will
 # ignore them.
@@ -380,7 +375,7 @@ CMAKE_OPTIONS += \
 	-DINSTALL_SQLBENCHDIR="" \
 	-DINSTALL_SUPPORTFILESDIR=share/mariadb \
 	-DINSTALL_UNIX_ADDRDIR=$(MARIADB_SOCKET) \
-	-DMYSQL_DATADIR=/var/lib/mysql \
+	-DMYSQL_DATADIR=/srv/mysql \
 	-DMYSQL_UNIX_ADDR=$(MARIADB_SOCKET) \
 	-DSKIP_TESTS=ON \
 	-DWITH_DEBUG=OFF \
@@ -478,11 +473,6 @@ define Build/Prepare
 	$(foreach p,$(MARIADB_DISABLE_PLUGINS),$(call Package/mariadb/disable/plugin,$(PKG_BUILD_DIR),$(p));)
 endef
 
-# Define Build/InstallDev, otherwise build system starts installing files into
-# staging area, which would interfere with mariadb-connector-c.
-define Build/InstallDev
-endef
-
 define Package/mariadb-client/install
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(foreach b,$(MARIADB_CLIENT),$(call Package/mariadb/install/bin,$(1),$(b));)
@@ -541,6 +531,12 @@ define BuildPlugin
     $(call Package/mariadb/Default)
     TITLE:=mariadb-server plugin
     DEPENDS:=mariadb-server $(patsubst +%,+PACKAGE_mariadb-server-plugin-$(subst _,-,$(1)):%,$(2))
+ifeq ($(1),auth_pam)
+    # Directory "auth_pam_tool_dir" is installed with mode 0750 and is only
+    # accessible by root and the group mariadb. This way mariadb can access
+    # the SUID binary "auth_pam_tool" contained within while others cannot.
+    FILE_MODES:=/usr/lib/mariadb/plugin/auth_pam_tool_dir:root:mariadb:0750
+endif
   endef
   define Package/mariadb-server-plugin-$(subst _,-,$(1))/description
     $(call Package/mariadb/description/Default)
@@ -552,7 +548,7 @@ This package provides the $(1) plugin.
 	  $(INSTALL_DIR) $$(1)$(PLUGIN_DIR)
 	  $(call Package/mariadb/install/plugin,$$(1),$(1))
 ifeq ($(1),auth_pam)
-	  $(INSTALL_DIR) -m0750 $$(1)$(PLUGIN_DIR)/auth_pam_tool_dir
+	  $(INSTALL_DIR) $$(1)$(PLUGIN_DIR)/auth_pam_tool_dir
 	  $(INSTALL_SUID) \
 		  $(PKG_INSTALL_DIR)$(PLUGIN_DIR)/auth_pam_tool_dir/auth_pam_tool \
 					  $$(1)$(PLUGIN_DIR)/auth_pam_tool_dir
@@ -572,22 +568,6 @@ ifeq ($(1),ha_spider)
 endif
   endef
   $$(eval $$(call BuildPackage,mariadb-server-plugin-$(subst _,-,$(1))))
-endef
-
-# Directory "auth_pam_tool_dir" is installed with '-m0750' above and
-# contains SUID binary "auth_pam_tool". Below post-install script
-# changes the group of "auth_pam_tool_dir" to mariadb, so user mariadb
-# can access the folder (and the SUID binary). The script only changes
-# the group if the directory is currently owned by "root:root".
-define Package/mariadb-server-plugin-auth-pam/postinst
-#!/bin/sh
-if [ -z "$${IPKG_INSTROOT}" ]; then
-  dir="/usr/lib/mariadb/plugin/auth_pam_tool_dir"
-  if ! [ -L "$$dir" ] && [ -d "$$dir" ] && [ -O "$$dir" ] && [ -G "$$dir" ]; then
-    chown :mariadb "$$dir"
-  fi
-fi
-exit 0
 endef
 
 $(eval $(call HostBuild))

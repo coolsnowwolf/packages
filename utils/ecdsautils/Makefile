@@ -19,7 +19,6 @@ PKG_MIRROR_HASH:=397395a471c0b5af1a173666ba21a5bedb4c3423a6e37c545c3627bed73dcb7
 PKG_MAINTAINER:=Matthias Schiffer <mschiffer@universe-factory.net>
 PKG_LICENSE_FILES:=COPYRIGHT
 
-PKG_BUILD_PARALLEL:=1
 CMAKE_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk

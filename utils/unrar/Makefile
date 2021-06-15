@@ -6,12 +6,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=unrar
-PKG_VERSION:=5.9.3
-PKG_RELEASE:=1
+PKG_VERSION:=6.0.6
+PKG_RELEASE:=$(AUTORELEASE)
 
 PKG_SOURCE:=unrarsrc-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://www.rarlab.com/rar
-PKG_HASH:=28c176c29da86d7efe3cb9a227255d8340f761ba95969195982ec87c8eb2dd69
+PKG_HASH:=011ef7290d3394a62bb5bfced914cd510a7eea7255cf69417f9c952bb6056588
+PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)-$(BUILD_VARIANT)/unrar
 
 PKG_MAINTAINER:=Álvaro Fernández Rojas <noltari@gmail.com>, \
 		Ted Hess <thess@kitschensync.net>
@@ -19,23 +20,19 @@ PKG_LICENSE:=UnRAR
 PKG_LICENSE_FILES:=license.txt
 PKG_CPE_ID:=cpe:/a:rarlab:unrar
 
-PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)-$(BUILD_VARIANT)/unrar
 PKG_INSTALL:=1
+PKG_BUILD_PARALLEL:=1
 
-include $(INCLUDE_DIR)/uclibc++.mk
 include $(INCLUDE_DIR)/package.mk
 
-ifeq ($(CONFIG_USE_UCLIBCXX),y)
-TARGET_LDFLAGS +=-nodefaultlibs
-endif
 TARGET_CXXFLAGS +=-fno-rtti -flto
-TARGET_LDFLAGS +=$(FPIC) -Wl,--gc-sections
+TARGET_LDFLAGS +=$(FPIC) -Wl,--gc-sections $(if $(CONFIG_USE_GLIBC),-lpthread)
 
 define Package/unrar/Default
   TITLE:=UnRAR
   SUBMENU:=Compression
   URL:=https://www.rarlab.com/
-  DEPENDS:=$(CXX_DEPENDS) +libpthread
+  DEPENDS:=+libstdcpp +libpthread
 endef
 
 define Package/unrar

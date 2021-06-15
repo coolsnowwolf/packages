@@ -8,13 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=forked-daapd
-PKG_VERSION:=27.1
-PKG_RELEASE:=6
+PKG_VERSION:=27.4
+PKG_RELEASE:=1
 
-PKG_SOURCE_PROTO:=git
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
-PKG_SOURCE_URL:=https://github.com/ejurgensen/forked-daapd.git
-PKG_SOURCE_VERSION:=9bb95768494a698df5d5b315c47d48c944d7cab0
+PKG_SOURCE_URL:=https://github.com/ejurgensen/$(PKG_NAME)/releases/download/$(PKG_VERSION)/
+PKG_HASH:=00f71c687df268a3c4db77cecf37972e76832a99e34f09750d07a92934a0bfa8
 
 PKG_FIXUP:=autoreconf
 PKG_USE_MIPS16:=0
@@ -33,9 +32,10 @@ CATEGORY:=Sound
 TITLE:=iTunes (DAAP) server for Apple Remote and AirPlay
 URL:=https://github.com/ejurgensen/forked-daapd
 DEPENDS:=+libgpg-error +libgcrypt +libgdbm +zlib +libexpat +libunistring \
-	+libevent2 +libdaemon +libantlr3c +confuse +libopus +alsa-lib +libffmpeg-full \
+	+libevent2 +libdaemon +libantlr3c +confuse +alsa-lib +libffmpeg-full \
 	+mxml +libavahi-client +sqlite3-cli +libplist +libcurl +libjson-c \
-	+libprotobuf-c +libgnutls +libsodium +libwebsockets-full $(ICONV_DEPENDS)
+	+libprotobuf-c +libgnutls +libsodium +libwebsockets $(ICONV_DEPENDS) \
+	+libuuid
 endef
 
 define Package/forked-daapd/description
@@ -50,7 +50,6 @@ define Package/forked-daapd/conffiles
 endef
 
 CONFIGURE_ARGS += \
-	--enable-itunes \
 	--enable-lastfm \
 	--enable-mpd \
 	--enable-chromecast \
@@ -58,7 +57,7 @@ CONFIGURE_ARGS += \
 	--enable-webinterface \
 	--disable-spotify \
 	--with-libplist \
-	--with-libwebsockets-full \
+	--with-libwebsockets \
 	--with-alsa \
 	--without-pulseaudio \
 	--without-libevent_pthreads
@@ -73,10 +72,8 @@ define Package/forked-daapd/install
 	$(INSTALL_CONF) ./files/forked-daapd.conf $(1)/etc/forked-daapd.conf
 	$(INSTALL_DIR) $(1)/usr/lib/forked-daapd
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/lib/forked-daapd/* $(1)/usr/lib/forked-daapd/
-	#$(INSTALL_DIR) $(1)/etc/init.d
-	#$(INSTALL_BIN) ./files/forked-daapd.init $(1)/etc/init.d/forked-daapd
-	$(INSTALL_DIR) $(1)/usr/share/forked-daapd/htdocs
-	$(CP) $(BUILD_DIR)/$(PKG_SOURCE_SUBDIR)/htdocs/* $(1)/usr/share/forked-daapd/htdocs/
+	$(INSTALL_DIR) $(1)/etc/init.d
+	$(INSTALL_BIN) ./files/forked-daapd.init $(1)/etc/init.d/forked-daapd
 endef
 
 $(eval $(call BuildPackage,forked-daapd))

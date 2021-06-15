@@ -7,13 +7,20 @@
 
 include $(TOPDIR)/rules.mk
 PKG_NAME:=frr
-PKG_VERSION:=7.3.1
+PKG_VERSION:=7.5.1
 PKG_RELEASE:=1
+PKG_SOURCE_DATE:=2021-03-25
 
-PKG_SOURCE_URL:=https://github.com/FRRouting/frr/releases/download/$(PKG_NAME)-$(PKG_VERSION)/
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
-PKG_HASH:=85571b63d2774329b7e97871e4761f852066a17e99a8daae9972c6bd7a533e05
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_SOURCE_DATE).tar.gz
+PKG_SOURCE_VERSION:=18f209926fb659790926b82dd4e30727311d22aa
+PKG_SOURCE_URL:=https://codeload.github.com/FRRouting/frr/tar.gz/$(PKG_SOURCE_VERSION)?
+
+
+PKG_HASH:=a2e21ea5f5c73afda521280c7b1bab3e6734f78517e7cf1b86cbbc0e5f9856cc
 PKG_MAINTAINER:=Lucian Cristian <lucian.cristian@gmail.com>
+
+PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_SOURCE_VERSION)
+HOST_BUILD_DIR:=$(BUILD_DIR_HOST)/$(PKG_NAME)-$(PKG_SOURCE_VERSION)
 
 PKG_LICENSE:=GPL-2.0-only LGPL-2.1-only
 
@@ -34,7 +41,6 @@ PKG_DAEMON_AVAILABLE:= \
 	ripngd \
 	staticd \
 	vrrpd
-
 
 PKG_CONFIG_DEPENDS:= \
 	CONFIG_IPV6 \
@@ -158,6 +164,7 @@ define Host/Configure
 	$(SED) 's/$$$$(MAKE) $$$$(AM_MAKEFLAGS) install-am/# $$$$(MAKE) $$$$(AM_MAKEFLAGS) install-am/' $(HOST_BUILD_DIR)/Makefile.in
 endef
 
+#HOST_CPPFLAGS += -I$(STAGING_DIR_HOST)/include/libelf
 HOST_CONFIGURE_ARGS+= \
 	--enable-clippy-only
 
@@ -171,6 +178,7 @@ CONFIGURE_ARGS+= \
 	--prefix=/usr \
 	--enable-shared \
 	--disable-static \
+	--disable-pathd \
 	--enable-user=network \
 	--enable-group=network \
 	--disable-ospfclient \
