@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=wget
 PKG_VERSION:=1.21.1
-PKG_RELEASE:=1
+PKG_RELEASE:=3
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=@GNU/$(PKG_NAME)
@@ -98,6 +98,8 @@ endif
 define Package/wget-ssl/install
 	$(INSTALL_DIR) $(1)/usr/libexec
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/wget $(1)/usr/libexec/wget-ssl
+	$(INSTALL_DIR) $(1)/usr/bin
+	$(LN) /usr/libexec/wget-ssl $(1)/usr/bin/wget-ssl
 endef
 
 define Package/wget-nossl/install
