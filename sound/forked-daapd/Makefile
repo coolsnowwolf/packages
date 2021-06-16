@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=forked-daapd
 PKG_VERSION:=27.4
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=https://github.com/ejurgensen/$(PKG_NAME)/releases/download/$(PKG_VERSION)/
@@ -72,8 +72,10 @@ define Package/forked-daapd/install
 	$(INSTALL_CONF) ./files/forked-daapd.conf $(1)/etc/forked-daapd.conf
 	$(INSTALL_DIR) $(1)/usr/lib/forked-daapd
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/lib/forked-daapd/* $(1)/usr/lib/forked-daapd/
-	$(INSTALL_DIR) $(1)/etc/init.d
-	$(INSTALL_BIN) ./files/forked-daapd.init $(1)/etc/init.d/forked-daapd
+	#$(INSTALL_DIR) $(1)/etc/init.d
+	#$(INSTALL_BIN) ./files/forked-daapd.init $(1)/etc/init.d/forked-daapd
+	$(INSTALL_DIR) $(1)/usr/share/forked-daapd/htdocs
+	$(CP) $(PKG_BUILD_DIR)/htdocs/* $(1)/usr/share/forked-daapd/htdocs/
 endef
 
 $(eval $(call BuildPackage,forked-daapd))
