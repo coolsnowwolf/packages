@@ -131,6 +131,9 @@ define Package/dockerd/install
 	$(INSTALL_DIR) $(1)/etc/sysctl.d
 	$(INSTALL_DATA) ./files/etc/sysctl.d/sysctl-br-netfilter-ip.conf \
 		$(1)/etc/sysctl.d/12-br-netfilter-ip.conf
+	
+	$(INSTALL_DIR) $(1)/etc/docker/
+	$(INSTALL_DATA) ./files/daemon.json $(1)/etc/docker/daemon.json
 endef
 
 define Package/dockerd/postinst
