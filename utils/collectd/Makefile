@@ -8,13 +8,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=collectd
-PKG_VERSION:=5.11.0
+PKG_VERSION:=5.12.0
 PKG_RELEASE:=9
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
 PKG_SOURCE_URL:=https://collectd.org/files/ \
 	https://github.com/collectd/collectd/releases/download/collectd-$(PKG_VERSION)
-PKG_HASH:=37b10a806e34aa8570c1cafa6006c604796fae13cc2e1b3e630d33dcba9e5db2
+PKG_HASH:=5bae043042c19c31f77eb8464e56a01a5454e0b39fa07cf7ad0f1bfc9c3a09d6
 
 PKG_FIXUP:=autoreconf
 PKG_REMOVE_FILES:=aclocal.m4 libltdl/aclocal.m4
@@ -24,6 +24,10 @@ PKG_CPE_ID:=cpe:/a:collectd:collectd
 PKG_INSTALL:=1
 PKG_BUILD_PARALLEL:=1
 PKG_USE_MIPS16:=0
+
+PKG_CONFIG_DEPENDS:= \
+	PACKAGE_COLLECTD_ENCRYPTED_NETWORK \
+	PACKAGE_COLLECTD_DEBUG_OUTPUT_ENABLE
 
 COLLECTD_PLUGINS_DISABLED:= \
 	amqp \
@@ -37,6 +41,7 @@ COLLECTD_PLUGINS_DISABLED:= \
 	ceph \
 	cgroups \
 	cpusleep \
+	curl_jolokia \
 	curl_json \
 	curl_xml \
 	dbi \
@@ -53,6 +58,7 @@ COLLECTD_PLUGINS_DISABLED:= \
 	grpc \
 	hddtemp \
 	hugepages \
+	infiniband \
 	intel_pmu \
 	intel_rdt \
 	ipc \
@@ -68,12 +74,14 @@ COLLECTD_PLUGINS_DISABLED:= \
 	mbmon \
 	mcelog \
 	md \
+	mdevents \
 	memcachec \
 	memcached \
 	mic \
 	monitorus \
 	multimeter \
 	netapp \
+	netstat_udp \
 	nfs \
 	notify_desktop \
 	notify_email \
@@ -97,10 +105,8 @@ COLLECTD_PLUGINS_DISABLED:= \
 	serial \
 	sigrok \
 	slurm \
-	smart \
 	snmp_agent \
 	statsd \
-	swap \
 	synproxy \
 	sysevent \
 	tape \
@@ -140,6 +146,7 @@ COLLECTD_PLUGINS_SELECTED:= \
 	csv \
 	curl \
 	df \
+	dhcpleases \
 	disk \
 	dns \
 	email \
@@ -149,6 +156,7 @@ COLLECTD_PLUGINS_SELECTED:= \
 	filecount \
 	fscache \
 	interface \
+	ipstatistics \
 	iptables \
 	irq \
 	iwinfo \
@@ -179,7 +187,10 @@ COLLECTD_PLUGINS_SELECTED:= \
 	routeros \
 	rrdtool \
 	sensors \
+	smart \
 	snmp \
+	snmp6 \
+	swap \
 	syslog \
 	table \
 	tail \
@@ -196,7 +207,7 @@ COLLECTD_PLUGINS_SELECTED:= \
 	vmem \
 	wireless \
 	write_graphite \
-	write_http \
+	write_http
 
 PKG_CONFIG_DEPENDS:= \
 	$(patsubst %,CONFIG_PACKAGE_collectd-mod-%,$(subst _,-,$(COLLECTD_PLUGINS_SELECTED))) \
@@ -235,17 +246,24 @@ define Package/collectd/config
 	default n
 	depends on PACKAGE_collectd
 	select PACKAGE_collectd-mod-network
+
+	config PACKAGE_COLLECTD_DEBUG_OUTPUT_ENABLE
+	bool "Enable debug output"
+	default n
+	depends on PACKAGE_collectd
+	help
+	  Enables the compiler option that collectd is compiled with
+	  debugging support. This is used at development stages to get
+	  more messages from the collectd during development.
 endef
 
 # common configure args
 CONFIGURE_ARGS+= \
 	--disable-werror \
-	--disable-debug \
 	--enable-daemon \
 	--with-nan-emulation \
 	--with-libyajl=no \
-	--without-perl-bindings \
-	--without-libudev
+	--without-perl-bindings
 
 CONFIGURE_VARS+= \
 	CFLAGS="$$$$CFLAGS $(FPIC)" \
@@ -265,6 +283,14 @@ CONFIGURE_VARS+= \
 else
 CONFIGURE_ARGS+= \
 	--without-libgcrypt
+endif
+
+ifeq ($(CONFIG_PACKAGE_COLLECTD_DEBUG_OUTPUT_ENABLE),y)
+CONFIGURE_ARGS+= \
+	--enable-debug
+else
+CONFIGURE_ARGS+= \
+	--disable-debug
 endif
 
 CONFIGURE_PLUGIN= \
@@ -309,6 +335,15 @@ endif
 # exception: mod-rrdtool needs rrdtool-1.0.x
 ifneq ($(CONFIG_PACKAGE_collectd-mod-rrdtool),)
   CONFIGURE_ARGS+= --with-librrd="$(STAGING_DIR)/usr/lib/rrdtool-1.0"
+endif
+
+# exception: mod-smart needs libatasmart
+ifneq ($(CONFIG_PACKAGE_collectd-mod-smart),)
+  CONFIGURE_ARGS+= \
+	--with-libatasmart="$(STAGING_DIR)/usr" \
+	--with-libudev="$(STAGING_DIR)/usr"
+else
+  CONFIGURE_ARGS+= --without-libudev
 endif
 
 define Package/collectd/conffiles
@@ -399,12 +434,13 @@ $(eval $(call BuildPlugin,chrony,chrony status input,chrony,))
 $(eval $(call BuildPlugin,conntrack,connection tracking table size input,conntrack,))
 $(eval $(call BuildPlugin,contextswitch,context switch input,contextswitch,))
 $(eval $(call BuildPlugin,cpu,CPU input,cpu,))
-$(eval $(call BuildPlugin,cpufreq,CPU Freq input,cpufreq,@(TARGET_x86||TARGET_x86_64||TARGET_mvebu||TARGET_ipq806x||TARGET_armvirt||TARGET_ipq40xx||TARGET_bcm27xx_bcm2709))) # Only enable on targets with CPUs supporting frequency scaling
+$(eval $(call BuildPlugin,cpufreq,CPU Freq input,cpufreq,@(TARGET_x86||TARGET_x86_64||TARGET_mvebu||TARGET_ipq806x||TARGET_armvirt||TARGET_ipq40xx||TARGET_bcm27xx_bcm2709||TARGET_rockchip))) # Only enable on targets with CPUs supporting frequency scaling
 $(eval $(call BuildPlugin,csv,CSV output,csv,))
 $(eval $(call BuildPlugin,curl,cURL input,curl,+PACKAGE_collectd-mod-curl:libcurl))
 #$(eval $(call BuildPlugin,dbi,relational database input,dbi,+PACKAGE_collectd-mod-dbi:libdbi))
 $(eval $(call BuildPlugin,df,disk space input,df,))
-$(eval $(call BuildPlugin,disk,disk usage/timing input,disk,))
+$(eval $(call BuildPlugin,dhcpleases,show dhcpleases,dhcpleases,))
+$(eval $(call BuildPlugin,disk,disk usage/timing input,disk,+PACKAGE_collectd-mod-smart:libudev))
 $(eval $(call BuildPlugin,dns,DNS traffic input,dns,+PACKAGE_collectd-mod-dns:libpcap))
 $(eval $(call BuildPlugin,email,email output,email,))
 $(eval $(call BuildPlugin,entropy,Entropy amount input,entropy,))
@@ -413,6 +449,7 @@ $(eval $(call BuildPlugin,exec,process exec input,exec,))
 $(eval $(call BuildPlugin,filecount,file count input,filecount,))
 $(eval $(call BuildPlugin,fscache,file-system based caching framework input,fscache,))
 $(eval $(call BuildPlugin,interface,network interfaces input,interface,))
+$(eval $(call BuildPlugin,ipstatistics,ipstatistics input,ipstatistics,))
 $(eval $(call BuildPlugin,iptables,iptables status input,iptables,+PACKAGE_collectd-mod-iptables:iptables +libip4tc +libip6tc))
 $(eval $(call BuildPlugin,irq,interrupt usage input,irq,))
 $(eval $(call BuildPlugin,iwinfo,libiwinfo wireless statistics,iwinfo,+PACKAGE_collectd-mod-iwinfo:libiwinfo))
@@ -443,7 +480,10 @@ $(eval $(call BuildPlugin,protocols,network protocols input,protocols,))
 $(eval $(call BuildPlugin,routeros,MikroTik RouterOS input,routeros,+PACKAGE_collectd-mod-routeros:librouteros))
 $(eval $(call BuildPlugin,rrdtool,RRDtool output,rrdtool,+PACKAGE_collectd-mod-rrdtool:librrd1))
 $(eval $(call BuildPlugin,sensors,lm_sensors input,sensors,+PACKAGE_collectd-mod-sensors:libsensors))
+$(eval $(call BuildPlugin,smart,smart input,smart,+PACKAGE_collectd-mod-smart:libatasmart))
 $(eval $(call BuildPlugin,snmp,SNMP input,snmp,+PACKAGE_collectd-mod-snmp:libnetsnmp))
+$(eval $(call BuildPlugin,snmp6,snmp6 input,snmp6,))
+$(eval $(call BuildPlugin,swap,swap input,swap,))
 $(eval $(call BuildPlugin,syslog,syslog output,syslog,))
 $(eval $(call BuildPlugin,tail,tail input,tail,))
 $(eval $(call BuildPlugin,tail-csv,tail CSV input,tail_csv,))

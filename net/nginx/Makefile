@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=nginx
 PKG_VERSION:=1.19.6
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_SOURCE:=nginx-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://nginx.org/download/
@@ -74,6 +74,7 @@ PKG_CONFIG_DEPENDS := \
 	CONFIG_OPENSSL_WITH_NPN
 
 include $(INCLUDE_DIR)/package.mk
+include $(INCLUDE_DIR)/nls.mk
 
 define Package/nginx/default
   SECTION:=net
@@ -449,6 +450,7 @@ ifeq ($(CONFIG_NGINX_RTMP_MODULE),y)
   define  Prepare/nginx-rtmp
 	$(eval $(Download/nginx-rtmp))
 	xzcat $(DL_DIR)/$(FILE) | tar -C $(PKG_BUILD_DIR) $(TAR_OPTIONS)
+	$(call PatchDir,$(PKG_BUILD_DIR)/nginx-rtmp,./patches-rtmp-nginx)
   endef
 endif
 

@@ -8,8 +8,8 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=krb5
-PKG_VERSION:=1.17
-PKG_RELEASE:=2
+PKG_VERSION:=1.19.1
+PKG_RELEASE:=$(AUTORELEASE)
 
 PKG_MAINTAINER:=W. Michael Petullo <mike@flyn.org>
 
@@ -18,8 +18,8 @@ PKG_LICENSE_FILES:=NOTICE
 PKG_CPE_ID:=cpe:/a:mit:kerberos
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://web.mit.edu/kerberos/dist/krb5/1.17
-PKG_HASH:=5a6e2284a53de5702d3dc2be3b9339c963f9b5397d3fbbc53beb249380a781f5
+PKG_SOURCE_URL:=https://web.mit.edu/kerberos/dist/krb5/1.19
+PKG_HASH:=fa16f87eb7e3ec3586143c800d7eaff98b5e0dcdf0772af7d98612e49dbeb20b
 
 PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
@@ -102,6 +102,9 @@ define Build/InstallDev
 	# needed for samba4, to detect system-krb5
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/krb5-config $(1)/usr/bin
+	$(SED) 's,^\(prefix\|exec_prefix\)=.*,\1=$(STAGING_DIR)/usr,g' $(1)/usr/bin/krb5-config
+	$(INSTALL_DIR) $(2)/bin
+	$(LN) ../../usr/bin/krb5-config $(2)/bin/krb5-config
 endef
 
 define Package/krb5-libs/install

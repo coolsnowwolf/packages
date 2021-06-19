@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=unbound
-PKG_VERSION:=1.10.1
-PKG_RELEASE:=4
+PKG_VERSION:=1.13.1
+PKG_RELEASE:=$(AUTORELEASE)
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://nlnetlabs.nl/downloads/unbound
-PKG_HASH:=b73677c21a71cf92f15cc8cfe76a3d875e40f65b6150081c39620b286582d536
+PKG_HASH:=8504d97b8fc5bd897345c95d116e0ee0ddf8c8ff99590ab2b4bd13278c9f50b8
 
 PKG_MAINTAINER:=Eric Luehrsen <ericluehrsen@gmail.com>
 PKG_LICENSE:=BSD-3-Clause
@@ -28,8 +28,10 @@ PKG_CONFIG_DEPENDS:=CONFIG_PACKAGE_libunbound_dnscrypt \
 	CONFIG_PACKAGE_libunbound_ipset \
 	CONFIG_PACKAGE_libunbound_libevent \
 	CONFIG_PACKAGE_libunbound_libpthread \
+	CONFIG_PACKAGE_libunbound_nghttp2 \
 	CONFIG_PACKAGE_libunbound_pythonmodule \
-	CONFIG_PACKAGE_libunbound_subnet
+	CONFIG_PACKAGE_libunbound_subnet \
+	CONFIG_PACKAGE_libunbound_dnstap
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -40,7 +42,7 @@ define Package/unbound/Default
   USERID:=unbound:unbound
   TITLE:=Recursive DNS Server
   URL:=https://nlnetlabs.nl/projects/unbound/about
-  DEPENDS:=+libopenssl +@OPENSSL_WITH_EC
+  DEPENDS:=+ca-bundle +libopenssl +@OPENSSL_WITH_EC
 endef
 
 define Package/unbound-daemon
@@ -65,8 +67,10 @@ define Package/libunbound
   DEPENDS+=+PACKAGE_libunbound_dnscrypt:libsodium \
     +PACKAGE_libunbound_ipset:libmnl \
     +PACKAGE_libunbound_libevent:libevent2 \
-	+PACKAGE_libunbound_libpthread:libpthread \
-	+PACKAGE_libunbound_pythonmodule:python3-base
+    +PACKAGE_libunbound_libpthread:libpthread \
+    +PACKAGE_libunbound_nghttp2:libnghttp2 \
+    +PACKAGE_libunbound_pythonmodule:python3-base \
+    +PACKAGE_libunbound_dnstap:libprotobuf-c
 endef
 
 define Package/libunbound/description
@@ -139,11 +143,17 @@ define Package/libunbound/config
 	config PACKAGE_libunbound_libpthread
 		bool "Build with POSIX threading (libpthread) support."
 		default y
+	config PACKAGE_libunbound_nghttp2
+		bool "Build with DNS over HTTPS support (nghttp2 framework)."
+		default n
 	config PACKAGE_libunbound_pythonmodule
 		bool "Build with PYTHON module for prototyping and data analysis."
 		default n
 	config PACKAGE_libunbound_subnet
 		bool "Build with SUBNET cache module support."
+		default n
+	config PACKAGE_libunbound_dnstap
+		bool "Build with dnstap support."
 		default n
 	endif
 endef
@@ -167,10 +177,13 @@ CONFIGURE_ARGS += \
         --enable-ipset --with-libmnl="$(STAGING_DIR)/usr",) \
     $(if $(CONFIG_PACKAGE_libunbound_libevent), \
         --enable-event-api --with-libevent="$(STAGING_DIR)/usr",--without-libevent) \
+    $(if $(CONFIG_PACKAGE_libunbound_nghttp2), \
+        --with-libnghttp2="$(STAGING_DIR)/usr",) \
     $(if $(CONFIG_PACKAGE_libunbound_libpthread), \
         --with-pthreads,--without-pthreads --without-solaris-threads) \
     $(if $(CONFIG_PACKAGE_libunbound_python),--with-pythonmodule,) \
     $(if $(CONFIG_PACKAGE_libunbound_subnet),--enable-subnet,) \
+    $(if $(CONFIG_PACKAGE_libunbound_dnstap),--enable-dnstap,) \
 
 define Package/unbound-daemon/conffiles
 /etc/config/unbound
@@ -194,14 +207,14 @@ define Package/unbound-daemon/install
 	$(INSTALL_BIN) \
 		$(PKG_INSTALL_DIR)/usr/sbin/unbound $(1)/usr/sbin/
 	$(INSTALL_DIR) $(1)/etc/unbound
-	$(INSTALL_DATA) \
+	$(INSTALL_CONF) \
 		$(PKG_INSTALL_DIR)/var/lib/unbound/unbound.conf \
 		$(1)/etc/unbound/unbound.conf
 	$(INSTALL_DATA) ./files/root.key $(1)/etc/unbound/root.key
-	$(INSTALL_DATA) ./files/unbound_ext.conf $(1)/etc/unbound/unbound_ext.conf
-	$(INSTALL_DATA) ./files/unbound_srv.conf $(1)/etc/unbound/unbound_srv.conf
+	$(INSTALL_CONF) ./files/unbound_ext.conf $(1)/etc/unbound/unbound_ext.conf
+	$(INSTALL_CONF) ./files/unbound_srv.conf $(1)/etc/unbound/unbound_srv.conf
 	$(INSTALL_DIR) $(1)/etc/config
-	$(INSTALL_DATA) ./files/unbound.uci $(1)/etc/config/unbound
+	$(INSTALL_CONF) ./files/unbound.uci $(1)/etc/config/unbound
 	$(INSTALL_DIR) $(1)/etc/hotplug.d/ntp
 	$(INSTALL_BIN)  ./files/unbound.ntpd $(1)/etc/hotplug.d/ntp/25-unbound
 	$(INSTALL_DIR) $(1)/etc/init.d

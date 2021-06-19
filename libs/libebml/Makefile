@@ -6,12 +6,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libebml
-PKG_VERSION:=1.3.10
-PKG_RELEASE:=1
+PKG_VERSION:=1.4.2
+PKG_RELEASE:=$(AUTORELEASE)
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/Matroska-Org/libebml/tar.gz/release-$(PKG_VERSION)?
-PKG_HASH:=2562bb9bc3248e956a6ed1148eafe4d7d68759257133083c212d14faa8709d1e
+PKG_HASH:=66486742fd4f443553ad1917505208404c8c4240c0ab26cedaf41d9476efc665
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-release-$(PKG_VERSION)
 
 PKG_MAINTAINER:=
@@ -19,7 +19,6 @@ PKG_LICENSE:=LGPL-2.1-or-later
 PKG_LICENSE_FILES:=LICENSE.LGPL
 
 CMAKE_INSTALL:=1
-PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/cmake.mk
@@ -39,11 +38,11 @@ define Package/libebml/description
 endef
 
 CMAKE_OPTIONS += \
+	-DCMAKE_LINK_WHAT_YOU_USE=ON \
 	-DDISABLE_PKGCONFIG=OFF \
 	-DDISABLE_CMAKE_CONFIG=OFF \
 	-DENABLE_WIN32_IO=OFF
 
-TARGET_CFLAGS += -flto
-TARGET_LDFLAGS += -Wl,--gc-sections,--as-needed
+TARGET_LDFLAGS += -Wl,--gc-sections
 
 $(eval $(call BuildPackage,libebml))

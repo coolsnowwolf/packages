@@ -1,12 +1,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=redis
-PKG_VERSION:=6.0.5
+PKG_VERSION:=6.2.4
 PKG_RELEASE:=1
 
 PKG_SOURCE_URL:=http://download.redis.io/releases/
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_HASH:=42cf86a114d2a451b898fcda96acd4d01062a7dbaaad2801d9164a36f898f596
+PKG_HASH:=ba32c406a10fc2c09426e2be2787d74ff204eb3a2e496d87cff76a476b6ae16e
 
 PKG_MAINTAINER:=Jan Pavlinec <jan.pavlinec@nic.cz>
 PKG_LICENSE:=BSD-3-Clause
@@ -54,6 +54,7 @@ define Package/redis-full
 $(call  Package/redis/Default)
   TITLE:=All Redis binaries (server,cli and utils)
   DEPENDS:=+redis-utils +redis-cli
+  BUILDONLY:=1
 endef
 
 define Package/redis-full/description

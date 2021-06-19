@@ -7,12 +7,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libreswan
-PKG_VERSION:=3.32
-PKG_RELEASE:=3
+PKG_VERSION:=4.4
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://download.libreswan.org/
-PKG_HASH:=236b57fee8f562302c54f2b16d8a839a9039fcb5893668e61b398ec6b179432e
+PKG_HASH:=5f3f0a20d7097f20108bc93ba1255a778d8ffb8692d05f86383978c03c394976
 
 PKG_MAINTAINER:=Lucian Cristian <lucian.cristian@gmail.com>
 PKG_LICENSE:=GPL-2.0-or-later
@@ -44,7 +44,7 @@ $(call Package/libreswan/Default)
   DEPENDS:= +IPV6:kmod-ip6-vti +IPV6:kmod-ipsec6 +ip-full +iptables-mod-ipsec \
 	+kmod-crypto-aead +kmod-crypto-authenc +kmod-crypto-gcm \
 	+kmod-crypto-hash +kmod-crypto-rng +kmod-ip-vti +kmod-ipsec \
-	+kmod-ipsec4 +kmod-ipt-ipsec +libevent2 +libevent2-pthreads \
+	+kmod-ipsec4 +kmod-ipt-ipsec +kmod-xfrm-interface +libevent2 +libevent2-pthreads \
 	+libldns +librt +libunbound +nss-utils +nspr +libcap-ng
   PROVIDES:=openswan
   CONFLICTS:=strongswan
@@ -74,21 +74,18 @@ MAKE_FLAGS+= \
     USE_LABELED_IPSEC=false \
     USE_NM=false \
     USE_NSS_KDF=true \
-    USE_NSS_PRF=true \
     USE_LIBCURL=false \
     USE_GLIBC_KERN_FLIP_HEADERS=true \
     USE_XAUTHPAM=false \
     USE_LIBCAP_NG=true \
     USE_SYSTEMD_WATCHDOG=false \
     USE_SECCOMP=false\
-    INC_USRLOCAL="/usr" \
+    USE_XFRM_INTERFACE_IFLA_HEADER=false \
+    PREFIX="/usr" \
     FINALRUNDIR="/var/run/pluto" \
+    FINALNSSDIR="/etc/ipsec.d" \
     MODPROBEARGS="-q" \
     ARCH="$(LINUX_KARCH)" \
-
-ifdef CONFIG_LINUX_4_14
-	MAKE_FLAGS+= USE_XFRM_INTERFACE_IFLA_HEADER=true
-endif
 
 define Build/Prepare
 	$(call Build/Prepare/Default)

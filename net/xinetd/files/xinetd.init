@@ -1,6 +1,8 @@
 #!/bin/sh /etc/rc.common
 # Copyright (C) 2006-2011 OpenWrt.org
 
+. ${IPKG_INSTROOT}/lib/functions.sh
+
 START=50
 STOP=10
 
@@ -12,6 +14,7 @@ PIDFILE="/var/run/xinetd.pid"
 
 CONF_FILE="/etc/config/xinetd"
 GENERATED_CONF_FILE="/var/run/xinetd.conf"
+OTHER_CONF_DIR="/tmp/xinetd.d"
 
 ServiceEntry="false"
 ListName=""
@@ -101,17 +104,27 @@ generate_config() {
 	echo "}" >> $GENERATED_CONF_FILE
 	echo "" >> $GENERATED_CONF_FILE
 	echo "includedir /etc/xinetd.d" >> $GENERATED_CONF_FILE
+	echo "includedir $OTHER_CONF_DIR" >> $GENERATED_CONF_FILE
 
 	config_load xinetd
 }
 
 start_service() {
+	mkdir -p $OTHER_CONF_DIR
+
 	generate_config
 
 	procd_open_instance
-	procd_set_param command $PROG -f $GENERATED_CONF_FILE -pidfile $PIDFILE
+	procd_set_param command $PROG -dontfork -f $GENERATED_CONF_FILE -pidfile $PIDFILE
 	procd_set_param respawn
 	procd_close_instance
+}
+
+reload_service() {
+	procd_running xinetd "instance1" && {
+		procd_send_signal xinetd "*" QUIT
+		start
+	}
 }
 
 service_triggers() {
