@@ -4,7 +4,8 @@
 START=80
 STOP=10
 
-extra_command "export_storage" "<PATH>
+EXTRA_COMMANDS="export_storage"
+EXTRA_HELP="	export_storage <PATH>
 	- export the storage into the specified folder
 	- <PATH> can be directly used with the default storage backend of Radicale 2.x.x."
 
