@@ -1,17 +1,30 @@
---- a/src/index.html
-+++ b/src/index.html
-@@ -61,9 +61,6 @@
- 						<!-- 切换到移动版 -->
- 						<a id="toolbar_mobile" href="javascript:location.href = 'index.mobile.html';" class="easyui-linkbutton" data-options="iconCls:'icon-mobile',plain:true" system-tip-lang="toolbar.tip['ui-mobile']"><span system-lang="toolbar['ui-mobile']"></span></a>
+Index: transmission-web-control-2020-09-13-c26a0761/src/index.html
+===================================================================
+--- transmission-web-control-2020-09-13-c26a0761.orig/src/index.html
++++ transmission-web-control-2020-09-13-c26a0761/src/index.html
+@@ -66,11 +66,6 @@
+ 							data-options="iconCls:'icon-mobile',plain:true" system-tip-lang="toolbar.tip['ui-mobile']"><span
+ 								system-lang="toolbar['ui-mobile']"></span></a>
  						<span class="button-split">|</span>
 -						<!-- 切换到原版 -->
--						<a id="" href="javascript:location.href = 'index.original.html';" class="easyui-linkbutton" data-options="iconCls:'icon-transmission',plain:true" system-tip-lang="toolbar.tip['ui-original']"><span system-lang="toolbar['ui-original']"></span></a>
+-						<a id="" href="javascript:location.href = 'index.original.html';" class="easyui-linkbutton"
+-							data-options="iconCls:'icon-transmission',plain:true" system-tip-lang="toolbar.tip['ui-original']"><span
+-								system-lang="toolbar['ui-original']"></span></a>
 -						<span class="button-split">|</span>
  						<!-- 关于 -->
- 						<a id="toolbar_about" href="javascript:void(0);" onclick="javascript:system.openDialogFromTemplate({id: 'dialog-about',options: {title: system.lang.toolbar['about'],width: 420,height: 370}});" class="easyui-linkbutton" data-options="iconCls:'icon-about',plain:true" system-tip-lang="toolbar.about"><span system-lang="toolbar.about"></span></a>
- 					</div>
---- a/src/index.mobile.html
-+++ b/src/index.mobile.html
+ 						<a id="toolbar_about" href="javascript:void(0);"
+ 							onclick="javascript:system.openDialogFromTemplate({id: 'dialog-about',options: {title: system.lang.toolbar['about'],width: 420,height: 370}});"
+@@ -215,4 +210,4 @@
+ 	<textarea id="clipboard-source"></textarea>
+ </body>
+ 
+-</html>
+\ No newline at end of file
++</html>
+Index: transmission-web-control-2020-09-13-c26a0761/src/index.mobile.html
+===================================================================
+--- transmission-web-control-2020-09-13-c26a0761.orig/src/index.mobile.html
++++ transmission-web-control-2020-09-13-c26a0761/src/index.mobile.html
 @@ -69,7 +69,6 @@
  			<ul data-role="listview" data-divider-theme="a" data-theme="c" data-icon="false" style="margin-top:15px;">
  				<li data-role='list-divider'>UI</li>
