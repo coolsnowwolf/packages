@@ -3,8 +3,9 @@
 USE_PROCD=1
 START=99
 
-extra_command "uciadd" "<interface> <device> <zone> Add docker bridge configuration to network and firewall uci config"
-extra_command "ucidel" "<interface> <device> <zone> Delete docker bridge configuration from network and firewall uci config"
+EXTRA_COMMANDS="uciadd ucidel"
+EXTRA_HELP="	uciadd <interface> <device> <zone> Add docker bridge configuration to network and firewall uci config
+ucidel <interface> <device> <zone> Delete docker bridge configuration from network and firewall uci config"
 
 DOCKER_CONF_DIR="/tmp/dockerd"
 DOCKERD_CONF="${DOCKER_CONF_DIR}/daemon.json"

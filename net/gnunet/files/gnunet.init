@@ -10,7 +10,8 @@ GNUNET_HOME=/var/run/gnunet
 # LOGFILE=$GNUNET_HOME/gnunet.log
 CONFIGFILE=$GNUNET_HOME/gnunet.conf
 
-extra_command "restart_transport" "Restart transport"
+EXTRA_COMMANDS="restart_transport"
+EXTRA_HELP="	restart_transport Restart transport"
 
 prepare_config() {
 	local had_exit_service=0;

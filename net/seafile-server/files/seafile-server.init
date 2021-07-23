@@ -3,7 +3,8 @@
 START=99
 STOP=01
 
-extra_command "generate_uci_conf" "Generate uci config"
+EXTRA_COMMANDS="generate_uci_conf"
+EXTRA_HELP="	generate_uci_conf Generate uci config"
 
 TOPDIR=/usr/share/seafile
 INSTALLPATH=$TOPDIR/seafile-server
