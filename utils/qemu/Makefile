@@ -22,6 +22,7 @@ PKG_CPE_ID:=cpe:/a:qemu:qemu
 PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
 PKG_USE_MIPS16:=0
+PKG_FLAGS:=nonshared
 
 PKG_BUILD_DEPENDS+=spice-protocol
 
