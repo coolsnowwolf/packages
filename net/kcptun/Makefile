@@ -19,7 +19,6 @@ PKG_USE_MIPS16:=0
 
 GO_PKG:=github.com/xtaci/kcptun
 
-GO_PKG_LDFLAGS:=-s -w
 GO_PKG_LDFLAGS_X:=main.VERSION=$(PKG_VERSION)
 
 include $(INCLUDE_DIR)/package.mk
