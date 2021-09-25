@@ -40,10 +40,9 @@ HOST_BUILD_DIR:=$(BUILD_DIR_HOST)/Python-$(PKG_VERSION)
 
 PKG_CONFIG_DEPENDS:= \
 	CONFIG_PACKAGE_python3-pkg-resources \
-	CONFIG_PACKAGE_python3-setuptools CONFIG_PACKAGE_python3-pip \
-	CONFIG_PYTHON3_BLUETOOTH_SUPPORT
+	CONFIG_PACKAGE_python3-setuptools CONFIG_PACKAGE_python3-pip
 
-PKG_BUILD_DEPENDS:=python3/host
+PKG_BUILD_DEPENDS:=bluez python3/host
 HOST_BUILD_DEPENDS:=bzip2/host expat/host libffi/host
 
 include $(INCLUDE_DIR)/host-build.mk
@@ -91,7 +90,7 @@ endef
 define Package/python3-light
 $(call Package/python3/Default)
   TITLE:=Python $(PYTHON3_VERSION) light installation
-  DEPENDS:=+python3-base +libffi +libbz2 +PYTHON3_BLUETOOTH_SUPPORT:bluez-libs +libuuid
+  DEPENDS:=+python3-base +libffi +libbz2 +libuuid
 endef
 
 define Package/python3-light/config
@@ -148,10 +147,6 @@ EXTRA_LDFLAGS+= \
 	-L$(PKG_BUILD_DIR) \
 	-L$(STAGING_DIR)/usr/lib -L$(STAGING_DIR)/lib
 
-DISABLE_BLUETOOTH:= \
-	ac_cv_header_bluetooth_bluetooth_h=no \
-	ac_cv_header_bluetooth_h=no
-
 CONFIGURE_ARGS+= \
 	--enable-optimizations \
 	--enable-shared \
@@ -162,8 +157,7 @@ CONFIGURE_ARGS+= \
 	$(if $(CONFIG_IPV6),--enable-ipv6) \
 	$(if $(findstring mips,$(CONFIG_ARCH)),,--with-lto) \
 	CONFIG_SITE="$(PKG_BUILD_DIR)/config.site" \
-	OPT="$(TARGET_CFLAGS)" \
-	$(if $(CONFIG_PYTHON3_BLUETOOTH_SUPPORT),,$(DISABLE_BLUETOOTH))
+	OPT="$(TARGET_CFLAGS)"
 
 define Build/Prepare
 	$(call Build/Prepare/Default)
