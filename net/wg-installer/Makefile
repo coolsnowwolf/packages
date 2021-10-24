@@ -48,6 +48,10 @@ define Package/wg-installer-server/conffiles
 /etc/config/wgserver
 endef
 
+define Package/wg-installer-server/conffiles
+/etc/config/wgserver
+endef
+
 define Package/wg-installer-server/postinst
 	#!/bin/sh
 	if [ -z $${IPKG_INSTROOT} ] ; then
