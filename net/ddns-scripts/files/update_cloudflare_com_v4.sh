@@ -32,21 +32,11 @@ local __URLBASE="https://api.cloudflare.com/client/v4"
 local __TTL=120
 
 # split __HOST __DOMAIN from $domain
-# given data:
-# @example.com for "domain record"
-# host.sub@example.com for a "host record"
-__HOST=$(printf %s "$domain" | cut -d@ -f1)
-__DOMAIN=$(printf %s "$domain" | cut -d@ -f2)
-
-# Cloudflare v4 needs:
-# __DOMAIN = the base domain i.e. example.com
-# __HOST   = the FQDN of record to modify
-# i.e. example.com for the "domain record" or host.sub.example.com for "host record"
-
-# handling domain record then set __HOST = __DOMAIN
-[ -z "$__HOST" ] && __HOST=$__DOMAIN
-# handling host record then rebuild fqdn host@domain.tld => host.domain.tld
-[ "$__HOST" != "$__DOMAIN" ] && __HOST="${__HOST}.${__DOMAIN}"
+[ "${domain:0:2}" == "@." ] && domain="${domain/./}"
+[ "$domain" == "${domain/@/}" ] && domain="${domain/./@}"
+__HOST="${domain%%@*}"
+__DOMAIN="${domain#*@}"
+[ -z "$__HOST" -o "$__HOST" == "$__DOMAIN" ] && __HOST="@"
 
 # set record type
 [ $use_ipv6 -eq 0 ] && __TYPE="A" || __TYPE="AAAA"
@@ -145,12 +135,12 @@ __ZONEID=$(grep -o '"id":\s*"[^"]*' $DATFILE | grep -o '[^"]*$' | head -1)
 }
 
 # read record id for A or AAAA record of host.domain.TLD
-__RUNPROG="$__PRGBASE --request GET '$__URLBASE/zones/$__ZONEID/dns_records?name=$__HOST&type=$__TYPE'"
+__RUNPROG="$__PRGBASE --request GET '$__URLBASE/zones/$__ZONEID/dns_records?name=${__HOST}.${__DOMAIN}&type=$__TYPE'"
 cloudflare_transfer || return 1
 # extract record id
 __RECID=$(grep -o '"id":\s*"[^"]*' $DATFILE | grep -o '[^"]*$' | head -1)
 [ -z "$__RECID" ] && {
-	write_log 4 "Could not detect 'record id' for host.domain.tld: '$__HOST'"
+	write_log 4 "Could not detect 'record id' for host.domain.tld: '${__HOST}.${__DOMAIN}'"
 	return 127
 }
 
@@ -187,7 +177,7 @@ __PROXIED=$(grep -o '"proxied":\s*[^",]*' $DATFILE | grep -o '[^:]*$')
 
 # use file to work around " needed for json
 cat > $DATFILE << EOF
-{"id":"$__ZONEID","type":"$__TYPE","name":"$__HOST","content":"$__IP","ttl":$__TTL,"proxied":$__PROXIED}
+{"id":"$__ZONEID","type":"$__TYPE","name":"${__HOST}.${__DOMAIN}","content":"$__IP","ttl":$__TTL,"proxied":$__PROXIED}
 EOF
 
 # let's complete transfer command
