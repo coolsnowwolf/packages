@@ -173,10 +173,20 @@ aria2_start() {
 		return 1
 	}
 
-	_create_file "$session_file" "$config_file" "$config_file_tmp" || {
-		_err "Can't create files: $session_file, $config_file, $config_file_tmp"
+	_create_file "$config_file" "$config_file_tmp" || {
+		_err "Can't create files: $config_file, $config_file_tmp"
 		return 1
 	}
+
+    # check session file existence before creating it
+	if [!-f "$session_file"]; then
+	 	_create_file "$session_file"|| {
+	 	 	_err "Can't create files: $session_file"
+	 	 	return 1
+	 	}
+	elif [!-r "$session_file" || !-w "$session_file"]; then
+		_change_file_mode 600 "$session_file"
+	fi
 
 	# create tmp file
 	cat >"$config_file_tmp" <<-EOF
