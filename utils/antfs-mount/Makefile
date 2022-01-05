@@ -11,7 +11,7 @@ define Package/antfs-mount
 	SUBMENU:=Filesystem
 	TITLE:=NTFS mount script for AVM NTFS driver
 	PKGARCH:=all
-	DEPENDS:=+kmod-fs-antfs
+	DEPENDS:=@!LINUX_5_15 +kmod-fs-antfs
 endef
 
 define Build/Configure
