@@ -32,7 +32,7 @@ define Package/stubby
   SUBMENU:=IP Addresses and Names
   TITLE+= - (daemon that uses getdns)
   USERID:=stubby=410:stubby=410
-  DEPENDS:= +libyaml +getdns +ca-certs
+  DEPENDS:= +libyaml +getdns +ca-certs +libunbound
 endef
 
 define Package/stubby/description
