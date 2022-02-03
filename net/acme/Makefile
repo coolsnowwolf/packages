@@ -79,5 +79,41 @@ define Package/acme-dnsapi/install
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/dnsapi/*.sh $(1)/usr/lib/acme/dnsapi
 endef
 
+define Package/acme-notify
+  SECTION:=net
+  CATEGORY:=Network
+  DEPENDS:=+acme
+  TITLE:=Notification integration for ACME (Letsencrypt) client
+  PKGARCH:=all
+endef
+
+define Package/acme-notify/description
+ This package provides notification integration for ACME (Letsencrypt) client.
+endef
+
+define Package/acme-notify/install
+	$(INSTALL_DIR) $(1)/usr/lib/acme/notify
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/notify/*.sh $(1)/usr/lib/acme/notify
+endef
+
+define Package/acme-deploy
+  SECTION:=net
+  CATEGORY:=Network
+  DEPENDS:=+acme
+  TITLE:=Deployment integration for ACME (Letsencrypt) client
+  PKGARCH:=all
+endef
+
+define Package/acme-deploy/description
+ This package provides deployment integration for ACME (Letsencrypt) client.
+endef
+
+define Package/acme-deploy/install
+	$(INSTALL_DIR) $(1)/usr/lib/acme/deploy
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/deploy/*.sh $(1)/usr/lib/acme/deploy
+endef
+
 $(eval $(call BuildPackage,acme))
 $(eval $(call BuildPackage,acme-dnsapi))
+$(eval $(call BuildPackage,acme-notify))
+$(eval $(call BuildPackage,acme-deploy))
