@@ -6,7 +6,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=stubby
 PKG_VERSION:=0.4.0
-PKG_RELEASE:=2
+PKG_RELEASE:=6
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/getdnsapi/$(PKG_NAME)
@@ -32,7 +32,7 @@ define Package/stubby
   SUBMENU:=IP Addresses and Names
   TITLE+= - (daemon that uses getdns)
   USERID:=stubby=410:stubby=410
-  DEPENDS:= +libyaml +getdns +ca-certs
+  DEPENDS:= +libyaml +getdns +ca-certs +libunbound
 endef
 
 define Package/stubby/description
@@ -45,10 +45,8 @@ define Package/stubby/conffiles
 /etc/config/stubby
 endef
 
-define Build/Prepare
-	$(call Build/Prepare/Default)
-	rm $(PKG_BUILD_DIR)/cmake/modules/FindLibidn2.cmake $(PKG_BUILD_DIR)/cmake/modules/FindLibunbound.cmake
-endef
+# Disable static linking
+CMAKE_OPTIONS += -DENABLE_GETDNS_STATIC_LINK=OFF
 
 define Package/stubby/install
 	$(INSTALL_DIR) $(1)/usr/sbin

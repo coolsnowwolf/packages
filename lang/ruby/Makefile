@@ -11,15 +11,15 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ruby
-PKG_VERSION:=3.0.1
-PKG_RELEASE:=1
+PKG_VERSION:=3.0.3
+PKG_RELEASE:=2
 
 # First two numbes
 PKG_ABI_VERSION:=$(subst $(space),.,$(wordlist 1, 2, $(subst .,$(space),$(PKG_VERSION))))
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=https://cache.ruby-lang.org/pub/ruby/$(PKG_ABI_VERSION)/
-PKG_HASH:=d06bccd382d03724b69f674bc46cd6957ba08ed07522694ce44b9e8ffc9c48e2
+PKG_HASH:=88cc7f0f021f15c4cd62b1f922e3a401697f7943551fe45b1fdf4f2417a17a9c
 PKG_MAINTAINER:=Luiz Angelo Daros de Luca <luizluca@gmail.com>
 PKG_LICENSE:=BSD-2-Clause
 PKG_LICENSE_FILES:=COPYING
@@ -77,6 +77,12 @@ endif
 CONFIGURE_ARGS += --disable-jit-support
 # Host JIT does work but it is not worth it
 HOST_CONFIGURE_ARGS += --disable-jit-support
+
+# Apple ld generates warning if LD_FLAGS var includes path to lib that is not 
+# exist (e.g. -L$(STAGING_DIR)/host/lib). configure script fails if ld generates 
+# any output
+HOST_LDFLAGS += \
+	$(if $(CONFIG_HOST_OS_MACOS),-Wl$(comma)-w)
 
 TARGET_LDFLAGS += -L$(PKG_BUILD_DIR)
 
@@ -221,7 +227,7 @@ endef
 
 # nothing to do
 define Package/ruby-stdlib/install
-	/bin/true
+	true
 endef
 
 define Package/ruby-abbrev/files

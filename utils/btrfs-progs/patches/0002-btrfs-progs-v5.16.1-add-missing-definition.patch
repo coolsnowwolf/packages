@@ -1,0 +1,14 @@
+--- btrfs-progs-v5.16.1/kernel-shared/zoned.h.orig	2022-02-06 11:09:39.728318915 +0000
++++ btrfs-progs-v5.16.1/kernel-shared/zoned.h	2022-02-06 11:11:21.772323202 +0000
+@@ -145,6 +145,11 @@ static inline int btrfs_reset_dev_zone(i
+ 	return 0;
+ }
+ 
++static inline bool zoned_profile_supported(u64 flags)
++{
++    return false;
++}
++
+ static inline bool zone_is_sequential(struct btrfs_zoned_device_info *zinfo,
+ 				      u64 bytenr)
+ {

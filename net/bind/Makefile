@@ -9,7 +9,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=bind
-PKG_VERSION:=9.17.13
+PKG_VERSION:=9.18.0
 PKG_RELEASE:=$(AUTORELEASE)
 USERID:=bind=57:bind=57
 
@@ -22,7 +22,7 @@ PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:= \
 	https://www.mirrorservice.org/sites/ftp.isc.org/isc/bind9/$(PKG_VERSION) \
 	https://ftp.isc.org/isc/bind9/$(PKG_VERSION)
-PKG_HASH:=bf485ac49715d43fa65c2c6e33271aab965bcd1b461fe2ac9f439754a210e6c7
+PKG_HASH:=56525bf5caf01fd8fd9d90910880cc0f8a90a27a97d169187d651d4ecf0c411c
 
 PKG_FIXUP:=autoreconf
 PKG_REMOVE_FILES:=aclocal.m4 libtool.m4
@@ -31,11 +31,10 @@ PKG_INSTALL:=1
 PKG_USE_MIPS16:=0
 PKG_BUILD_PARALLEL:=1
 
-PKG_BUILD_DEPENDS:=nghttp2
-
 PKG_CONFIG_DEPENDS := \
 	CONFIG_BIND_LIBJSON \
-	CONFIG_BIND_LIBXML2
+	CONFIG_BIND_LIBXML2 \
+	CONFIG_BIND_ENABLE_DOH
 
 PKG_BUILD_DEPENDS += BIND_LIBXML2:libxml2 BIND_LIBJSON:libjson-c
 
@@ -59,7 +58,7 @@ define Package/bind-libs
 	+libpthread \
 	+libatomic \
 	+libuv \
-	+libnghttp2 \
+	+BIND_ENABLE_DOH:libnghttp2 \
 	+BIND_LIBXML2:libxml2 \
 	+BIND_LIBJSON:libjson-c
   TITLE:=bind shared libraries
@@ -69,6 +68,7 @@ endef
 define Package/bind-server
   $(call Package/bind/Default)
   TITLE+= DNS server
+  DEPENDS+= +libcap
 endef
 
 define Package/bind-server/config
@@ -135,7 +135,6 @@ export BUILD_CC="$(TARGET_CC)"
 TARGET_LDFLAGS += -Wl,--gc-sections,--as-needed
 
 CONFIGURE_ARGS += \
-	--disable-linux-caps \
 	--with-openssl="$(STAGING_DIR)/usr" \
 	--with-libtool \
 	--without-lmdb \
@@ -160,6 +159,14 @@ ifdef CONFIG_BIND_LIBXML2
 else
 	CONFIGURE_ARGS += \
 		--with-libxml2=no
+endif
+
+ifdef CONFIG_BIND_ENABLE_DOH
+	CONFIGURE_ARGS += \
+		--enable-doh
+else
+	CONFIGURE_ARGS += \
+		--disable-doh
 endif
 
 CONFIGURE_VARS += \
