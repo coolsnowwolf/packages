@@ -6,12 +6,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=expat
-PKG_VERSION:=2.4.1
+PKG_VERSION:=2.4.6
 PKG_RELEASE:=$(AUTORELEASE)
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=@SF/expat
-PKG_HASH:=cf032d0dba9b928636548e32b327a2d66b1aab63c4f4a13dd132c2d1d2f2fb6a
+PKG_HASH:=de55794b7a9bc214852fdc075beaaecd854efe1361597e6268ee87946951289b
 
 PKG_MAINTAINER:=Ted Hess <thess@kitschensync.net>
 PKG_LICENSE:=MIT
@@ -20,8 +20,8 @@ PKG_CPE_ID:=cpe:/a:libexpat:expat
 
 CMAKE_INSTALL:=1
 
-include $(INCLUDE_DIR)/host-build.mk
 include $(INCLUDE_DIR)/package.mk
+include $(INCLUDE_DIR)/host-build.mk
 include $(INCLUDE_DIR)/cmake.mk
 
 define Package/libexpat
@@ -35,7 +35,7 @@ define Package/libexpat/description
  A fast, non-validating, stream-oriented XML parsing library.
 endef
 
-OPTIONS += \
+CMAKE_OPTIONS += \
 	-DDOCBOOK_TO_MAN=OFF \
 	-DEXPAT_BUILD_TOOLS=OFF \
 	-DEXPAT_BUILD_EXAMPLES=OFF \
@@ -46,9 +46,6 @@ OPTIONS += \
 	-DEXPAT_DTD=OFF \
 	-DEXPAT_NS=OFF \
 	-DEXPAT_DEV_URANDOM=OFF
-
-CMAKE_OPTIONS += $(OPTIONS)
-CMAKE_HOST_OPTIONS += $(OPTIONS)
 
 define Package/libexpat/install
 	$(INSTALL_DIR) $(1)/usr/lib
