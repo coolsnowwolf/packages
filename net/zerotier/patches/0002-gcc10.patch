@@ -1,3 +1,14 @@
+From d4b62a9f3017de8663308c5ebe1b924fca0d5ad4 Mon Sep 17 00:00:00 2001
+From: Moritz Warning <moritzwarning@web.de>
+Date: Tue, 8 Mar 2022 16:08:33 +0100
+Subject: [PATCH 2/5] gcc10
+
+---
+ osdep/Binder.hpp | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/osdep/Binder.hpp b/osdep/Binder.hpp
+index 82568373..d7921dd2 100644
 --- a/osdep/Binder.hpp
 +++ b/osdep/Binder.hpp
 @@ -440,9 +440,9 @@ class Binder {
@@ -13,3 +24,6 @@
  						phy.setIfName(udps, (char*)ii->second.c_str(), (int)ii->second.length());
  						++_bindingCount;
  					}
+-- 
+2.35.1
+

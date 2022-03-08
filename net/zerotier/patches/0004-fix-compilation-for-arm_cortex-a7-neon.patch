@@ -1,7 +1,7 @@
-From 7ac88ced6cdedf88ccebfc1de12d92b269d4a60a Mon Sep 17 00:00:00 2001
+From 656c2a9e87cbcf1b6da259632951138938d7d738 Mon Sep 17 00:00:00 2001
 From: Moritz Warning <moritzwarning@web.de>
 Date: Mon, 30 Nov 2020 12:25:42 +0100
-Subject: [PATCH 8/8] fix compilation for arm_cortex-a7+neon
+Subject: [PATCH 4/5] fix compilation for arm_cortex-a7+neon
 
 Fixes "error: 'vrbitq_u8' was not declared in this scope"
 
@@ -10,9 +10,11 @@ Signed-off-by: Rosen Penev <rosenp@gmail.com>
  node/Constants.hpp | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/node/Constants.hpp b/node/Constants.hpp
+index 930c9129..c8e5cc0c 100644
 --- a/node/Constants.hpp
 +++ b/node/Constants.hpp
-@@ -109,7 +109,7 @@
+@@ -118,7 +118,7 @@
  #include <immintrin.h>
  #endif
  
@@ -21,3 +23,6 @@ Signed-off-by: Rosen Penev <rosenp@gmail.com>
  #if (defined(__APPLE__) && !defined(__LP64__)) || (defined(__ANDROID__) && defined(__arm__))
  #ifdef ZT_ARCH_ARM_HAS_NEON
  #undef ZT_ARCH_ARM_HAS_NEON
+-- 
+2.35.1
+
