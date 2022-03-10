@@ -139,7 +139,7 @@ CONFIGURE_ARGS += \
 endif
 
 EXTRA_CFLAGS+= $(TARGET_CPPFLAGS) -fgnu89-inline
-EXTRA_LDFLAGS+= $(TARGET_LDFLAGS) -Wl,-rpath-link,$(STAGING_DIR)/usr/lib
+EXTRA_LDFLAGS+= $(TARGET_LDFLAGS)
 
 define Package/bandwidthd/install
 	$(INSTALL_DIR) $(1)/usr/sbin
