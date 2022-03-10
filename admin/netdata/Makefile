@@ -30,7 +30,7 @@ include $(INCLUDE_DIR)/package.mk
 define Package/netdata
   SECTION:=admin
   CATEGORY:=Administration
-  DEPENDS:=+zlib +libuuid +libuv +libmnl +libjson-c +libopenssl +liblz4
+  DEPENDS:=+zlib +libuuid +libuv +libmnl +libjson-c
   TITLE:=Real-time performance monitoring tool
   URL:=https://www.netdata.cloud/
 endef
@@ -45,7 +45,7 @@ endef
 
 TARGET_CFLAGS := $(filter-out -O%,$(TARGET_CFLAGS))
 TARGET_CFLAGS += -ffunction-sections -fdata-sections -O3
-TARGET_LDFLAGS += -Wl,--gc-sections,-lssl,-lcrypto
+TARGET_LDFLAGS += -Wl,--gc-sections
 
 CONFIGURE_ARGS += \
 	--with-zlib \
