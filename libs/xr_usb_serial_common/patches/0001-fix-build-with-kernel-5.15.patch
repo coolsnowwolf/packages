@@ -1,0 +1,42 @@
+From 1ae852b3cd6a305ca70b7390b6fe32254045fe9f Mon Sep 17 00:00:00 2001
+From: W_Y_CPP <383152993@qq.com>
+Date: Wed, 9 Mar 2022 01:38:01 -0500
+Subject: [PATCH] fix build with kernel 5.15
+
+---
+ xr_usb_serial_common-1a/xr_usb_serial_common.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/xr_usb_serial_common-1a/xr_usb_serial_common.c b/xr_usb_serial_common-1a/xr_usb_serial_common.c
+index 972a9e7ce..97e0703f8 100644
+--- a/xr_usb_serial_common-1a/xr_usb_serial_common.c
++++ b/xr_usb_serial_common-1a/xr_usb_serial_common.c
+@@ -688,8 +688,11 @@ static int xr_usb_serial_tty_write(struct tty_struct *tty,
+ 		return stat;
+ 	return count;
+ }
+-
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
++static unsigned int xr_usb_serial_tty_write_room(struct tty_struct *tty) 
++#else
+ static int xr_usb_serial_tty_write_room(struct tty_struct *tty)
++#endif
+ {
+ 	struct xr_usb_serial *xr_usb_serial = tty->driver_data;
+ 	/*
+@@ -698,8 +701,11 @@ static int xr_usb_serial_tty_write_room(struct tty_struct *tty)
+ 	 */
+ 	return xr_usb_serial_wb_is_avail(xr_usb_serial) ? xr_usb_serial->writesize : 0;
+ }
+-
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
++static unsigned int xr_usb_serial_tty_chars_in_buffer(struct tty_struct *tty)
++#else
+ static int xr_usb_serial_tty_chars_in_buffer(struct tty_struct *tty)
++#endif
+ {
+ 	struct xr_usb_serial *xr_usb_serial = tty->driver_data;
+ 	/*
+-- 
+2.17.1
+
