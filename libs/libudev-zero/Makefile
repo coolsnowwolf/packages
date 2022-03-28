@@ -5,12 +5,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libudev-zero
-PKG_VERSION:=0.4.8
+PKG_VERSION:=1.0.1
 PKG_RELEASE:=$(AUTORELEASE)
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/illiliti/libudev-zero/tar.gz/$(PKG_VERSION)?
-PKG_HASH:=19e8af430997283a8a830797634757c299da13e9ca5a151bb919d45b46f5e95d
+PKG_HASH:=c4cf149ea96295c1e6e86038d10c725344c751982ed4a790b06c76776923e0ea
 
 PKG_MAINTAINER:=Daniel Golle <daniel@makrotopia.org>
 PKG_LICENSE:=MIT

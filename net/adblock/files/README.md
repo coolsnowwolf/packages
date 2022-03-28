@@ -22,7 +22,6 @@ A lot of people already use adblocker plugins within their desktop browsers, but
 | energized           |         | VAR  | compilation      | [Link](https://energized.pro)                                                     |
 | firetv_tracking     |         | S    | tracking         | [Link](https://github.com/Perflyst/PiHoleBlocklist)                               |
 | games_tracking      |         | S    | tracking         | [Link](https://www.gameindustry.eu)                                               |
-| gaming              |         | S    | gaming           | [Link](https://github.com/abyssin/pihole-blocklist)                               |
 | notracking          |         | XL   | tracking         | [Link](https://github.com/notracking/hosts-blocklists)                            |
 | oisd_basic          |         | L    | general          | [Link](https://oisd.nl)                                                           |
 | oisd_full           |         | XXL  | general          | [Link](https://oisd.nl)                                                           |
@@ -44,10 +43,8 @@ A lot of people already use adblocker plugins within their desktop browsers, but
 | reg_ru              |         | M    | reg_russia       | [Link](https://easylist.to)                                                       |
 | reg_se              |         | M    | reg_sweden       | [Link](https://github.com/lassekongo83/Frellwits-filter-lists)                    |
 | reg_vn              |         | S    | reg_vietnam      | [Link](https://bigdargon.github.io/hostsVN)                                       |
-| shallalist          |         | VAR  | general          | [Link](https://www.shallalist.de)                                                 |
 | smarttv_tracking    |         | S    | tracking         | [Link](https://github.com/Perflyst/PiHoleBlocklist)                               |
 | spam404             |         | S    | general          | [Link](https://github.com/Dawsey21)                                               |
-| stalkerware         |         | S    | tracking         | [Link](https://github.com/astryzia/stalkerware-urls)                              |
 | stevenblack         |         | VAR  | compilation      | [Link](https://github.com/StevenBlack/hosts)                                      |
 | stopforumspam       |         | S    | spam             | [Link](https://www.stopforumspam.com)                                             |
 | utcapitole          |         | VAR  | general          | [Link](https://dsi.ut-capitole.fr/blacklists/index_en.php)                        |

@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=glib2
-PKG_VERSION:=2.70.0
+PKG_VERSION:=2.70.4
 PKG_RELEASE:=$(AUTORELEASE)
 
 PKG_SOURCE:=glib-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=@GNOME/glib/2.70
-PKG_HASH:=200d7df811c5ba634afbf109f14bb40ba7fde670e89389885da14e27c0840742
+PKG_HASH:=ab3d176f3115dcc4e5d02db795984e04e4f4b48d836252e23e8c468e9d423c33
 
 PKG_MAINTAINER:=Peter Wagner <tripolar@gmx.at>
 PKG_LICENSE:=LGPL-2.1-or-later
@@ -26,6 +26,8 @@ PKG_BUILD_DEPENDS:=libiconv/host
 HOST_BUILD_DEPENDS:=libiconv/host libffi/host pcre/host
 PKG_CONFIG_DEPENDS:=CONFIG_BUILD_NLS
 PKG_INSTALL:=1
+
+HOST_PATCH_DIR:=./patches-host
 
 include $(INCLUDE_DIR)/host-build.mk
 include $(INCLUDE_DIR)/package.mk
@@ -44,7 +46,6 @@ define Package/glib2/description
   The GLib library of C routines
 endef
 
-HOST_LDFLAGS += -Wl,-rpath,$(STAGING_DIR_HOSTPKG)/lib
 TARGET_CFLAGS += -ffunction-sections -fdata-sections
 TARGET_LDFLAGS += -Wl,--gc-sections $(if $(INTL_FULL),-lintl)
 

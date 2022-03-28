@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2016, 2018-2019 Jeffery To
+# Copyright (C) 2016, 2018-2019, 2022 Jeffery To
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -8,19 +8,19 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=slide-switch
-PKG_VERSION:=0.9.5
+PKG_VERSION:=1.0.0
 PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/jefferyto/openwrt-slide-switch.git
-PKG_MIRROR_HASH:=ac61aea3ce620364285de5525635999aa8b463c4070da6bce134278ff92a433c
+PKG_MIRROR_HASH:=6afa0b444b13fc9cec23643203cfd82526007156b459a4e98b728e1b321edfbd
 PKG_SOURCE_VERSION:=$(PKG_VERSION)
 
 PKG_BUILD_PARALLEL:=1
 PKG_FIXUP:=autoreconf
 PKG_INSTALL:=1
 
-PKG_LICENSE:=GPL-2.0
+PKG_LICENSE:=GPL-2.0-only
 PKG_LICENSE_FILES:=COPYING
 PKG_MAINTAINER:=Jeffery To <jeffery.to@gmail.com>
 
@@ -40,6 +40,10 @@ slide-switch translates slide switch position changes into normal button
 presses and releases for OpenWrt devices.
 endef
 
+define Package/slide-switch/conffiles
+/etc/slide-switch/switch-data.json
+endef
+
 define Package/slide-switch/install
 	$(INSTALL_DIR) $(1)/etc/hotplug.d/button
 	$(INSTALL_DATA) \
@@ -48,7 +52,8 @@ define Package/slide-switch/install
 
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) \
-		$(PKG_INSTALL_DIR)/etc/init.d/zzz-slide-switch \
+		$(PKG_INSTALL_DIR)/etc/init.d/slide-switch \
+		$(PKG_INSTALL_DIR)/etc/init.d/zzz-slide-switch-update \
 		$(1)/etc/init.d
 
 	$(INSTALL_DIR) $(1)/usr/sbin

@@ -9,7 +9,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=bind
-PKG_VERSION:=9.18.0
+PKG_VERSION:=9.18.1
 PKG_RELEASE:=$(AUTORELEASE)
 USERID:=bind=57:bind=57
 
@@ -22,7 +22,7 @@ PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:= \
 	https://www.mirrorservice.org/sites/ftp.isc.org/isc/bind9/$(PKG_VERSION) \
 	https://ftp.isc.org/isc/bind9/$(PKG_VERSION)
-PKG_HASH:=56525bf5caf01fd8fd9d90910880cc0f8a90a27a97d169187d651d4ecf0c411c
+PKG_HASH:=57c7afd871694d615cb4defb1c1bd6ed023350943d7458414db8d493ef560427
 
 PKG_FIXUP:=autoreconf
 PKG_REMOVE_FILES:=aclocal.m4 libtool.m4
@@ -40,6 +40,8 @@ PKG_BUILD_DEPENDS += BIND_LIBXML2:libxml2 BIND_LIBJSON:libjson-c
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/nls.mk
+
+DISABLE_NLS:=
 
 define Package/bind/Default
   SECTION:=net
@@ -95,7 +97,8 @@ define Package/bind-tools
 	+bind-nslookup \
 	+bind-dnssec \
 	+bind-host \
-	+bind-rndc
+	+bind-rndc \
+	+bind-ddns-confgen
 endef
 
 define Package/bind-rndc
@@ -130,18 +133,21 @@ define Package/bind-nslookup
 	  200:/usr/bin/nslookup:/usr/libexec/nslookup-bind
 endef
 
+define Package/bind-ddns-confgen
+  $(call Package/bind/Default)
+  TITLE+= administration tools (ddns-confgen and tsig-keygen only)
+endef
+
 export BUILD_CC="$(TARGET_CC)"
 
 TARGET_LDFLAGS += -Wl,--gc-sections,--as-needed
 
 CONFIGURE_ARGS += \
 	--with-openssl="$(STAGING_DIR)/usr" \
-	--with-libtool \
 	--without-lmdb \
 	--enable-epoll \
 	--without-gssapi \
 	--without-readline \
-	--without-python \
 	--sysconfdir=/etc/bind
 
 ifdef CONFIG_BIND_LIBJSON
@@ -266,6 +272,12 @@ define Package/bind-nslookup/install
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/nslookup $(1)/usr/libexec/nslookup-bind
 endef
 
+define Package/bind-ddns-confgen/install
+	$(INSTALL_DIR) $(1)/usr/sbin
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/ddns-confgen $(1)/usr/sbin/ddns-confgen
+	$(LN) -s ddns-confgen $(1)/usr/sbin/tsig-keygen
+endef
+
 $(eval $(call BuildPackage,bind-libs))
 $(eval $(call BuildPackage,bind-server))
 $(eval $(call BuildPackage,bind-server-filter-aaaa))
@@ -277,3 +289,4 @@ $(eval $(call BuildPackage,bind-dnssec))
 $(eval $(call BuildPackage,bind-host))
 $(eval $(call BuildPackage,bind-dig))
 $(eval $(call BuildPackage,bind-nslookup))
+$(eval $(call BuildPackage,bind-ddns-confgen))
