@@ -40,6 +40,8 @@ define Package/nlbwmon/install
 	$(INSTALL_CONF) ./files/nlbwmon.config $(1)/etc/config/nlbwmon
 	$(INSTALL_DIR) $(1)/etc/hotplug.d/iface
 	$(INSTALL_BIN) ./files/nlbwmon.hotplug $(1)/etc/hotplug.d/iface/30-nlbwmon
+	$(INSTALL_DIR) $(1)/etc/sysctl.d
+	$(INSTALL_CONF) ./files/sysctl-net-core-mem.conf $(1)/etc/sysctl.d/sysctl-net-core-mem.conf
 endef
 
 define Package/nlbwmon/conffiles
