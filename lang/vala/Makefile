@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=vala
-PKG_VERSION:=0.52.3
+PKG_VERSION:=0.56.0
 PKG_RELEASE:=$(AUTORELEASE)
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
-PKG_SOURCE_URL:=@GNOME/vala/0.52
-PKG_HASH:=037ea1a92bf0f1ab04a71b52a01d50aca1945ad1017b6189d9614f84f5c9b2d9
+PKG_SOURCE_URL:=@GNOME/vala/0.56
+PKG_HASH:=d92bd13c5630905eeb6a983dcb702204da9731460c2a6e4e39f867996f371040
 
 PKG_MAINTAINER:=
 PKG_LICENSE:=LGPL-2.1-or-later
@@ -40,13 +40,11 @@ define Package/vala/description
 endef
 
 HOST_CONFIGURE_ARGS += \
+	--disable-shared \
 	--disable-coverage \
 	--disable-debug \
 	--disable-valadoc \
 	--without-cgraph
-
-HOST_LDFLAGS += \
-	-Wl,--rpath,$(STAGING_DIR_HOSTPKG)/lib
 
 $(eval $(call HostBuild))
 $(eval $(call BuildPackage,vala))
