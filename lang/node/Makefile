@@ -6,12 +6,6 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=node
 
-ifeq ($(CONFIG_NODEJS_16),y)
-PKG_VERSION:=v16.14.0
-PKG_RELEASE:=1
-PKG_HASH:=05eb64193e391fa8a2c159c0f60c171824715165f80c67fcab9dbc944e30c623
-PATCH_DIR:=./patches/v16.x
-else
 ifeq ($(CONFIG_NODEJS_10),y)
 PKG_VERSION:=v10.24.1
 PKG_RELEASE:=3
@@ -28,7 +22,6 @@ PKG_VERSION:=v12.22.1
 PKG_RELEASE:=4
 PKG_HASH:=dd650df7773a6ed3e390320ba51ef33cba6499f0e9397709ea3d1debdcbcb989
 PATCH_DIR:=./patches/v12.x
-endif
 endif
 endif
 
@@ -69,7 +62,7 @@ define Package/node/description
    package ecosystem, npm, is the largest ecosystem of open source libraries in the world.
 
   *** The following preparations must be made on the host side. ***
-      1. gcc 8.3 or higher is required.
+      1. gcc 6.3 or higher is required.
       2. To build a 32-bit target, gcc-multilib, g++-multilib are required.
       3. Requires libatomic package. (If necessary, install the 32-bit library at the same time.)
      ex) sudo apt-get install gcc-multilib g++-multilib
@@ -107,11 +100,7 @@ define Package/node/config
 
 		config NODEJS_14
 			depends on !(mips||mipsel||mips64||mips64el)
-			bool "14.x Maintenance LTS"
-
-		config NODEJS_16
-			depends on !(mips||mipsel||mips64||mips64el)
-			bool "16.x Active LTS"
+			bool "14.x Active LTS"
 	endchoice
 
 	choice
