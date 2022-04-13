@@ -1,10 +1,6 @@
 --- a/src/Cedar/Server.c
 +++ b/src/Cedar/Server.c
-@@ -10901,6 +10901,7 @@ bool SiCheckCurrentRegion(CEDAR *c, char
- //
+@@ -10902,2 +10902,3 @@ bool SiCheckCurrentRegion(CEDAR *c, char
  bool SiIsEnterpriseFunctionsRestrictedOnOpenSource(CEDAR *c)
  {
-+       return false;
-        char region[128];
-        bool ret = false;
-        // Validate arguments
++return false;
