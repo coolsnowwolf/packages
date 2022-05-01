@@ -8,7 +8,7 @@ PKG_LICENSE_FILES:=LICENSE
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/containerd/containerd/tar.gz/v${PKG_VERSION}?
-PKG_HASH:=02b79d5e2b07b5e64cd28f1fe84395ee11eef95fc49fd923a9ab93022b148be6
+PKG_HASH:=skip
 PKG_SOURCE_VERSION:=3df54a852345ae127d1fa3092b95168e4a88e2f8
 
 PKG_MAINTAINER:=Gerard Ryan <G.M0N3Y.2503@gmail.com>
