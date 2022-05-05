@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=tailscale
-PKG_VERSION:=1.20.2
+PKG_VERSION:=1.24.2
 PKG_RELEASE:=$(AUTORELEASE)
 
 PKG_SOURCE:=tailscale-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/tailscale/tailscale/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=9ecd054f241fd43d4d652cf411ba872f816e1a83a4a009966eff5377971bacb1
+PKG_HASH:=f1fe7770b4e372ace47c5b0ac4cbe21af95c3a6fb1828ee4f407fcfe35b7958f
 
 PKG_MAINTAINER:=Jan Pavlinec <jan.pavlinec1@gmail.com>
 PKG_LICENSE:=BSD-3-Clause
@@ -27,6 +27,11 @@ PKG_USE_MIPS16:=0
 GO_PKG:=\
 	tailscale.com/cmd/tailscale \
 	tailscale.com/cmd/tailscaled
+
+GO_PKG_LDFLAGS:=-s -w
+GO_PKG_LDFLAGS_X:= \
+	tailscale.com/version.Long=${PKG_VERSION} \
+	tailscale.com/version.Short=${PKG_VERSION}
 
 include $(INCLUDE_DIR)/package.mk
 include ../../lang/golang/golang-package.mk
