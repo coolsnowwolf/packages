@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=gpsd
-PKG_VERSION:=3.21
+PKG_VERSION:=3.23.1
 PKG_RELEASE:=$(AUTORELEASE)
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=@SAVANNAH/$(PKG_NAME)
-PKG_HASH:=5512a7d3c2e86be83c5555652e5b4cc9049e8878a4320be7f039eb1a7203e5f0
+PKG_HASH:=ca2c466df783c57b8a07ad3f5c67943186d05befdc377de938ed111d1358a8c1
 
 PKG_MAINTAINER:=Pushpal Sidhu <psidhu.devel@gmail.com>
 PKG_LICENSE:=BSD-3-Clause
@@ -87,6 +87,7 @@ define Package/libgps
   SECTION:=libs
   CATEGORY:=Libraries
   TITLE:=C service library for communicating with the GPS daemon
+  ABI_VERSION:=29
 endef
 
 define Package/libgps/description
@@ -99,6 +100,7 @@ SCONS_VARS += \
 	LINKFLAGS="$(TARGET_LDFLAGS)"
 
 SCONS_OPTIONS += \
+	target_platform=linux \
 	dbus_export=no \
 	tsip=no \
 	fv18=no \
@@ -157,7 +159,7 @@ endef
 
 define Package/libgps/install
 	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libgps.so.* $(1)/usr/lib/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libgps.so.$(ABI_VERSION)* $(1)/usr/lib/
 endef
 
 $(eval $(call BuildPackage,gpsd))
