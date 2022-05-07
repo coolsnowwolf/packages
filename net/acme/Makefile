@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=acme
-PKG_VERSION:=3.0.1
+PKG_VERSION:=3.0.3
 PKG_RELEASE:=$(AUTORELEASE)
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/acmesh-official/acme.sh/tar.gz/$(PKG_VERSION)?
-PKG_HASH:=6212cc0c2bca99a7dd6cbb4236b4c7dd5d1113dab0841e66dae4d307d902a8e6
+PKG_HASH:=601a1688b5e2fdd567c3ee308be243e9329b286336e4a709ee2157eff7b06aaf
 PKG_BUILD_DIR:=$(BUILD_DIR)/acme.sh-$(PKG_VERSION)
 
 PKG_MAINTAINER:=Toke Høiland-Jørgensen <toke@toke.dk>
@@ -79,5 +79,41 @@ define Package/acme-dnsapi/install
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/dnsapi/*.sh $(1)/usr/lib/acme/dnsapi
 endef
 
+define Package/acme-notify
+  SECTION:=net
+  CATEGORY:=Network
+  DEPENDS:=+acme
+  TITLE:=Notification integration for ACME (Letsencrypt) client
+  PKGARCH:=all
+endef
+
+define Package/acme-notify/description
+ This package provides notification integration for ACME (Letsencrypt) client.
+endef
+
+define Package/acme-notify/install
+	$(INSTALL_DIR) $(1)/usr/lib/acme/notify
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/notify/*.sh $(1)/usr/lib/acme/notify
+endef
+
+define Package/acme-deploy
+  SECTION:=net
+  CATEGORY:=Network
+  DEPENDS:=+acme
+  TITLE:=Deployment integration for ACME (Letsencrypt) client
+  PKGARCH:=all
+endef
+
+define Package/acme-deploy/description
+ This package provides deployment integration for ACME (Letsencrypt) client.
+endef
+
+define Package/acme-deploy/install
+	$(INSTALL_DIR) $(1)/usr/lib/acme/deploy
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/deploy/*.sh $(1)/usr/lib/acme/deploy
+endef
+
 $(eval $(call BuildPackage,acme))
 $(eval $(call BuildPackage,acme-dnsapi))
+$(eval $(call BuildPackage,acme-notify))
+$(eval $(call BuildPackage,acme-deploy))
