@@ -95,7 +95,7 @@ define Package/node/config
 	choice
 		prompt "Version Selection"
 		default NODEJS_12 if mips||mipsel||mips64||mips64el
-		default NODEJS_14
+		default NODEJS_16
 		help
 		 Select node.js version.
 
