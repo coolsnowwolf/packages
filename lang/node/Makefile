@@ -13,9 +13,9 @@ PKG_HASH:=d72fc2c244603b4668da94081dc4d6067d467fdfa026e06a274012f16600480c
 PATCH_DIR:=./patches/v10.x
 else
 ifeq ($(CONFIG_NODEJS_16),y)
-PKG_VERSION:=v16.14.2
+PKG_VERSION:=v16.15.0
 PKG_RELEASE:=1
-PKG_HASH:=e922e215cc68eb5f94d33e8a0b61e2c863b7731cc8600ab955d3822da90ff8d1
+PKG_HASH:=a0f812efc43f78321eca08957960a48f5e6bf97004d5058c8dd3b03c646ea4f7
 PATCH_DIR:=./patches/v16.x
 else
 ifeq ($(CONFIG_NODEJS_14),y)
@@ -191,7 +191,6 @@ define Package/node/install
 endef
 
 define Package/node-npm/install
-	$(RM) $(1)/usr/lib/node_modules/npm
 	$(INSTALL_DIR) $(1)/usr/lib/node_modules/npm
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/node_modules/npm/{package.json,LICENSE} \
 		$(1)/usr/lib/node_modules/npm/
@@ -202,6 +201,11 @@ define Package/node-npm/install
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(LN) ../lib/node_modules/npm/bin/npm-cli.js $(1)/usr/bin/npm
 	$(LN) ../lib/node_modules/npm/bin/npx-cli.js $(1)/usr/bin/npx
+endef
+
+define Host/Install
+	$(RM) -rf $(1)/lib/node_modules/npm
+	$(call Host/Install/Default)
 endef
 
 define Package/node-npm/postrm
