@@ -115,7 +115,7 @@ define Package/dnsdist
 	  +libedit \
 	  +libstdcpp \
 	  +lmdb \
-	  +liblua \
+	  +luajit \
 	  +tinycdb
   URL:=https://dnsdist.org/
 endef
@@ -145,7 +145,7 @@ TARGET_CXX+=-std=c++17
 CONFIGURE_ARGS+= \
 	--enable-option-checking=fatal \
 	--with-pic \
-	--with-lua=lua \
+	--with-lua=luajit \
 	$(if $(CONFIG_DNSDIST_SODIUM),--enable-dnscrypt --with-libsodium,--disable-dnscrypt --without-libsodium) \
 	$(if $(CONFIG_DNSDIST_DNSTAP),--enable-dnstap=yes,--enable-dnstap=no) \
 	$(if $(CONFIG_DNSDIST_RE2),--with,--without)-re2 \
