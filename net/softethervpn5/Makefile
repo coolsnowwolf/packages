@@ -6,7 +6,6 @@ PKG_NAME:=softethervpn5
 PKG_VERSION:=5.01.9674
 PKG_RELEASE:=1
 
-PKG_MAINTAINER:=Andy Walsh <andy.walsh44+github@gmail.com>
 PKG_LICENSE:=GPL-2.0
 PKG_LICENSE_FILES:=COPYING
 

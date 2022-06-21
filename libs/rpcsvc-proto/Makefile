@@ -8,7 +8,6 @@ PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=https://github.com/thkukuk/rpcsvc-proto/releases/download/v$(PKG_VERSION)
 PKG_HASH:=678851b9f7ddf4410d2859c12016b65a6dd1a0728d478f18aeb54d165352f17c
 
-PKG_MAINTAINER:=Andy Walsh <andy.walsh44+github@gmail.com>
 PKG_LICENSE:=BSD-3-clause
 PKG_LICENSE_FILES:=COPYING
 
