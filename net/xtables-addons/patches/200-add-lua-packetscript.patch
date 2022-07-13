@@ -1352,7 +1352,7 @@
 +** See Copyright Notice in lua.h
 +*/
 +
-+#include <stdarg.h>
++//#include <stdarg.h>
 +#include <math.h>
 +#include <assert.h>
 +#include <string.h>
@@ -2460,7 +2460,7 @@
 +** See Copyright Notice in lua.h
 +*/
 +
-+#include <stdarg.h>
++//#include <stdarg.h>
 +
 +#if !defined(__KERNEL__)
 +#include <ctype.h>
@@ -3142,7 +3142,7 @@
 +#define lauxlib_h
 +
 +
-+#include <stddef.h>
++//#include <stddef.h>
 +#include <linux/slab.h>	/* for kmalloc and kfree when allocating luaL_Buffer */
 +
 +#if !defined(__KERNEL__)
@@ -4895,8 +4895,8 @@
 +*/
 +
 +
-+#include <stdarg.h>
-+#include <stddef.h>
++//#include <stdarg.h>
++//#include <stddef.h>
 +#include <string.h>
 +
 +#define ldebug_c
@@ -6148,7 +6148,7 @@
 +** See Copyright Notice in lua.h
 +*/
 +
-+#include <stddef.h>
++//#include <stddef.h>
 +
 +#define ldump_c
 +#define LUA_CORE
@@ -6316,7 +6316,7 @@
 +*/
 +
 +
-+#include <stddef.h>
++//#include <stddef.h>
 +
 +#define lfunc_c
 +#define LUA_CORE
@@ -7906,7 +7906,7 @@
 +#ifndef llimits_h
 +#define llimits_h
 +
-+#include <stddef.h>
++//#include <stddef.h>
 +#include <limits.h>
 +
 +#include "lua.h"
@@ -8032,7 +8032,7 @@
 +*/
 +
 +
-+#include <stddef.h>
++//#include <stddef.h>
 +
 +#define lmem_c
 +#define LUA_CORE
@@ -8124,7 +8124,7 @@
 +#define lmem_h
 +
 +
-+#include <stddef.h>
++//#include <stddef.h>
 +
 +#include "llimits.h"
 +#include "lua.h"
@@ -8172,7 +8172,7 @@
 +** See Copyright Notice in lua.h
 +*/
 +
-+#include <stdarg.h>
++//#include <stdarg.h>
 +
 +#include <ctype.h>
 +#include <stdio.h>
@@ -8395,7 +8395,7 @@
 +#define lobject_h
 +
 +
-+#include <stdarg.h>
++//#include <stdarg.h>
 +
 +
 +#include "llimits.h"
@@ -10578,7 +10578,7 @@
 +*/
 +
 +
-+#include <stddef.h>
++//#include <stddef.h>
 +
 +#define lstate_c
 +#define LUA_CORE
@@ -11115,7 +11115,7 @@
 +
 +
 +#include <ctype.h>
-+#include <stddef.h>
++//#include <stddef.h>
 +#include <stdio.h>
 +#include <stdlib.h>
 +#include <string.h>
@@ -12634,7 +12634,7 @@
 +*/
 +
 +
-+#include <stddef.h>
++//#include <stddef.h>
 +
 +#define ltablib_c
 +#define LUA_LIB
@@ -13062,7 +13062,7 @@
 +#ifndef lconfig_h
 +#define lconfig_h
 +
-+#include <stddef.h>
++//#include <stddef.h>
 +
 +#if !defined(__KERNEL__)
 +#include <limits.h>
@@ -13863,8 +13863,8 @@
 +#ifndef lua_h
 +#define lua_h
 +
-+#include <stdarg.h>
-+#include <stddef.h>
++//#include <stdarg.h>
++//#include <stddef.h>
 +
 +#include "luaconf.h"
 +
