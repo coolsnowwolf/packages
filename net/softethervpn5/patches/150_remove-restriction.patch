@@ -1,0 +1,10 @@
+--- a/src/Cedar/Server.c	2022-08-04 06:26:10.816413980 +0000
++++ b/src/Cedar/Server.c	2022-08-04 06:34:32.361586024 +0000
+@@ -10628,6 +10628,7 @@
+ // 
+ bool SiIsEnterpriseFunctionsRestrictedOnOpenSource(CEDAR *c)
+ {
++	return false;
+ 	char region[128];
+ 	bool ret = false;
+ 	// Validate arguments
