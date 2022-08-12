@@ -1,6 +1,6 @@
---- a/src/Cedar/Server.c	2022-08-04 06:26:10.816413980 +0000
-+++ b/src/Cedar/Server.c	2022-08-04 06:34:32.361586024 +0000
-@@ -10628,6 +10628,7 @@
+--- a/src/Cedar/Server.c	2020-04-30 16:48:22.000000000 +0800
++++ b/src/Cedar/Server.c	2022-08-12 15:08:36.000000000 +0800
+@@ -10624,6 +10624,7 @@
  // 
  bool SiIsEnterpriseFunctionsRestrictedOnOpenSource(CEDAR *c)
  {
