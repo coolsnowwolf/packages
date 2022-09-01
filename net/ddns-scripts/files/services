@@ -39,7 +39,7 @@
 #.no-ip.com / noip.com	!!! Please install additional package "ddns-scripts_no-ip_com"
 #.route53-v1		!!! Please install additional package "ddns-scripts_route53-v1"
 
-"3322.org"		"http://[USERNAME]:[PASSWORD]@members.3322.org/dyndns/update?system=dyndns&hostname=[DOMAIN]&myip=[IP]"
+"3322.org"		"http://[USERNAME]:[PASSWORD]@members.3322.net/dyndns/update?system=dyndns&hostname=[DOMAIN]&myip=[IP]"
 
 "able.or.kr"		"http://able.or.kr/ddns/src/update.php?hostname=[DOMAIN]&myip=[IP]&ddnsuser=[USERNAME]&pwd=[PASSWORD]"
 
