@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=aliyundrive-webdav
-PKG_VERSION:=1.8.9
+PKG_VERSION:=1.10.1
 PKG_RELEASE:=$(AUTORELEASE)
 
 PKG_LICENSE:=MIT
@@ -36,7 +36,7 @@ define Package/aliyundrive-webdav
 endef
 
 define Package/aliyundrive-webdav/description
- WebDAV server for AliyunDrive.
+  WebDAV server for AliyunDrive.
 endef
 
 define Package/aliyundrive-webdav/conffiles
