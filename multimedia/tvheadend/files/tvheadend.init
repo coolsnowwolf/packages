@@ -13,8 +13,8 @@ PERSISTENT_CONFIG=/etc/tvheadend
 # If you change the group, update USB hotplug script for DVB devices in /dev/hotplug.d/usb/
 # otherwise, tvheadend won't have permissions to open newly connected tuners!
 # Also update all other packages that use the dvb group.
-TVH_USER=tvheadend
-TVH_GROUP=dvb
+TVH_USER=root
+TVH_GROUP=root
 
 
 execute_first_run() {
