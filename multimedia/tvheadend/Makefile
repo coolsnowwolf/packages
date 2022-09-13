@@ -26,7 +26,7 @@ define Package/tvheadend
   CATEGORY:=Multimedia
   TITLE:=TV streaming server
   MENU:=1
-  USERID:=tvheadend:dvb
+  USERID:=root:root
   URL:=https://tvheadend.org
   MAINTAINER:=Marius Dinu <m95d+git@psihoexpert.ro>
   DEPENDS:= \
