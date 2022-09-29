@@ -17,7 +17,7 @@ PKG_SOURCE_URL:= \
 	http://oss.oetiker.ch/rrdtool/pub/rrdtool-1.0.x \
 	http://www.fastmirrors.org/rrdtool/rrdtool-1.0.x \
 	ftp://ftp.sunet.se/pub/network/monitoring/rrdtool/rrdtool-1.0.x
-PKG_HASH:=42aa7c213dedbd95d33ca84d92f4187880f7e96062c6a3fb05bfb16f77ba2a91
+PKG_HASH:=88dcddf2a92b9dc9243e929340fdc6f3431b779e22438093d7a31a400f1c3909
 PKG_MAINTAINER:=Jo-Philipp Wich <jo@mein.io>
 
 PKG_FIXUP:=autoreconf
