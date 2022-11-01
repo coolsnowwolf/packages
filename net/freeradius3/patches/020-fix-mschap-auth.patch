@@ -1,0 +1,22 @@
+--- a/raddb/sites-available/default
++++ b/raddb/sites-available/default
+@@ -500,7 +500,7 @@ authenticate {
+ 
+ 	#
+ 	#  MSCHAP authentication.
+-	Auth-Type MS-CHAP {
++	Auth-Type MSCHAP {
+ 		mschap
+ 	}
+ 
+--- a/raddb/sites-available/inner-tunnel
++++ b/raddb/sites-available/inner-tunnel
+@@ -214,7 +214,7 @@ authenticate {
+ 
+ 	#
+ 	#  MSCHAP authentication.
+-	Auth-Type MS-CHAP {
++	Auth-Type MSCHAP {
+ 		mschap
+ 	}
+ 
