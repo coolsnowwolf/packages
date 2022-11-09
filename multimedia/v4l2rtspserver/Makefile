@@ -7,17 +7,17 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=v4l2rtspserver
-PKG_VERSION:=0.2.3
+PKG_VERSION:=0.3.7
 PKG_RELEASE:=$(AUTORELEASE)
 
 #cannot use codeload as this uses submodules
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/mpromonet/v4l2rtspserver
 PKG_SOURCE_VERSION:=v$(PKG_VERSION)
-PKG_MIRROR_HASH:=f047fd24441a070b123252bf82c7d7e42bb0c3280b78ad2ddb01cf200acc3a32
+PKG_MIRROR_HASH:=f2eca75c8af9933f4ceb67cab74af488e1e9ec8af9cbef2534fda5b701b1d63d
 
-LIVE555_VERSION:=2021.02.11
-LIVE555_HASH:=834ad3fc199f1a6b0c09646976deb71a3a7803dc7b498ce92e920f6cb7b717ba
+LIVE555_VERSION:=2022.10.01
+LIVE555_HASH:=429de73061e3fc6901c4d2f0b7562ae3f6233060ca4b5e182fe555d065cbdd45
 LIVE555_FILE:=live.$(LIVE555_VERSION).tar.gz
 
 PKG_MAINTAINER:=Roger Dammit <rogerdammit@gmail.com>
@@ -54,15 +54,15 @@ TARGET_LDFLAGS += -Wl,--gc-sections,--as-needed
 
 CMAKE_OPTIONS += \
 	-DALSA=OFF \
+	-DSTATICSTDCPP=OFF \
 	-DLIVE555CFLAGS=" -DSOCKLEN_T=socklen_t -D_LARGEFILE_SOURCE=1 -D_FILE_OFFSET_BITS=64 -DLOCALE_NOT_USED -DNO_SSTREAM=1 -DALLOW_RTSP_SERVER_PORT_REUSE=1 -DNO_OPENSSL"
 
 define Build/Prepare
-	$(Build/Prepare/Default)
-
 	# download live555
 	$(eval $(call Download,live555))
 	mkdir -p $(PKG_BUILD_DIR)/live
 	$(TAR) -xf $(DL_DIR)/$(LIVE555_FILE) --strip=1 -C $(PKG_BUILD_DIR)/live
+	$(Build/Prepare/Default)
 endef
 
 define Package/v4l2rtspserver/install

@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=gst1-plugins-base
-PKG_VERSION:=1.18.5
+PKG_VERSION:=1.20.2
 PKG_RELEASE:=$(AUTORELEASE)
 
 PKG_SOURCE:=gst-plugins-base-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=https://gstreamer.freedesktop.org/src/gst-plugins-base
-PKG_HASH:=960b7af4585700db0fdd5b843554e11e2564fed9e061f591fae88a7be6446fa3
+PKG_HASH:=ab0656f2ad4d38292a803e0cb4ca090943a9b43c8063f650b4d3e3606c317f17
 PKG_BUILD_DIR:=$(BUILD_DIR)/gst-plugins-base-$(PKG_VERSION)
 
 PKG_MAINTAINER:=W. Michael Petullo <mike@flyn.org> \
@@ -246,7 +246,7 @@ $(eval $(call GstBuildLibrary,pbutils,utils,audio tag video,))
 $(eval $(call GstBuildLibrary,riff,RIFF media,audio tag,,))
 $(eval $(call GstBuildLibrary,rtp,RTP,,))
 $(eval $(call GstBuildLibrary,rtsp,RTSP,,))
-$(eval $(call GstBuildLibrary,sdp,SDP,rtp,))
+$(eval $(call GstBuildLibrary,sdp,SDP,pbutils rtp,))
 $(eval $(call GstBuildLibrary,tag,tag support,,))
 $(eval $(call GstBuildLibrary,video,video,,))
 
@@ -305,8 +305,8 @@ $(eval $(call GstBuildPlugin,typefindfunctions,'typefind' functions,audio pbutil
 $(eval $(call GstBuildPlugin,videoconvert,video format conversion,video,,))
 $(eval $(call GstBuildPlugin,videorate,Adjusts video frames,video,,))
 $(eval $(call GstBuildPlugin,videoscale,Resizes video,video,,))
-$(eval $(call GstBuildPlugin,videotestsrc,video test,video,,+liboil))
-$(eval $(call GstBuildPlugin,volume,volume,audio controller,,+liboil))
+$(eval $(call GstBuildPlugin,videotestsrc,video test,video,,))
+$(eval $(call GstBuildPlugin,volume,volume,audio controller,,))
 
 $(eval $(call GstBuildPlugin,alsa,ALSA audio source/sink,audio tag,,+alsa-lib))
 $(eval $(call GstBuildPlugin,ivorbisdec,Integer Vorbis decoder plugin for devices without floating point,audio tag,,+libvorbisidec))
