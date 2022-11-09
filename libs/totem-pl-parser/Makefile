@@ -26,7 +26,7 @@ include $(INCLUDE_DIR)/meson.mk
 define Package/totem-pl-parser
   SECTION:=libs
   CATEGORY:=Libraries
-  DEPENDS:=+glib2 +libxml2
+  DEPENDS:=+glib2 +libxml2 +shared-mime-info
   TITLE:=totem-pl-parser
   URL:=https://gitlab.gnome.org/GNOME/totem-pl-parser
 endef
@@ -35,7 +35,9 @@ define Package/totem-pl-parser/decription
   totem-pl-parser is a simple GObject-based library to parse a host of playlist formats
 endef
 
-MESON_ARGS += -Dintrospection=false
+MESON_ARGS += -Dintrospection=false \
+              -Denable-libarchive=no \
+              -Denable-libgcrypt=no
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include/

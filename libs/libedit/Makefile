@@ -8,7 +8,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libedit
-PKG_VERSION:=20210419-3.1
+PKG_VERSION:=20221030-3.1
 PKG_RELEASE:=1
 
 PKG_MAINTAINER:=Daniel Salzman <daniel.salzman@nic.cz>
@@ -16,7 +16,7 @@ PKG_LICENSE:=BSD-3-Clause
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=http://thrysoee.dk/editline/
-PKG_HASH:=571ebe44b74860823e24a08cf04086ff104fd7dfa1020abf26c52543134f5602
+PKG_HASH:=f0925a5adf4b1bf116ee19766b7daa766917aec198747943b1c4edf67a4be2bb
 
 PKG_INSTALL:=1
 
