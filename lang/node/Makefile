@@ -13,9 +13,9 @@ PKG_HASH:=d72fc2c244603b4668da94081dc4d6067d467fdfa026e06a274012f16600480c
 PATCH_DIR:=./patches/v10.x
 else
 ifeq ($(CONFIG_NODEJS_18),y)
-PKG_VERSION:=v18.11.0
+PKG_VERSION:=v18.12.0
 PKG_RELEASE:=1
-PKG_HASH:=8b9643dc6fce79c1e99379db0ce64e43601e2e2d7389015fe8985cc4ccd0ce17
+PKG_HASH:=73a7f01e2999eb197763ced666a6cd544ad580eaefb73e0a849603b3e804f42e
 PATCH_DIR:=./patches/v18.x
 else
 ifeq ($(CONFIG_NODEJS_16),y)
@@ -114,15 +114,15 @@ define Package/node/config
 
 		config NODEJS_14
 			depends on !(mips||mipsel||mips64||mips64el)
-			bool "14.x Maintenance LTS"
+			bool "14.x Maintenance"
 
 		config NODEJS_16
 			depends on !(mips||mipsel||mips64||mips64el)
-			bool "16.x Active LTS"
+			bool "16.x Maintenance"
 
 		config NODEJS_18
 			depends on !(mips||mipsel||mips64||mips64el)
-			bool "18.x Current"
+			bool "18.x Active LTS"
 	endchoice
 
 	if PACKAGE_node
