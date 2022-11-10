@@ -6,13 +6,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=squeezelite
-PKG_VERSION:=1.9.6-1210
-PKG_RELEASE:=3
+PKG_VERSION:=1.9.9-1403
+PKG_RELEASE:=$(AUTORELEASE)
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/ralph-irving/squeezelite
-PKG_SOURCE_VERSION:=1b7a17616cd2bbd9935c710dc33cda11cd0de45e
-PKG_MIRROR_HASH:=5993fa5fcacd1640962bc60f88a93faa4fcac74a767fbf820b40a27c338a9062
+PKG_SOURCE_VERSION:=bc72c0de3fff771540a2a45aaafafed539387b3c
+PKG_MIRROR_HASH:=25f6c320e52b53c0340a337429b91d59783c87f1af3454dc0434c24b90ed3b94
 
 PKG_MAINTAINER:=Ted Hess <thess@kitschensync.net>
 PKG_LICENSE:=GPL-3.0-or-later
@@ -36,6 +36,8 @@ define Package/squeezelite-full
     $(call Package/squeezelite/default)
     TITLE+= (full)
     DEPENDS+= +libflac +libvorbis +libmpg123 +libfaad2 \
+              +SQUEEZELITE_OPUS:libopusfile \
+              +SQUEEZELITE_SSL:libopenssl \
               +SQUEEZELITE_WMA:libffmpeg-audio-dec
     VARIANT:=full
 endef
@@ -64,7 +66,19 @@ define Package/squeezelite/config/default
 	config SQUEEZELITE_DSD
 	    bool "DSD playback over PCM (DoP)"
 	    help
-		Include support for DSD over PCM for compatible DAC"
+		Include support for DSD over PCM for compatible DAC
+	    default n
+
+	config SQUEEZELITE_SSL
+	    bool "SSL/TLS support"
+	    help
+		Include SSL/TLS support for use with e.g. https media URLs
+	    default n
+
+	config SQUEEZELITE_OPUS
+	    bool "Opus codec support"
+	    help
+		Include Opus codec support
 	    default n
 endef
 
@@ -84,7 +98,7 @@ define Package/squeezelite/description/default
     Squeezelite is a small headless squeezebox emulator for linux using alsa audio output
     It is aimed at supporting high quality audio at multiple sample rates including
     44.1/48/88.2/96/176.4/192k/352.8/384kHz
-    Supported codecs: mp3, flac, ogg, aac, (wma and alac via ffmpeg)
+    Supported codecs: mp3, flac, ogg, aac, (wma and alac via ffmpeg), opus (optional)
     Native support for PCM builtin
     Optional support of DSD playback via PCM for DoP capable DAC
     Optional resampling to match sound device
@@ -112,6 +126,15 @@ endif
 
 ifeq ($(CONFIG_SQUEEZELITE_RESAMPLE),y)
     opts+= -DRESAMPLE
+endif
+
+ifeq ($(CONFIG_SQUEEZELITE_SSL),y)
+    opts+= -DUSE_SSL
+endif
+
+ifeq ($(CONFIG_SQUEEZELITE_OPUS),y)
+    opts+= -DOPUS
+    TARGET_CFLAGS+=-I$(STAGING_DIR)/usr/include/opus
 endif
 
 ifeq ($(BUILD_VARIANT),full)
