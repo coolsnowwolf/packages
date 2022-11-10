@@ -97,7 +97,6 @@ endef
 
 define Package/node/config
 	menu "Configuration"
-		depends on PACKAGE_node
 
 	choice
 		prompt "Version Selection"
@@ -105,6 +104,7 @@ define Package/node/config
 		default NODEJS_16
 		help
 		 Select node.js version.
+		 The host package version is also the same.
 
 		config NODEJS_10
 			bool "10.x End-of-life : NO LONGER SUPPORTED"
@@ -125,23 +125,25 @@ define Package/node/config
 			bool "18.x Current"
 	endchoice
 
-	choice
-		prompt "i18n features"
-		default NODEJS_ICU_NONE
-		help
-		 Select i18n features
+	if PACKAGE_node
+		choice
+			prompt "i18n features"
+			default NODEJS_ICU_SMALL
+			help
+			 Select i18n features
 
-		config NODEJS_ICU_NONE
-			bool "Disable"
+			config NODEJS_ICU_NONE
+				bool "Disable"
 
-		config NODEJS_ICU_SMALL
-			depends on !BIG_ENDIAN
-			bool "small-icu"
+			config NODEJS_ICU_SMALL
+				depends on !BIG_ENDIAN
+				bool "small-icu"
 
-		config NODEJS_ICU_SYSTEM
-			depends on ARCH_64BIT&&!BIG_ENDIAN
-			bool "system-icu"
-	endchoice
+			config NODEJS_ICU_SYSTEM
+				depends on ARCH_64BIT&&!BIG_ENDIAN
+				bool "system-icu"
+		endchoice
+	endif
 
 	endmenu
 endef
