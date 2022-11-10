@@ -9,12 +9,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=memcached
-PKG_VERSION:=1.6.9
+PKG_VERSION:=1.6.17
 PKG_RELEASE:=$(AUTORELEASE)
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://memcached.org/files
-PKG_HASH:=d5a62ce377314dbffdb37c4467e7763e3abae376a16171e613cbe69956f092d1
+PKG_HASH:=2055e373613d8fc21529aff9f0adce3e23b9ce01ba0478d30e7941d9f2bd1224
 
 PKG_MAINTAINER:=Thomas Heil <heil@terminal-consulting.de>
 PKG_LICENSE:=BSD-3-Clause
@@ -32,6 +32,7 @@ define Package/memcached
   DEPENDS:=+libevent2 +libpthread
   TITLE:=The high-performance, distributed memory object caching system
   URL:=https://memcached.org/
+  USERID:=memcached=441:memcached=441
 endef
 
 define Package/memcached/description
