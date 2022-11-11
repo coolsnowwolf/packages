@@ -9,7 +9,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=zoneinfo
-PKG_VERSION:=2022c
+PKG_VERSION:=2022f
 PKG_RELEASE:=1
 
 #As i couldn't find real license used "Public Domain"
@@ -19,14 +19,14 @@ PKG_LICENSE:=Public Domain
 PKG_SOURCE:=tzdata$(PKG_VERSION).tar.gz
 PKG_SOURCE_CODE:=tzcode$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=http://www.iana.org/time-zones/repository/releases
-PKG_HASH:=6974f4e348bf2323274b56dff9e7500247e3159eaa4b485dfa0cd66e75c14bfe
+PKG_HASH:=9990d71f675d212567b931fe8aae1cab7027f89fefb8a79d808a6933a67af000
 
 include $(INCLUDE_DIR)/package.mk
 
 define Download/tzcode
    FILE=$(PKG_SOURCE_CODE)
    URL=$(PKG_SOURCE_URL)
-   HASH:=3e7ce1f3620cc0481907c7e074d69910793285bffe0ca331ef1a6d1ae3ea90cc
+   HASH:=e4543e90f84f91fa82809ea98930052fdbc13880c8a623ee3a4eaa42f8a64c15
 endef
 
 $(eval $(call Download,tzcode))
@@ -103,7 +103,6 @@ define Package/zoneinfo-all
 $(call Package/zoneinfo/Default)
   TITLE:=Zone Information (all zones)
   DEPENDS:= \
-	+zoneinfo-simple \
 	+zoneinfo-core \
 	+zoneinfo-africa \
 	+zoneinfo-northamerica \
@@ -145,6 +144,10 @@ define Package/zoneinfo-core/install
 	  $(CP) $(PKG_INSTALL_DIR)/zoneinfo/$$$$i \
 	      $(1)/usr/share/zoneinfo ; \
 	done
+endef
+
+define Package/zoneinfo-all/install
+	:
 endef
 
 define Package/zoneinfo-simple/install
