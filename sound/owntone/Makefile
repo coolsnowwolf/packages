@@ -58,7 +58,6 @@ CONFIGURE_ARGS += \
 	--without-libevent_pthreads
 
 TARGET_CFLAGS += $(FPIC)
-TARGET_LDFLAGS += -Wl,-rpath-link,$(STAGING_DIR)/usr/lib
 
 define Package/owntone/install
 	$(INSTALL_DIR) $(1)/usr/sbin
