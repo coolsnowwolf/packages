@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=nut
-PKG_VERSION:=2.7.4
-PKG_RELEASE:=23
+PKG_VERSION:=2.8.0
+PKG_RELEASE:=$(AUTORELEASE)
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=http://www.networkupstools.org/source/2.7/
-PKG_HASH:=980e82918c52d364605c0703a5dcf01f74ad2ef06e3d365949e43b7d406d25a7
+PKG_SOURCE_URL:=http://www.networkupstools.org/source/2.8/
+PKG_HASH:=c3e5a708da797b7c70b653d37b1206a000fcb503b85519fe4cdf6353f792bfe5
 PKG_LICENSE:=GPL-2.0-or-later GPL-3.0-or-later GPL-1.0-or-later Artistic-1.0-Perl
 PKG_LICENSE_FILES:=LICENSE-GPL2 LICENSE-GPL3 COPYING
 PKG_FIXUP:=autoreconf
@@ -24,6 +24,7 @@ PKG_CONFIG_DEPENDS:= \
 	CONFIG_NUT_DRIVER_SNMP \
 	CONFIG_NUT_DRIVER_USB \
 	CONFIG_NUT_DRIVER_SERIAL \
+	CONFIG_NUT_DRIVER_NEON \
 	CONFIG_NUT_SSL \
 	CONFIG_PACKAGE_nut-web-cgi
 
@@ -98,6 +99,7 @@ define Package/nut-common
 	DEPENDS:= nut \
 		+NUT_DRIVER_SNMP:libnetsnmp \
 		+NUT_DRIVER_USB:libusb-compat \
+		+NUT_DRIVER_NEON:libneon \
 		+NUT_SSL:libopenssl
 endef
 
@@ -369,6 +371,7 @@ define DriverPackage
 		$(if $(filter $(1),snmp),DEPENDS+= @NUT_DRIVER_SNMP)
 		$(if $(filter $(1),usb),DEPENDS+= @NUT_DRIVER_USB)
 		$(if $(filter $(1),serial),DEPENDS+= @NUT_DRIVER_SERIAL)
+                $(if $(filter $(1),neon),DEPENDS+= @NUT_DRIVER_NEON)
         endef
 	# Deliberately empty description in order to trigger a build failure.
 	# It should be overridden by the list below, and when updating to a
@@ -396,7 +399,7 @@ endef
 SERIAL_DRIVERLIST = al175 bcmxcp belkin belkinunv bestfcom	\
  bestfortress bestuferrups bestups dummy-ups etapro everups	 \
  gamatronic genericups isbmex liebert liebert-esp2 masterguard metasys	\
- oldmge-shut mge-utalk microdowell mge-shut oneac optiups powercom rhino	 \
+ mge-utalk microdowell mge-shut oneac optiups powercom rhino	 \
  safenet skel solis tripplite tripplitesu upscode2 victronups powerpanel \
  blazer_ser clone clone-outlet ivtscd apcsmart apcsmart-old apcupsd-ups riello_ser	\
  nutdrv_qx
@@ -405,6 +408,7 @@ USB_LIBUSB_DRIVERLIST = usbhid-ups bcmxcp_usb tripplite_usb \
  blazer_usb richcomm_usb riello_usb \
  nutdrv_atcl_usb \
  nutdrv_qx
+NEONXML_DRIVERLIST = netxml-ups
 # END: DO NOT EDIT!
 SERIAL_DRIVERLIST_IGNORE:=skel clone-outlet nutdrv_qx
 # nutdrv_qx can be either USB or serial. Given most routers have USB
@@ -417,6 +421,7 @@ SERIAL_DRIVERLIST_IGNORE:=skel clone-outlet nutdrv_qx
 $(foreach d,$(filter-out $(SERIAL_DRIVERLIST_IGNORE),$(SERIAL_DRIVERLIST)),$(eval $(call DriverPackage,serial,$(d))))
 $(foreach d,$(SNMP_DRIVERLIST),$(eval $(call DriverPackage,snmp,$(d))))
 $(foreach d,$(USB_LIBUSB_DRIVERLIST),$(eval $(call DriverPackage,usb,$(d))))
+$(foreach d,$(NEONXML_DRIVERLIST),$(eval $(call DriverPackage,neon,$(d))))
 
 $(eval $(call DriverDescription,serial,al175,\
 	Driver for Eltek UPS models with AL175 alarm module))
@@ -454,8 +459,6 @@ $(eval $(call DriverDescription,serial,masterguard,\
 	Driver for Masterguard UPS equipment))
 $(eval $(call DriverDescription,serial,metasys,\
 	Driver for Meta System UPS equipment))
-$(eval $(call DriverDescription,serial,oldmge-shut,\
-	Driver for SHUT Protocol UPS equipment, deprecated, use mge-shut))
 $(eval $(call DriverDescription,serial,mge-utalk,\
 	Driver for MGE UPS SYSTEMS UTalk protocol equipment))
 $(eval $(call DriverDescription,serial,microdowell,\
@@ -516,6 +519,11 @@ $(eval $(call DriverDescription,usb,nutdrv_atcl_usb,\
 	Driver for ATCL FOR UPS equipment))
 $(eval $(call DriverDescription,usb,nutdrv_qx,\
 	Driver for Q* protocol serial and USB based UPS equipment))
+$(eval $(call DriverDescription,neon,netxml-ups,\
+        Driver for NetXML based UPS equipment))
+
+CONFIGURE_VARS += \
+	ac_cv_path_AR=$(TARGET_AR)
 
 CONFIGURE_ARGS += \
 	--sysconfdir=/etc/nut \
@@ -526,15 +534,17 @@ CONFIGURE_ARGS += \
 	--$(if $(CONFIG_NUT_DRIVER_SNMP),with,without)-snmp \
 	--$(if $(CONFIG_NUT_DRIVER_SERIAL),with,without)-serial \
 	--without-doc \
-	--without-neon \
+        --$(if $(CONFIG_NUT_DRIVER_NEON),with,without)-neon \
 	--without-powerman \
 	--without-wrap \
 	--with-hotplug-dir=/etc/hotplug \
 	--with$(if $(CONFIG_PACKAGE_nut-web-cgi),,out)-cgi \
 	--without-ipmi \
 	--without-freeipmi \
+	--without-linux-i2c \
 	--$(if $(CONFIG_NUT_SSL),with,without)-ssl $(if $(CONFIG_NUT_SSL),--with-openssl) \
 	--without-libltdl \
+	--without-macosx_ups \
 	--with-statepath=/var/run/nut \
 	--with-drvpath=/lib/nut \
 	--with-user=root \
@@ -566,3 +576,4 @@ $(eval $(call BuildPackage,nut-avahi-service))
 $(foreach d,$(filter-out $(SERIAL_DRIVERLIST_IGNORE),$(SERIAL_DRIVERLIST)),$(eval $(call BuildPackage,nut-driver-$(d))))
 $(foreach d,$(SNMP_DRIVERLIST),$(eval $(call BuildPackage,nut-driver-$(d))))
 $(foreach d,$(USB_LIBUSB_DRIVERLIST),$(eval $(call BuildPackage,nut-driver-$(d))))
+$(foreach d,$(NEONXML_DRIVERLIST),$(eval $(call BuildPackage,nut-driver-$(d))))
