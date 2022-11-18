@@ -1,12 +1,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=dnsdist
-PKG_VERSION:=1.6.0
+PKG_VERSION:=1.7.3
 PKG_RELEASE:=$(AUTORELEASE)
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
 PKG_SOURCE_URL:=https://downloads.powerdns.com/releases/
-PKG_HASH:=a7783a04d8d4ad2b0168ffaaf85ef95d5f557057b0462280684dd799d0cdd292
+PKG_HASH:=7eaf6fac2f26565c5d8658d42a213799e05f4d3bc68e7c716e7174df41315886
 
 PKG_MAINTAINER:=Peter van Dijk <peter.van.dijk@powerdns.com>
 PKG_LICENSE:=GPL-2.0-only
@@ -56,6 +56,13 @@ menu "Configuration"
 			"Enables DNS over HTTPS Support for dnsdist"
 		default y
 
+	config DNSDIST_DNS_OVER_HTTPS_OUTGOING
+	depends on !DNSDIST_NOSSL
+		bool "Outgoing DNS over HTTPS Support"
+		help
+			"Enables Outgoing DNS over HTTPS Support for dnsdist"
+		default y
+
 	config DNSDIST_DNS_OVER_TLS
 	depends on !DNSDIST_NOSSL
 		bool "DNS over TLS Support"
@@ -96,6 +103,7 @@ define Package/dnsdist
   TITLE:=dnsdist DNS-, DOS- and abuse-aware loadbalancer
   DEPENDS:= \
 	  +DNSDIST_DNS_OVER_HTTPS:libh2o-evloop \
+	  +DNSDIST_DNS_OVER_HTTPS_OUTGOING:libnghttp2 \
 	  +DNSDIST_GNUTLS:libgnutls \
 	  +DNSDIST_OPENSSL:libopenssl \
 	  +DNSDIST_NET_SNMP:libnetsnmp \
@@ -107,7 +115,7 @@ define Package/dnsdist
 	  +libedit \
 	  +libstdcpp \
 	  +lmdb \
-	  +liblua \
+	  +luajit \
 	  +tinycdb
   URL:=https://dnsdist.org/
 endef
@@ -135,9 +143,8 @@ DISABLE_NLS:=
 TARGET_CXX+=-std=c++17
 
 CONFIGURE_ARGS+= \
-	--enable-option-checking=fatal \
 	--with-pic \
-	--with-lua=lua \
+	--with-lua=luajit \
 	$(if $(CONFIG_DNSDIST_SODIUM),--enable-dnscrypt --with-libsodium,--disable-dnscrypt --without-libsodium) \
 	$(if $(CONFIG_DNSDIST_DNSTAP),--enable-dnstap=yes,--enable-dnstap=no) \
 	$(if $(CONFIG_DNSDIST_RE2),--with,--without)-re2 \
@@ -145,7 +152,8 @@ CONFIGURE_ARGS+= \
 	$(if $(CONFIG_DNSDIST_GNUTLS),--with,--without)-gnutls \
 	$(if $(CONFIG_DNSDIST_OPENSSL),--with,--without)-libssl \
 	$(if $(CONFIG_DNSDIST_DNS_OVER_TLS),--enable-dns-over-tls,) \
-	$(if $(CONFIG_DNSDIST_DNS_OVER_HTTPS),--enable-dns-over-https,)
+	$(if $(CONFIG_DNSDIST_DNS_OVER_HTTPS),--enable-dns-over-https,) \
+	$(if $(CONFIG_DNSDIST_DNS_OVER_HTTPS_OUTGOING),--with,--without)-nghttp2
 
 define Package/dnsdist/install
 	$(INSTALL_DIR) $(1)/etc
