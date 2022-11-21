@@ -336,6 +336,7 @@ CONFIGURE_ARGS +=			\
 	--disable-bsd-user		\
 	--disable-linux-user		\
 	--enable-system			\
+	--enable-slirp=system		\
 
 # accel
 CONFIGURE_ARGS +=			\
