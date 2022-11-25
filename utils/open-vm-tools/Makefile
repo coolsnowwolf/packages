@@ -39,6 +39,7 @@ $(call Package/open-vm-tools/Default)
 	+glib2 \
 	+libpthread \
 	+libtirpc \
+	+libmspack \
 	+libdnet
   TITLE:=open-vm-tools
   URL:=https://github.com/vmware/open-vm-tools
@@ -66,7 +67,6 @@ CONFIGURE_ARGS+= \
 	--disable-multimon \
 	--disable-docs \
 	--disable-tests \
-	--enable-deploypkg=no \
 	--without-gtkmm \
 	--without-gtkmm3 \
 	--without-xerces \
@@ -114,6 +114,7 @@ define Package/open-vm-tools/install
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libguestlib.so* $(1)/lib/
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libhgfs.so* $(1)/lib/
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libvmtools.so* $(1)/lib/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libDeployPkg.so* $(1)/lib/
 
 	$(INSTALL_DIR) $(1)/usr/lib/open-vm-tools/plugins/common/
 	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/lib/open-vm-tools/plugins/common/libhgfsServer.so $(1)/usr/lib/open-vm-tools/plugins/common/
@@ -124,6 +125,7 @@ define Package/open-vm-tools/install
 	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/lib/open-vm-tools/plugins/vmsvc/libpowerOps.so $(1)/usr/lib/open-vm-tools/plugins/vmsvc/
 	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/lib/open-vm-tools/plugins/vmsvc/libtimeSync.so $(1)/usr/lib/open-vm-tools/plugins/vmsvc/
 	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/lib/open-vm-tools/plugins/vmsvc/libvmbackup.so $(1)/usr/lib/open-vm-tools/plugins/vmsvc/
+	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/lib/open-vm-tools/plugins/vmsvc/libdeployPkgPlugin.so $(1)/usr/lib/open-vm-tools/plugins/vmsvc/
 
 	$(INSTALL_DIR) $(1)/etc/hotplug.d/block/
 	$(INSTALL_BIN) ./files/vmware-scsi.hotplug $(1)/etc/hotplug.d/block/80-vmware-scsi
