@@ -98,8 +98,12 @@ define Package/iperf3-ssl/install
 endef
 
 define Package/libiperf3/install
-	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libiperf.so.* $(1)/usr/lib
+	ifeq ($(BUILD_VARIANT),ssl)
+		
+	else
+		$(INSTALL_DIR) $(1)/usr/lib
+		$(CP) $(PKG_INSTALL_DIR)/usr/lib/libiperf.so.* $(1)/usr/lib
+	endif
 endef
 
 $(eval $(call BuildPackage,iperf3))
