@@ -52,5 +52,10 @@ define Package/gowebdav/install
 	$(INSTALL_CONF) $(CURDIR)/files/webdav.yaml $(1)/etc/webdav/webdav.yaml
 endef
 
+define Package/$(PKG_NAME)/conffiles
+/etc/config/webdav
+/etc/webdav/webdav.yaml
+endef
+
 $(eval $(call GoBinPackage,gowebdav))
 $(eval $(call BuildPackage,gowebdav))
