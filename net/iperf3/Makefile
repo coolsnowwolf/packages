@@ -56,7 +56,7 @@ endef
 
 TARGET_CFLAGS += -D_GNU_SOURCE
 
-ifeq ($(BUILD_VARIANT),ssl)
+ifeq ($(BUILD_VARIANT), ssl)
 	CONFIGURE_ARGS += --with-openssl="$(STAGING_DIR)/usr" --disable-shared
 else
 	CONFIGURE_ARGS += --without-openssl
