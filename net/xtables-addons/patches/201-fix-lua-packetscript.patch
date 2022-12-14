@@ -71,7 +71,7 @@
 @@ -8,7 +8,6 @@
  #define llimits_h
  
- //#include <stddef.h>
+ #include <stddef.h>
 -#include <limits.h>
  
  #include "lua.h"
@@ -82,7 +82,7 @@
  ** See Copyright Notice in lua.h
  */
  
--//#include <stdarg.h>
+-#include <stdarg.h>
 -#include <math.h>
 -#include <assert.h>
  #include <string.h>
