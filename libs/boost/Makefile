@@ -389,7 +389,7 @@ ifeq ($(word 1,$(subst ., ,$(call qstrip,$(CONFIG_GCC_VERSION)))),5)
 else ifneq ($(filter-out 6 7 8 9,$(word 1,$(subst ., ,$(call qstrip,$(CONFIG_GCC_VERSION))))),)
     EXTRA_CXXFLAGS += -std=gnu++17
 else
-    EXTRA_CXXFLAGS += -std=gnu++20
+    EXTRA_CXXFLAGS += -std=gnu++2a
 endif
 
 ifneq ($(findstring mips,$(ARCH)),)
