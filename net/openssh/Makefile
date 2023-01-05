@@ -173,7 +173,7 @@ CONFIGURE_ARGS += \
 	--without-kerberos5 \
 	--with-stackprotect \
 	--with$(if $(CONFIG_OPENSSL_ENGINE),,out)-ssl-engine \
-	--with$(if $(CONFIG_OPENSSH_LIBFIDO2),,out)-security-key-builtin
+	--with$(if $(CONFIG_OPENSSH_LIBFIDO2),,out)-security-key-builtin \
 	--with-sandbox=rlimit
 	
 ifeq ($(BUILD_VARIANT),with-pam)
