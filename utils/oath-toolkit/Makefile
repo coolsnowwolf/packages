@@ -34,7 +34,7 @@ define Package/oath-toolkit
   CATEGORY:=Utilities
   TITLE:=Toolkit for building one-time password authentication
   URL:=http://www.nongnu.org/oath-toolkit/index.html
-  DEPENDS:=
+  DEPENDS:= +libpam
 endef
 
 define Package/oath-toolkit/description
