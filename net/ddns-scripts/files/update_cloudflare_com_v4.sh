@@ -27,7 +27,7 @@
 [ $use_https -eq 0 ] && use_https=1	# force HTTPS
 
 # used variables
-local __HOST __DOMAIN __TYPE __URLBASE __PRGBASE __RUNPROG __DATA __IPV6 __ZONEID __RECID __PROXIED
+local __HOST __DOMAIN __FULLDOMAIN __TYPE __URLBASE __PRGBASE __RUNPROG __DATA __IPV6 __ZONEID __RECID __PROXIED
 local __URLBASE="https://api.cloudflare.com/client/v4"
 local __TTL=120
 
@@ -37,6 +37,11 @@ local __TTL=120
 __HOST="${domain%%@*}"
 __DOMAIN="${domain#*@}"
 [ -z "$__HOST" -o "$__HOST" == "$__DOMAIN" ] && __HOST="@"
+if [ "$__HOST" = "@" ]; then
+__FULLDOMAIN="${__DOMAIN}"
+else
+__FULLDOMAIN="${__HOST}.${__DOMAIN}"
+fi
 
 # set record type
 [ $use_ipv6 -eq 0 ] && __TYPE="A" || __TYPE="AAAA"
@@ -135,12 +140,12 @@ __ZONEID=$(grep -o '"id":\s*"[^"]*' $DATFILE | grep -o '[^"]*$' | head -1)
 }
 
 # read record id for A or AAAA record of host.domain.TLD
-__RUNPROG="$__PRGBASE --request GET '$__URLBASE/zones/$__ZONEID/dns_records?name=${__HOST}.${__DOMAIN}&type=$__TYPE'"
+__RUNPROG="$__PRGBASE --request GET '$__URLBASE/zones/$__ZONEID/dns_records?name=${__FULLDOMAIN}&type=$__TYPE'"
 cloudflare_transfer || return 1
 # extract record id
 __RECID=$(grep -o '"id":\s*"[^"]*' $DATFILE | grep -o '[^"]*$' | head -1)
 [ -z "$__RECID" ] && {
-	write_log 4 "Could not detect 'record id' for host.domain.tld: '${__HOST}.${__DOMAIN}'"
+	write_log 4 "Could not detect 'record id' for host.domain.tld: '${__FULLDOMAIN}'"
 	return 127
 }
 
@@ -177,7 +182,7 @@ __PROXIED=$(grep -o '"proxied":\s*[^",]*' $DATFILE | grep -o '[^:]*$')
 
 # use file to work around " needed for json
 cat > $DATFILE << EOF
-{"id":"$__ZONEID","type":"$__TYPE","name":"${__HOST}.${__DOMAIN}","content":"$__IP","ttl":$__TTL,"proxied":$__PROXIED}
+{"id":"$__ZONEID","type":"$__TYPE","name":"${__FULLDOMAIN}","content":"$__IP","ttl":$__TTL,"proxied":$__PROXIED}
 EOF
 
 # let's complete transfer command
