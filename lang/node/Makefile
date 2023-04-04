@@ -6,12 +6,6 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=node
 
-ifeq ($(CONFIG_NODEJS_10),y)
-PKG_VERSION:=v10.24.1
-PKG_RELEASE:=3
-PKG_HASH:=d72fc2c244603b4668da94081dc4d6067d467fdfa026e06a274012f16600480c
-PATCH_DIR:=./patches/v10.x
-else
 ifeq ($(CONFIG_NODEJS_18),y)
 PKG_VERSION:=v18.15.0
 PKG_RELEASE:=1
@@ -30,11 +24,10 @@ PKG_RELEASE:=1
 PKG_HASH:=458ec092e60ad700ddcf079cb63d435c15da4c7bb3d3f99b9a8e58a99e54075e
 PATCH_DIR:=./patches/v14.x
 else
-PKG_VERSION:=v12.22.1
-PKG_RELEASE:=4
-PKG_HASH:=dd650df7773a6ed3e390320ba51ef33cba6499f0e9397709ea3d1debdcbcb989
+PKG_VERSION:=v12.14.0
+PKG_RELEASE:=1
+PKG_HASH:=088a217ba2af641b8cc15be29f6e2956b8a33e6badb85596bbc2cdea9df9be71
 PATCH_DIR:=./patches/v12.x
-endif
 endif
 endif
 endif
@@ -105,9 +98,6 @@ define Package/node/config
 		help
 		 Select node.js version.
 		 The host package version is also the same.
-
-		config NODEJS_10
-			bool "10.x End-of-life : NO LONGER SUPPORTED"
 
 		config NODEJS_12
 			bool "12.x Maintenance LTS"
