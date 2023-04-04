@@ -23700,9 +23700,9 @@ diff -urN a/deps/openssl/openssl_asm.gypi b/deps/openssl/openssl_asm.gypi
 +      'includes': ['config/archs/linux-mips/asm/openssl.gypi'],
 +    }, 'target_arch=="mipsel" and OS=="linux"', {
 +      'includes': ['config/archs/linux-mipsel/asm/openssl.gypi'],
+     }, 'target_arch=="arm64" and OS=="mac"', {
+       'includes': ['config/archs/darwin64-arm64-cc/asm/openssl.gypi'],
      }, 'target_arch=="ia32" and OS=="freebsd"', {
-       'includes': ['config/archs/BSD-x86/asm/openssl.gypi'],
-     }, 'target_arch=="ia32" and OS=="linux"', {
 diff -urN a/deps/openssl/openssl-cl_asm.gypi b/deps/openssl/openssl-cl_asm.gypi
 --- a/deps/openssl/openssl-cl_asm.gypi	2019-12-17 16:05:03.000000000 +0900
 +++ b/deps/openssl/openssl-cl_asm.gypi	2019-12-25 13:49:19.996298773 +0900
