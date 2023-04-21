@@ -21,8 +21,11 @@ set_driver_values() {
 	for varname in "$@"; do
 		local value
 		json_get_var value "$varname"
-
-		[ -n "$value" ] && echo "$value" > /sys/class/net/"$link"/bonding/"$varname"
+		[ "$varname" = 'num_grat_arp__num_unsol_na' ] && [ ! -f /sys/class/net/"$link"/bonding/"$varname" ] && {
+				[ -n "$value" ] && echo "$value" > /sys/class/net/"$link"/bonding/num_grat_arp
+				[ -n "$value" ] && echo "$value" > /sys/class/net/"$link"/bonding/num_unsol_na
+		}
+		[ -n "$value" ] && [ -f /sys/class/net/"$link"/bonding/"$varname" ] && echo "$value" > /sys/class/net/"$link"/bonding/"$varname"
 	done
 }
 
