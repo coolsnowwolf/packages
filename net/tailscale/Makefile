@@ -63,7 +63,6 @@ Package/tailscaled/description:=$(Package/tailscale/description)
 
 define Package/tailscaled/conffiles
 /etc/config/tailscale
-/etc/tailscale/tailscaled.state
 endef
 
 GO_IPTABLES_VERSION:=0.6.0
@@ -96,8 +95,8 @@ endef
 define Package/tailscaled/install
 	$(INSTALL_DIR) $(1)/usr/sbin $(1)/etc/init.d $(1)/etc/config
 	$(INSTALL_BIN) $(GO_PKG_BUILD_BIN_DIR)/tailscaled $(1)/usr/sbin
-	$(INSTALL_BIN) ./files//tailscale.init $(1)/etc/init.d/tailscale
-	$(INSTALL_DATA) ./files//tailscale.conf $(1)/etc/config/tailscale
+	$(INSTALL_BIN) ./files/tailscale.init $(1)/etc/init.d/tailscale
+	$(INSTALL_DATA) ./files/tailscale.conf $(1)/etc/config/tailscale
 endef
 
 $(eval $(call BuildPackage,tailscale))
