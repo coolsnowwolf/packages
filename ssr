@@ -1,0 +1,5 @@
+mkdir openwrt-packages
+cd openwrt-packages
+git clone https://github.com/maxlicheng/luci-app-ssr-plus.git
+cd ../..
+git pull
