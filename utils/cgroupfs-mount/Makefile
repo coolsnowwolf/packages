@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=cgroupfs-mount
-PKG_RELEASE:=2
+PKG_RELEASE:=3
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/tianon/$(PKG_NAME)
@@ -17,7 +17,7 @@ define Package/cgroupfs-mount/config
 	config CGROUPFS_MOUNT_KERNEL_CGROUPS
 		bool "Enable kernel cgroups support"
 		depends on PACKAGE_cgroupfs-mount
-		default y if ( DOCKER_KERNEL_OPTIONS || LXC_KERNEL_OPTIONS )
+		default y
 		select KERNEL_CGROUPS
 endef
 
