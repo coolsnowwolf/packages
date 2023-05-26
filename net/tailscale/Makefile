@@ -17,6 +17,7 @@ PKG_HASH:=09de9bacda98de8d733cff162572b7eac857d13db783776ba2a2450a44ecc5e9
 
 PKG_MAINTAINER:=Jan Pavlinec <jan.pavlinec1@gmail.com>
 PKG_LICENSE:=BSD-3-Clause
+
 PKG_LICENSE_FILES:=LICENSE
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/tailscale-$(PKG_VERSION)
@@ -28,7 +29,7 @@ GO_PKG:=\
         tailscale.com/cmd/tailscale \
         tailscale.com/cmd/tailscaled
 GO_PKG_LDFLAGS:=-X 'tailscale.com/version.Long=$(PKG_VERSION)-$(PKG_RELEASE) (OpenWrt)'
-GO_PKG_LDFLAGS_X:=tailscale.com/version.Short=$(PKG_VERSION)-$(PKG_RELEASE)
+GO_PKG_LDFLAGS_X:=tailscale.com/version.Short=$(PKG_VERSION)
 
 include $(INCLUDE_DIR)/package.mk
 include ../../lang/golang/golang-package.mk
