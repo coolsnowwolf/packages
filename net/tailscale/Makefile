@@ -17,7 +17,6 @@ PKG_HASH:=09de9bacda98de8d733cff162572b7eac857d13db783776ba2a2450a44ecc5e9
 
 PKG_MAINTAINER:=Jan Pavlinec <jan.pavlinec1@gmail.com>
 PKG_LICENSE:=BSD-3-Clause
-
 PKG_LICENSE_FILES:=LICENSE
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/tailscale-$(PKG_VERSION)
