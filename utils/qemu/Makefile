@@ -9,10 +9,10 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=qemu
-PKG_VERSION:=7.2.0
+PKG_VERSION:=7.2.1
 PKG_RELEASE:=1
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
-PKG_HASH:=5b49ce2687744dad494ae90a898c52204a3406e84d072482a1e1be854eeb2157
+PKG_HASH:=8c85699acf9d7a43a5fe29a64cdd56370b0c2d1ad074baf7098a824d17aad73b
 PKG_SOURCE_URL:=http://download.qemu.org/
 PKG_LICENSE:=GPL-2.0-only
 PKG_LICENSE_FILES:=LICENSE tcg/LICENSE
@@ -67,6 +67,7 @@ define Package/qemu-ga/install
 endef
 
 PKG_CONFIG_DEPENDS += CONFIG_PACKAGE_qemu-ga
+PKG_CONFIG_DEPENDS += CONFIG_PACKAGE_libaio
 
 
 define Package/qemu-bridge-helper
@@ -92,7 +93,7 @@ define Package/qemu-img
  SUBMENU:=Virtualization
  TITLE:=QEMU Image utility
  URL:=http://www.qemu.org
- DEPENDS:=+glib2 $(QEMU_DEPS_IN_HOST)
+ DEPENDS:=+glib2 +libaio +KERNEL_IO_URING:liburing $(QEMU_DEPS_IN_HOST)
 endef
 
 define Package/qemu-img/install
@@ -107,7 +108,7 @@ define Package/qemu-nbd
  SUBMENU:=Virtualization
  TITLE:=QEMU Network Block Device Utility
  URL:=http://www.qemu.org
- DEPENDS:=+glib2 $(QEMU_DEPS_IN_HOST) +kmod-nbd
+ DEPENDS:=+glib2 +libaio +KERNEL_IO_URING:liburing $(QEMU_DEPS_IN_HOST) +kmod-nbd
 endef
 
 define Package/qemu-nbd/install
@@ -191,7 +192,7 @@ define qemu-target
     SUBMENU:=Virtualization
     TITLE:=QEMU target $(1)
     URL:=http://www.qemu.org
-    DEPENDS:= +glib2 +libpthread +zlib +libbpf $(QEMU_DEPS_IN_HOST) $(qemu-target-$(1)-deps) \
+    DEPENDS:= +glib2 +libpthread +zlib +libbpf +libaio +KERNEL_IO_URING:liburing $(QEMU_DEPS_IN_HOST) $(qemu-target-$(1)-deps) \
 	+QEMU_UI_VNC:qemu-keymaps \
 	+QEMU_UI_VNC:libpng \
 	+QEMU_UI_VNC_JPEG:libjpeg \
@@ -395,8 +396,8 @@ CONFIGURE_ARGS +=			\
 	--disable-libpmem		\
 	--disable-libssh		\
 	--$(if $(CONFIG_QEMU_DEV_USB),enable,disable)-libusb		\
-	--disable-linux-aio		\
-	--disable-linux-io-uring	\
+	--$(if $(CONFIG_KERNEL_AIO),enable,disable)-linux-aio		\
+	--$(if $(CONFIG_KERNEL_IO_URING),enable,disable)-linux-io-uring	\
 	--disable-lzfse			\
 	--disable-lzo			\
 	--disable-modules		\
