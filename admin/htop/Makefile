@@ -60,7 +60,7 @@ CONFIGURE_ARGS += \
 	--enable-affinity \
 	--disable-capabilities \
 	--disable-delayacct \
-	--disable-unicode \
+	--enable-unicode \
 	--disable-unwind \
 	--disable-hwloc
 
