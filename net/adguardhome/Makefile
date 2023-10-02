@@ -6,13 +6,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=adguardhome
-PKG_VERSION:=0.107.25
+PKG_VERSION:=0.107.36
 PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_VERSION:=v$(PKG_VERSION)
 PKG_SOURCE_URL:=https://github.com/AdguardTeam/AdGuardHome
-PKG_MIRROR_HASH:=609e991f0d03c1541e02fc656f8abea686e64ed350729b85ea87fe25640dd03a
+PKG_MIRROR_HASH:=6f32717df3654432d0c50ee730f0eef3ec806a966508f5cd82899077f1e086c8
 
 PKG_LICENSE:=GPL-3.0-only
 PKG_LICENSE_FILES:=LICENSE.txt
@@ -20,7 +20,7 @@ PKG_MAINTAINER:=Dobroslaw Kijowski <dobo90@gmail.com>
 
 PKG_BUILD_DEPENDS:=golang/host node/host node-yarn/host
 PKG_BUILD_PARALLEL:=1
-PKG_USE_MIPS16:=0
+PKG_BUILD_FLAGS:=no-mips16
 
 GO_PKG:=github.com/AdguardTeam/AdGuardHome
 GO_PKG_BUILD_PKG:=github.com/AdguardTeam/AdGuardHome
