@@ -64,10 +64,10 @@ endif
 MESON_ARGS += \
 	-Dlegacy_level=7 \
 	-Ddebug_level=0 \
-        -Dzlib=disabled \ 
-         -Dlzma=disabled \ 
-         -Dlz4=disabled \ 
-         -Db_lto=true
+        -Dzlib=disabled \
+        -Dlzma=disabled \
+        -Dlz4=disabled \
+        -Db_lto=true
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include
