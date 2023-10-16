@@ -1,198 +1,166 @@
-<!-- markdownlint-disable -->
-
-# DNS based ad/abuse domain blocking
+# dns based ad/abuse domain blocking
 
 ## Description
-A lot of people already use adblocker plugins within their desktop browsers, but what if you are using your (smart) phone, tablet, watch or any other (wlan) gadget!? Getting rid of annoying ads, trackers and other abuse sites (like facebook) is simple: block them with your router. When the DNS server on your router receives DNS requests, you will sort out queries that ask for the resource records of ad servers and return a simple 'NXDOMAIN'. This is nothing but **N**on-e**X**istent Internet or Intranet domain name, if domain name is unable to resolved using the DNS server, a condition called the 'NXDOMAIN' occurred.  
+A lot of people already use adblocker plugins within their desktop browsers, but what if you are using your (smart) phone, tablet, watch or any other wlan gadget...getting rid of annoying ads, trackers and other abuse sites (like facebook ;-) is simple: block them with your router. When the dns server on your router receives dns requests, you will sort out queries that ask for the resource records of ad servers and return a simple 'NXDOMAIN'. This is nothing but **N**on-e**X**istent Internet or Intranet domain name, if domain name is unable to resolved using the dns server, a condition called the 'NXDOMAIN' occurred.  
 
 ## Main Features
-* Support of the following fully pre-configured domain blocklist sources (free for private usage, for commercial use please check their individual licenses)
-
-| Source              | Enabled | Size | Focus            | Information                                                                       |
-| :------------------ | :-----: | :--- | :--------------- | :-------------------------------------------------------------------------------- |
-| adaway              | x       | S    | mobile           | [Link](https://github.com/AdAway/adaway.github.io)                                |
-| adguard             | x       | L    | general          | [Link](https://adguard.com)                                                       |
-| adguard_tracking    |         | S    | tracking         | [Link](https://github.com/AdguardTeam/cname-trackers)                             |
-| android_tracking    |         | S    | tracking         | [Link](https://github.com/Perflyst/PiHoleBlocklist)                               |
-| andryou             |         | L    | compilation      | [Link](https://gitlab.com/andryou/block/-/blob/master/readme.md)                  |
-| anti_ad             |         | L    | compilation      | [Link](https://github.com/privacy-protection-tools/anti-AD/blob/master/README.md) |
-| anudeep             |         | M    | compilation      | [Link](https://github.com/anudeepND/blacklist)                                    |
-| bitcoin             |         | S    | mining           | [Link](https://github.com/hoshsadiq/adblock-nocoin-list)                          |
-| disconnect          | x       | S    | general          | [Link](https://disconnect.me)                                                     |
-| energized           |         | VAR  | compilation      | [Link](https://energized.pro)                                                     |
-| firetv_tracking     |         | S    | tracking         | [Link](https://github.com/Perflyst/PiHoleBlocklist)                               |
-| games_tracking      |         | S    | tracking         | [Link](https://www.gameindustry.eu)                                               |
-| hblock              |         | XL   | compilation      | [Link](https://hblock.molinero.dev)                                               |
-| lightswitch05       |         | XL   | compilation      | [Link](https://github.com/lightswitch05/hosts)                                    |
-| notracking          |         | XL   | tracking         | [Link](https://github.com/notracking/hosts-blocklists)                            |
-| oisd_basic          |         | L    | general          | [Link](https://oisd.nl)                                                           |
-| oisd_nsfw           |         | XL   | general          | [Link](https://oisd.nl)                                                           |
-| oisd_full           |         | XXL  | general          | [Link](https://oisd.nl)                                                           |
-| openphish           |         | S    | phishing         | [Link](https://openphish.com)                                                     |
-| phishing_army       |         | S    | phishing         | [Link](https://phishing.army)                                                     |
-| reg_cn              |         | M    | reg_china        | [Link](https://easylist.to)                                                       |
-| reg_cz              |         | M    | reg_czech+slovak | [Link](https://easylist.to)                                                       |
-| reg_de              |         | M    | reg_germany      | [Link](https://easylist.to)                                                       |
-| reg_es              |         | M    | reg_espania      | [Link](https://easylist.to)                                                       |
-| reg_fi              |         | S    | reg_finland      | [Link](https://github.com/finnish-easylist-addition)                              |
-| reg_fr              |         | S    | reg_france       | [Link](https://forums.lanik.us/viewforum.php?f=91)                                |
-| reg_id              |         | M    | reg_indonesia    | [Link](https://easylist.to)                                                       |
-| reg_it              |         | M    | reg_italy        | [Link](https://easylist.to)                                                       |
-| reg_kr              |         | S    | reg_korea        | [Link](https://github.com/List-KR/List-KR)                                        |
-| reg_nl              |         | M    | reg_netherlands  | [Link](https://easylist.to)                                                       |
-| reg_pl1             |         | S    | reg_poland       | [Link](https://kadantiscam.netlify.com)                                           |
-| reg_pl2             |         | S    | reg_poland       | [Link](https://www.certyficate.it)                                                |
-| reg_ro              |         | M    | reg_romania      | [Link](https://easylist.to)                                                       |
-| reg_ru              |         | M    | reg_russia       | [Link](https://easylist.to)                                                       |
-| reg_se              |         | M    | reg_sweden       | [Link](https://github.com/lassekongo83/Frellwits-filter-lists)                    |
-| reg_vn              |         | S    | reg_vietnam      | [Link](https://bigdargon.github.io/hostsVN)                                       |
-| smarttv_tracking    |         | S    | tracking         | [Link](https://github.com/Perflyst/PiHoleBlocklist)                               |
-| spam404             |         | S    | general          | [Link](https://github.com/Dawsey21)                                               |
-| stevenblack         |         | VAR  | compilation      | [Link](https://github.com/StevenBlack/hosts)                                      |
-| stopforumspam       |         | S    | spam             | [Link](https://www.stopforumspam.com)                                             |
-| utcapitole          |         | VAR  | general          | [Link](https://dsi.ut-capitole.fr/blacklists/index_en.php)                        |
-| wally3k             |         | S    | compilation      | [Link](https://firebog.net/about)                                                 |
-| whocares            |         | M    | general          | [Link](https://someonewhocares.org)                                               |
-| winhelp             |         | S    | general          | [Link](https://winhelp2002.mvps.org)                                              |
-| winspy              |         | S    | win_telemetry    | [Link](https://github.com/crazy-max/WindowsSpyBlocker)                            |
-| yoyo                | x       | S    | general          | [Link](https://pgl.yoyo.org/adservers)                                            |
-
-* List of supported and fully pre-configured adblock sources, already active sources are pre-selected.  
-  <b><em>To avoid OOM errors, please do not select too many lists!</em></b>  
-  List size information with the respective domain ranges as follows:  
-    • <b>S</b> (-10k), <b>M</b> (10k-30k) and <b>L</b> (30k-80k) should work for 128 MByte devices,  
-    • <b>XL</b> (80k-200k) should work for 256-512 MByte devices,  
-    • <b>XXL</b> (200k-) needs more RAM and Multicore support, e.g. x86 or raspberry devices.  
-    • <b>VAR</b> (50k-500k) variable size depending on the selection.  
-* Zero-conf like automatic installation & setup, usually no manual changes needed
-* Simple but yet powerful adblock engine: adblock does not use error prone external iptables rulesets, http pixel server instances and things like that
-* Supports five different DNS backend formats: dnsmasq, unbound, named (bind), kresd or raw (e.g. used by dnscrypt-proxy)
-* Supports four different SSL-enabled download utilities: uclient-fetch, wget, curl or aria2c
-* Supports SafeSearch for google, bing, duckduckgo, yandex, youtube and pixabay
-* Supports RPZ-trigger 'RPZ-CLIENT-IP' to always allow/deny certain DNS clients based on their IP address (currently only supported by bind dns backend)
-* Fast downloads & list processing as they are handled in parallel running background jobs with multicore support
-* Supports a wide range of router modes, even AP modes are supported
-* Full IPv4 and IPv6 support
-* Provides top level domain compression ('tld compression'), this feature removes thousands of needless host entries from the blocklist and lowers the memory footprint for the DNS backend
-* Provides a 'DNS File Reset', where the generated DNS blocklist file will be purged after DNS backend loading to save storage space
-* Source parsing by fast & flexible regex rulesets, all rules and source information are placed in an external/compredd JSON file ('/etc/adblock/adblock.sources.gz') 
-* Overall duplicate removal in generated blocklist file 'adb_list.overall'
-* Additional local blacklist for manual overrides, located in '/etc/adblock/adblock.blacklist'
-* Additional local whitelist for manual overrides, located in '/etc/adblock/adblock.whitelist'
-* Quality checks during blocklist update to ensure a reliable DNS backend service
-* Minimal status & error logging to syslog, enable debug logging to receive more output
-* Procd based init system support ('start', 'stop', 'restart', 'reload', 'enable', 'disable', 'running', 'status', 'suspend',  'resume', 'query', 'report', 'list', 'timer')
-* Auto-Startup via procd network interface trigger or via classic time based startup
-* Suspend & Resume adblock temporarily without blocklist reloading
-* Provides comprehensive runtime information
-* Provides a detailed DNS Query Report with DNS related information about client requests, top (blocked) domains and more
-* Provides a powerful query function to quickly find blocked (sub-)domains, e.g. for whitelisting
-* Provides an easily configurable blocklist update scheduler called 'Refresh Timer'
-* Includes an option to generate an additional, restrictive 'adb_list.jail' to block access to all domains except those listed in the whitelist file. You can use this restrictive blocklist manually e.g. for guest wifi or kidsafe configurations
-* Includes an option to force DNS requests to the local resolver
-* Automatic blocklist backup & restore, these backups will be used in case of download errors and during startup
-* Send notification E-Mails in case of a processing error or if the overall domain count is &le; 0
-* Add new adblock sources on your own, see example below
-* Strong LuCI support, all relevant options are exposed to the web frontend
+* support of the following domain blocklist sources (free for private usage, for commercial use please check their individual licenses):
+    * [adaway](https://adaway.org)
+    * => infrequent updates, approx. 400 entries (enabled by default)
+    * [adguard](https://adguard.com)
+    * => numerous updates on the same day, approx. 12.000 entries
+    * [bitcoin](https://github.com/hoshsadiq/adblock-nocoin-list)
+    * => infrequent updates, approx. 15 entries
+    * [blacklist]()
+    * => static local blacklist, located by default in '/etc/adblock/adblock.blacklist'
+    * [disconnect](https://disconnect.me)
+    * => numerous updates on the same day, approx. 6.500 entries (enabled by default)
+    * [dshield](http://dshield.org)
+    * => daily updates, approx. 4.500 entries
+    * [feodotracker](https://feodotracker.abuse.ch)
+    * => daily updates, approx. 0-10 entries
+    * [hphosts](https://hosts-file.net)
+    * => monthly updates, approx. 50.000 entries
+    * [malwaredomains](http://malwaredomains.com)
+    * => daily updates, approx. 16.000 entries
+    * [malwaredomainlist](http://www.malwaredomainlist.com)
+    * => daily updates, approx. 1.500 entries
+    * [openphish](https://openphish.com)
+    * => numerous updates on the same day, approx. 1.800 entries
+    * [ransomware tracker](https://ransomwaretracker.abuse.ch)
+    * => daily updates, approx. 150 entries
+    * [reg_cn](https://easylist-downloads.adblockplus.org/easylistchina+easylist.txt)
+    * => regional blocklist for China, daily updates, approx. 1.600 entries
+    * [reg_cz](https://raw.githubusercontent.com/qxstyles/turris-hole-czech-block-list/master/turris-hole-czech-block-list)
+    * => regional blocklist for Czechia, maintained by Turris Omnia Users, infrequent updates, approx. 100 entries
+    * [reg_de](https://easylist-downloads.adblockplus.org/easylistgermany+easylist.txt)
+    * => regional blocklist for Germany, daily updates, approx. 9.200 entries
+    * [reg_id](https://easylist-downloads.adblockplus.org/abpindo+easylist.txt)
+    * => regional blocklist for Indonesia, daily updates, approx. 800 entries
+    * [reg_nl](https://easylist-downloads.adblockplus.org/easylistdutch+easylist.txt)
+    * => regional blocklist for the Netherlands, weekly updates, approx. 1300 entries
+    * [reg_pl](http://adblocklist.org)
+    * => regional blocklist for Poland, daily updates, approx. 50 entries
+    * [reg_ro](https://easylist-downloads.adblockplus.org/rolist+easylist.txt)
+    * => regional blocklist for Romania, weekly updates, approx. 600 entries
+    * [reg_ru](https://code.google.com/p/ruadlist)
+    * => regional blocklist for Russia, weekly updates, approx. 2.000 entries
+    * [shallalist](http://www.shallalist.de) (categories "adv" "costtraps" "spyware" "tracker" "warez" enabled by default)
+    * => daily updates, approx. 32.000 entries (a short description of all categories can be found [online](http://www.shallalist.de/categories.html))
+    * [spam404](http://www.spam404.com)
+    * => infrequent updates, approx. 5.000 entries
+    * [sysctl/cameleon](http://sysctl.org/cameleon)
+    * => weekly updates, approx. 21.000 entries
+    * [ut_capitole](https://dsi.ut-capitole.fr/blacklists) (categories "cryptojacking" "ddos" "malware" "phishing" "warez" enabled by default)
+    * => daily updates, approx. 64.000 entries (a short description of all categories can be found [online](https://dsi.ut-capitole.fr/blacklists/index_en.php))
+    * [urlhaus](https://urlhaus.abuse.ch)
+    * => numerous updates on the same day, approx. 3.500 entries
+    * [whocares](http://someonewhocares.org)
+    * => weekly updates, approx. 12.000 entries
+    * [winhelp](http://winhelp2002.mvps.org)
+    * => infrequent updates, approx. 15.000 entries
+    * [winspy](https://github.com/crazy-max/WindowsSpyBlocker)
+    * => infrequent updates, approx. 120 entries
+    * [youtube](https://api.hackertarget.com/hostsearch/?q=googlevideo.com)
+    * => dynamic request API to filter "random" youtube ad domains (experimental!), approx. 150 entries
+    * [yoyo](http://pgl.yoyo.org/adservers)
+    * => weekly updates, approx. 2.500 entries (enabled by default)
+    * [zeus tracker](https://zeustracker.abuse.ch)
+    * => daily updates, approx. 440 entries
+* zero-conf like automatic installation & setup, usually no manual changes needed
+* simple but yet powerful adblock engine: adblock does not use error prone external iptables rulesets, http pixel server instances and things like that
+* supports five different dns backends / blocklist formats: dnsmasq, unbound, named (bind), kresd and dnscrypt-proxy
+* supports six different download utilities: uclient-fetch, wget, curl, aria2c, wget-nossl, busybox-wget
+* Really fast downloads & list processing as they are handled in parallel as background jobs in a configurable 'Download Queue'
+* provides 'http only' mode without installed ssl library for all non-SSL blocklist sources
+* supports a wide range of router modes, even AP modes are supported
+* full IPv4 and IPv6 support
+* provides top level domain compression ('tld compression'), this feature removes thousands of needless host entries from the blocklist and lowers the memory footprint for the dns backend
+* blocklist source parsing by fast & flexible regex rulesets
+* overall duplicate removal in central blocklist 'adb_list.overall'
+* additional whitelist for manual overrides, located by default in /etc/adblock/adblock.whitelist
+* quality checks during blocklist update to ensure a reliable dns backend service
+* minimal status & error logging to syslog, enable debug logging to receive more output
+* procd based init system support (start/stop/restart/reload/suspend/resume/query/status)
+* procd network interface trigger support or classic time based startup
+* keep the dns cache intact after adblock processing (currently supported by unbound, named and kresd)
+* conditional dns backend restarts by old/new blocklist comparison with sha256sum (default) or md5sum
+* suspend & resume adblock actions temporarily without blocklist reloading
+* output comprehensive runtime information via LuCI or via 'status' init command
+* query function to quickly identify blocked (sub-)domains, e.g. for whitelisting
+* strong LuCI support
+* optional: force dns requests to local resolver
+* optional: force overall sort / duplicate removal for low memory devices (handle with care!)
+* optional: automatic blocklist backup & restore, they will be used in case of download errors or during startup in backup mode
+* optional: 'backup mode' to re-use blocklist backups during startup, get fresh lists only via reload or restart action
+* optional: 'Jail' blocklist generation which builds an additional list (/tmp/adb_list.jail) to block access to all domains except those listed in the whitelist file. You can use this restrictive blocklist manually e.g. for guest wifi or kidsafe configurations
+* optional: send notification emails in case of a processing error or if the overall domain count is &le; 0
+* optional: add new adblock sources on your own, see example below
 
 ## Prerequisites
-* [OpenWrt](https://openwrt.org), tested with the stable release series and with the latest rolling snapshot releases.  
-  <b>Please note:</b> Older OpenWrt releases like 18.06.x or 17.01.x are _not_ supported!  
-  <b>Please note:</b> Devices with less than 128 MByte RAM are _not_ supported!  
-* A usual setup with an enabled DNS backend at minimum - dump AP modes without a working DNS backend are _not_ supported
-* A download utility with SSL support: 'wget', 'uclient-fetch' with one of the 'libustream-*' ssl libraries, 'aria2c' or 'curl' is required
-* A certificate store such as 'ca-bundle' or 'ca-certificates', as adblock checks the validity of the SSL certificates of all download sites by default
-* Optional E-Mail notification support: for E-Mail notifications you need to install the additional 'msmtp' package
-* Optional DNS Query Report support: for DNS reporting you need to install the additional package 'tcpdump-mini' or 'tcpdump'
-* Optional support for gnu awk as alternative to the busybox default, install the additional package 'gawk'
+* [OpenWrt](https://openwrt.org), tested with the stable release series (18.06) and with the latest snapshot
+* a usual setup with an enabled dns backend at minimum - dump AP modes without a working dns backend are _not_ supported
+* a download utility:
+    * to support all blocklist sources a full version (with ssl support) of 'wget', 'uclient-fetch' with one of the 'libustream-*' ssl libraries, 'aria2c' or 'curl' is required
+    * for limited devices with real memory constraints, adblock provides also a 'http only' option and supports wget-nossl and uclient-fetch (without libustream-ssl) as well
+    * for more configuration options see examples below
 
 ## Installation & Usage
-* Update your local opkg repository (_opkg update_)
-* Install 'adblock' (_opkg install adblock_). The adblock service is enabled by default
-* Install the LuCI companion package 'luci-app-adblock' (_opkg install luci-app-adblock_)
-* It's strongly recommended to use the LuCI frontend to easily configure all aspects of adblock, the application is located in LuCI under the 'Services' menu
-* Update from a former adblock version is easy. During the update a backup is made of the old configuration '/etc/config/adblock-backup' and replaced by the new config - that's all
+* install 'adblock' (_opkg install adblock_)
+* at minimum configure the appropriate dns backend ('dnsmasq' by default), the download utility and enable the adblock service in _/etc/config/adblock_
+* control the adblock service manually with _/etc/init.d/adblock_ start/stop/restart/reload/suspend/resume/status or use the LuCI frontend
 
-## Adblock CLI Options
-* All important adblock functions are accessible via CLI as well.  
-<pre><code>
-~# /etc/init.d/adblock
-Syntax: /etc/init.d/adblock [command]
+## LuCI adblock companion package
+* for easy management of the various blocklist sources and adblock runtime options you should use the provided LuCI frontend
+* install 'luci-app-adblock' (_opkg install luci-app-adblock_)
+* the application is located in LuCI under 'Services' menu
 
-Available commands:
-	start           Start the service
-	stop            Stop the service
-	restart         Restart the service
-	reload          Reload configuration files (or restart if service does not implement reload)
-	enable          Enable service autostart
-	disable         Disable service autostart
-	enabled         Check if service is started on boot
-	suspend         Suspend adblock processing
-	resume          Resume adblock processing
-	query           &lt;domain&gt; Query active blocklists and backups for a specific domain
-	report          [&lt;search&gt;] Print DNS statistics with an optional search parameter
-	list            [&lt;add&gt;|&lt;add_utc&gt;|&lt;add_eng&gt;|&lt;add_stb&gt;|&lt;remove&gt;|&lt;remove_utc&gt;|&lt;remove_eng&gt;|&lt;remove_stb&gt;] &lt;source(s)&gt; List/Edit available sources
-	timer           [&lt;add&gt; &lt;tasks&gt; &lt;hour&gt; [&lt;minute&gt;] [&lt;weekday&gt;]]|[&lt;remove&gt; &lt;line no.&gt;] List/Edit cron update intervals
-	version         Print version information
-	running         Check if service is running
-	status          Service status
-	trace           Start with syscall trace
-</code></pre>
+## Tweaks
+* **runtime information:** the adblock status is available via _/etc/init.d/adblock status_ (see example below)
+* **debug logging:** for script debugging please set the config option 'adb\_debug' to '1' and check the runtime output with _logread -e "adblock"_
+* **storage expansion:** to process and store all blocklist sources at once it might helpful to enlarge your temp directory with a swap partition => see [OpenWrt Wiki](https://openwrt.org/docs/guide-user/storage/fstab) for further details
+* **add white- / blacklist entries:** add domain white- or blacklist entries to always-allow or -deny certain (sub) domains, by default both lists are empty and located in _/etc/adblock_. Please add one domain per line - ip addresses, wildcards & regex are _not_ allowed (see example below)
+* **backup & restore blocklists:** enable this feature, to restore automatically the latest compressed backup of your blocklists in case of any processing error (e.g. a single blocklist source is not available during update). Please use an (external) solid partition and _not_ your volatile router temp directory for this
+* **download queue size:** for further download & list processing performance improvements you can raise the 'adb\_maxqueue' value, e.g. '8' or '16' should be safe
+* **scheduled list updates:** for a scheduled call of the adblock service add an appropriate crontab entry (see example below)
+* **change startup behaviour:** by default the startup will be triggered by the 'wan' procd interface trigger. Choose 'none' to disable automatic startups, 'timed' to use a classic timeout (default 30 sec.) or select another trigger interface
+* **suspend & resume adblocking:** to quickly switch the adblock service 'on' or 'off', simply use _/etc/init.d/adblock [suspend|resume]_
+* **domain query:** to query the active blocklist for a certain domain, please use the LuCI frontend or run _/etc/init.d/adblock query `<DOMAIN>`_ (see example below)
+* **add new list sources:** you could add new blocklist sources on your own via uci config, all you need is a source url and an awk one-liner (see example below)
+* **disable active dns probing in windows 10:** to prevent a yellow exclamation mark on your internet connection icon (which wrongly means connected, but no internet), please change the following registry key/value from "1" to "0" _HKLM\SYSTEM\CurrentControlSet\Services\NlaSvc\Parameters\Internet\EnableActiveProbing_
 
-## Adblock Config Options
-* Usually the auto pre-configured adblock setup works quite well and no manual overrides are needed
+## Further adblock config options
+* usually the pre-configured adblock setup works quite well and no manual overrides are needed
+* the following options apply to the 'global' config section:
+    * adb\_enabled => main switch to enable/disable adblock service (default: '0', disabled)
+    * adb\_debug => enable/disable adblock debug output (default: '0', disabled)
+    * adb\_fetchutil => name of the used download utility: 'uclient-fetch', 'wget', 'curl', 'aria2c', 'wget-nossl'. 'busybox' (default: 'uclient-fetch')
+    * adb\_fetchparm => special config options for the download utility (default: not set)
+    * adb\_dns => select the dns backend for your environment: 'dnsmasq', 'unbound', 'named', 'kresd' or 'dnscrypt-proxy' (default: 'dnsmasq')
+    * adb\_dnsdir => target directory for the generated blocklist 'adb_list.overall' (default: not set, use dns backend default)
+    * adb\_trigger => set the startup trigger to a certain interface, to 'timed' or to 'none' (default: 'wan')
 
-| Option             | Default                            | Description/Valid Values                                                                       |
-| :----------------- | :--------------------------------- | :--------------------------------------------------------------------------------------------- |
-| adb_enabled        | 1, enabled                         | set to 0 to disable the adblock service                                                        |
-| adb_srcarc         | -, /etc/adblock/adblock.sources.gz | full path to the used adblock source archive                                                   |
-| adb_srcfile        | -, /tmp/adb_sources.json           | full path to the used adblock source file, which has a higher precedence than the archive file |
-| adb_dns            | -, auto-detected                   | 'dnsmasq', 'unbound', 'named', 'kresd' or 'raw'                                                |
-| adb_fetchutil      | -, auto-detected                   | 'uclient-fetch', 'wget', 'curl' or 'aria2c'                                                    |
-| adb_fetchparm      | -, auto-detected                   | manually override the config options for the selected download utility                         |
-| adb_fetchinsecure  | 0, disabled                        | don't check SSL server certificates during download                                            |
-| adb_trigger        | -, not set                         | trigger network interface or 'not set' to use a time-based startup                             |
-| adb_triggerdelay   | 2                                  | additional trigger delay in seconds before adblock processing begins                           |
-| adb_debug          | 0, disabled                        | set to 1 to enable the debug output                                                            |
-| adb_nice           | 0, standard prio.                  | valid nice level range 0-19 of the adblock processes                                           |
-| adb_forcedns       | 0, disabled                        | set to 1 to force DNS requests to the local resolver                                           |
-| adb_dnsdir         | -, auto-detected                   | path for the generated blocklist file 'adb_list.overall'                                       |
-| adb_dnstimeout     | 10                                 | timeout in seconds to wait for a successful DNS backend restart                                |
-| adb_dnsinstance    | 0, first instance                  | set to the relevant dns backend instance used by adblock (dnsmasq only)                        |
-| adb_dnsflush       | 0, disabled                        | set to 1 to flush the DNS Cache before & after adblock processing                              |
-| adb_dnsallow       | -, not set                         | set to 1 to disable selective DNS whitelisting (RPZ-PASSTHRU)                                  |
-| adb_lookupdomain   | example.com                        | external domain to check for a successful DNS backend restart or 'false' to disable this check |
-| adb_portlist       | 53 853 5353                        | space separated list of firewall ports which should be redirected locally                      |
-| adb_report         | 0, disabled                        | set to 1 to enable the background tcpdump gathering process for reporting                      |
-| adb_reportdir      | /tmp                               | path for DNS related report files                                                              |
-| adb_repiface       | -, auto-detected                   | name of the reporting interface or 'any' used by tcpdump                                       |
-| adb_replisten      | 53                                 | space separated list of reporting port(s) used by tcpdump                                      |
-| adb_repchunkcnt    | 5                                  | report chunk count used by tcpdump                                                             |
-| adb_repchunksize   | 1                                  | report chunk size used by tcpdump in MB                                                        |
-| adb_represolve     | 0, disabled                        | resolve reporting IP addresses using reverse DNS (PTR) lookups                                 |
-| adb_backup         | 1, enabled                         | set to 0 to disable the backup function                                                        |
-| adb_backupdir      | /tmp                               | path for adblock backups                                                                       |
-| adb_tmpbase        | /tmp                               | path for all adblock related runtime operations, e.g. downloading, sorting, merging etc.       |
-| adb_safesearch     | 0, disabled                        | set to 1 to enforce SafeSearch for google, bing, duckduckgo, yandex, youtube and pixabay       |
-| adb_safesearchlist | -, not set                         | Limit SafeSearch to certain provider (see above)                                               |
-| adb_safesearchmod  | 0, disabled                        | set to 1 to enable moderate SafeSearch filters for youtube                                     |
-| adb_mail           | 0, disabled                        | set to 1 to enable notification E-Mails in case of a processing errors                         |
-| adb_mailreceiver   | -, not set                         | receiver address for adblock notification E-Mails                                              |
-| adb_mailsender     | no-reply@adblock                   | sender address for adblock notification E-Mails                                                |
-| adb_mailtopic      | adblock&nbsp;notification          | topic for adblock notification E-Mails                                                         |
-| adb_mailprofile    | adb_notify                         | mail profile used in 'msmtp' for adblock notification E-Mails                                  |
-| adb_mailcnt        | 0                                  | minimum domain count to trigger E-Mail notifications                                           |
-| adb_jail           | 0                                  | set to 1 to enable the additional, restrictive 'adb_list.jail' creation                        |
-| adb_jaildir        | /tmp                               | path for the generated jail list                                                               |
+* the following options apply to the 'extra' config section:
+    * adb\_triggerdelay => additional trigger delay in seconds before adblock processing begins (int/default: '2')
+    * adb\_forcedns => force dns requests to local resolver (bool/default: '0', disabled)
+    * adb\_forcesrt => force overall sort on low memory devices with less than 64 MB RAM (bool/default: '0', disabled)
+    * adb\_backup_mode => do not automatically update blocklists during startup, use backups instead (bool/default: '0', disabled)
+    * adb\_maxqueue => size of the download queue to handle downloads & list processing in parallel (int/default: '4')
+    * adb\_jail => builds an additional 'Jail' list (/tmp/adb_list.jail) to block access to all domains except those listed in the whitelist file (bool/default: '0', disabled)
+    * adb\_dnsflush => flush DNS cache after adblock processing, i.e. enable the old restart behavior (bool/default: '0', disabled)
+    * adb\_notify => send notification emails in case of a processing error or if the overall domain count is &le; 0 (bool/default: '0', disabled)
+    * adb\_notifycnt => Raise minimum domain count email notification trigger (int/default: '0')
 
 ## Examples
-**Change the DNS backend to 'unbound':**  
-No further configuration is needed, adblock deposits the final blocklist 'adb_list.overall' in '/var/lib/unbound' by default.  
-To preserve the DNS cache after adblock processing please install the additional package 'unbound-control'.
+**change default dns backend to 'unbound':**
 
-**Change the DNS backend to 'bind':**  
-Adblock deposits the final blocklist 'adb_list.overall' in '/var/lib/bind' by default.  
-To preserve the DNS cache after adblock processing please install the additional package 'bind-rdnc'.
+Adblock deposits the final blocklist 'adb_list.overall' in '/var/lib/unbound' where unbound can find them in its jail.  
+To preserve the DNS cache after adblock processing you need to install 'unbound-control'.  
+  
+**change default dns backend to 'named' (bind):**
+
+Adblock deposits the final blocklist 'adb_list.overall' in '/var/lib/bind'.  
+To preserve the DNS cache after adblock processing you need to install & configure 'bind-rdnc'.  
 To use the blocklist please modify '/etc/bind/named.conf':
 <pre><code>
 in the 'options' namespace add:
@@ -206,24 +174,23 @@ and at the end of the file add:
     allow-transfer { none; };
   };
 </code></pre>
+  
+**change default dns backend to 'kresd':**
 
-**Change the DNS backend to 'kresd':**  
-Adblock deposits the final blocklist 'adb_list.overall' in '/etc/kresd', no further configuration needed.  
-<b>Please note:</b> The knot-resolver (kresd) is only available on Turris devices and does not support the SafeSearch functionality yet.
+The knot-resolver (kresd) is only available on Turris Omnia devices.  
+Adblock deposits the final blocklist 'adb_list.overall' in '/etc/kresd', no further configuration needed.
+  
+**change default dns backend to 'dnscrypt-proxy':**
 
-**Use restrictive jail modes:**  
-You can enable a restrictive 'adb_list.jail' to block access to all domains except those listed in the whitelist file. Usually this list will be generated as an additional list for guest or kidsafe configurations (for a separate dns server instance). If the jail directory points to your primary dns directory, adblock enables the restrictive jail mode automatically (jail mode only).
+The required 'blacklist' option of dnscrypt-proxy is not enabled by default, because the package will be compiled without plugins support.  
+Take a custom OpenWrt build with plugins support to use this feature. Adblock deposits the final blocklist 'adb_list.overall' in '/tmp'.  
+To use the blocklist please modify '/etc/config/dnscrypt-proxy' per instance:
+<pre><code>
+  list blacklist 'domains:/tmp/adb_list.overall'
+</code></pre>
+  
+**enable email notification via msmtp:**
 
-**Manually override the download options:**  
-By default adblock uses the following pre-configured download options:  
-* aria2c: <code>--timeout=20 --allow-overwrite=true --auto-file-renaming=false --log-level=warn --dir=/ -o</code>
-* curl: <code>--connect-timeout 20 --silent --show-error --location -o</code>
-* uclient-fetch: <code>--timeout=20 -O</code>
-* wget: <code>--no-cache --no-cookies --max-redirect=0 --timeout=20 -O</code>
-
-To override the default set 'adb_fetchparm' manually to your needs.
-
-**Enable E-Mail notification via 'msmtp':**  
 To use the email notification you have to install & configure the package 'msmtp'.  
 Modify the file '/etc/msmtprc':
 <pre><code>
@@ -242,70 +209,104 @@ from            dev.adblock@gmail.com
 user            dev.adblock
 password        xxx
 </code></pre>
-Finally enable E-Mail support and add a valid E-Mail receiver address in LuCI.
+Edit the file '/etc/adblock/adblock.notify' and change at least the 'mail_receiver'.  
+Finally make this file executable via 'chmod' and test it directly. If no more errors come up you can comment 'mail_debug', too.
+  
+**receive adblock runtime information:**
 
-**Service status output:**  
-In LuCI you'll see the realtime status in the 'Runtime' section on the overview page.  
-To get the status in the CLI, just call _/etc/init.d/adblock status_ or _/etc/init.d/adblock status\_service_:
 <pre><code>
-~#@blackhole:~# /etc/init.d/adblock status
+/etc/init.d/adblock status
 ::: adblock runtime information
   + adblock_status  : enabled
-  + adblock_version : 4.1.4
-  + blocked_domains : 268355
-  + active_sources  : adaway, adguard, adguard_tracking, android_tracking, bitcoin, disconnect, firetv_tracking, games_t
-                      racking, hblock, oisd_basic, phishing_army, smarttv_tracking, stopforumspam, wally3k, winspy, yoyo
-  + dns_backend     : unbound (unbound-control), /var/lib/unbound
-  + run_utils       : download: /usr/bin/curl, sort: /usr/libexec/sort-coreutils, awk: /bin/busybox
-  + run_ifaces      : trigger: wan, report: br-lan
-  + run_directories : base: /tmp, backup: /mnt/data/adblock-Backup, report: /mnt/data/adblock-Report, jail: /tmp
-  + run_flags       : backup: ✔, flush: ✘, force: ✔, search: ✘, report: ✔, mail: ✔, jail: ✘
-  + last_run        : restart, 3m 17s, 249/73/68, 2022-09-10T13:43:07+02:00
-  + system          : ASUS RT-AX53U, OpenWrt SNAPSHOT r20535-2ca5602864
+  + adblock_version : 3.5.5
+  + overall_domains : 97199 (backup mode)
+  + fetch_utility   : /bin/uclient-fetch (libustream-ssl)
+  + dns_backend     : unbound (/var/lib/unbound)
+  + last_rundate    : 01.09.2018 07:09:16
+  + system_release  : PC Engines APU, OpenWrt SNAPSHOT r7986-dc9388ac55
 </code></pre>
-The 'last\_run' line includes the used start type, the run duration, the memory footprint after DNS backend loading (total/free/available) and the date/time of the last run.  
+  
+**cronjob for a regular block list update (/etc/crontabs/root):**
 
-**Edit, add new adblock sources:**  
-The adblock blocklist sources are stored in an external, compressed JSON file '/etc/adblock/adblock.sources.gz'. 
-This file is directly parsed in LuCI and accessible via CLI, just call _/etc/init.d/adblock list_:
 <pre><code>
-/etc/init.d/adblock list
-::: Available adblock sources
-:::
-    Name                 Enabled   Size   Focus               Info URL
-    ------------------------------------------------------------------
-  + adaway               x         S      mobile              https://adaway.org
-  + adguard              x         L      general             https://adguard.com
-  + andryou              x         L      compilation         https://gitlab.com/andryou/block/-/blob/master/readme.md
-  + bitcoin              x         S      mining              https://github.com/hoshsadiq/adblock-nocoin-list
-  + disconnect           x         S      general             https://disconnect.me
-  + dshield                        XL     general             https://www.dshield.org
-[...]
-  + winhelp                        S      general             http://winhelp2002.mvps.org
-  + winspy               x         S      win_telemetry       https://github.com/crazy-max/WindowsSpyBlocker
-  + yoyo                 x         S      general             https://pgl.yoyo.org
+0 06 * * *    /etc/init.d/adblock reload
+</code></pre>
+  
+**blacklist entry (/etc/adblock/adblock.blacklist):**
+
+<pre><code>
+ads.example.com
+
+This entry blocks the following (sub)domains:
+  http://ads.example.com/foo.gif
+  http://server1.ads.example.com/foo.gif
+  https://ads.example.com:8000/
+
+This entry does not block:
+  http://ads.example.com.ua/foo.gif
+  http://example.com/
+</code></pre>
+  
+**whitelist entry (/etc/adblock/adblock.whitelist):**
+
+<pre><code>
+here.com
+
+This entry removes the following (sub)domains from the blocklist:
+  maps.here.com
+  here.com
+
+This entry does not remove:
+  where.com
+  www.adwhere.com
+</code></pre>
+  
+**query the active blocklist for a certain (sub-)domain, e.g. for whitelisting:**
+
+The query function checks against the submitted (sub-)domain and recurses automatically to the upper top level domain. For every (sub-)domain it returns the first ten relevant results.
+<pre><code>
+/etc/init.d/adblock query www.example.google.com
+::: results for domain 'www.example.google.com'
+  - no match
+::: results for domain 'example.google.com'
+  - no match
+::: results for domain 'google.com'
+  + ads.google.com
+  + adservices.google.com
+  + adwords.google.com
+  + ampcid.google.com
+  + analytics.google.com
+  + gg.google.com
+  + google.com.analytics.kdgsrltkcun.com
+  + googleadapis.l.google.com
+  + id.google.com
+  + pagead-googlehosted.l.google.com
+  + [...]
+</code></pre>
+  
+**add a new blocklist source:**
+
+1. the easy way ...  
+example: https://easylist-downloads.adblockplus.org/rolist+easylist.txt  
+Adblock already supports an easylist source, called 'reg_ru'. To add the additional local easylist as a new source, copy the existing config source section and change only
+the source name, the url and the description - that's all!
+<pre><code>
+config source 'reg_ro'
+  option enabled '0'
+  option adb_src 'https://easylist-downloads.adblockplus.org/rolist+easylist.txt'
+  option adb_src_rset 'BEGIN{FS=\"[|^]\"}/^\|\|([^([:space:]|#|\*|\/).]+\.)+[[:alpha:]]+\^("\\\$third-party")?$/{print tolower(\$3)}'
+  option adb_src_desc 'focus on romanian ads plus generic easylist additions, weekly updates, approx. 9.400 entries'
 </code></pre>
 
-To add new or edit existing sources extract the compressed JSON file _gunzip /etc/adblock/adblock.sources.gz_.  
-A valid JSON source object contains the following required information, e.g.:
-<pre><code>
-	[...]
-	"adaway": {
-		"url": "https://raw.githubusercontent.com/AdAway/adaway.github.io/master/hosts.txt",
-		"rule": "/^127\\.0\\.0\\.1[[:space:]]+([[:alnum:]_-]+\\.)+[[:alpha:]]+([[:space:]]|$)/{print tolower($2)}",
-		"size": "S",
-		"focus": "mobile",
-		"descurl": "https://github.com/AdAway/adaway.github.io"
-	},
-	[...]
-</code></pre>
-Add an unique object name, make the required changes to 'url', 'rule', 'size' and 'descurl' and finally compress the changed JSON file _gzip /etc/adblock/adblock.sources.gz_ to use the new source object in adblock.  
-<b>Please note:</b> if you're going to add new sources on your own, please make a copy of the default file and work with that copy further on, cause the default will be overwritten with every adblock update. To reference your copy set the option 'adb\_srcarc' which points by default to '/etc/adblock/adblock.sources.gz'  
-<b>Please note:</b> when adblock starts, it looks for the uncompressed 'adb\_srcfile', only if this file is not found the archive 'adb\_srcarc' is unpacked once and then the uncompressed file is used
+2. a bit harder ...  
+To add a really new source with different domain/host format you have to write a suitable awk one-liner on your own, so basic awk skills are needed. As a starting point check the already existing awk rulesets 'adb_src_rset' in the config file, probably you need only small changes for your individual list. Download the desired list and test your new awk string locally. The output result should be a sequential list with one domain/host per line - nothing more. If your awk one-liner works quite well, add a new source section to the adblock config file and test the new source.  
 
 ## Support
-Please join the adblock discussion in this [forum thread](https://forum.openwrt.org/t/adblock-support-thread/507) or contact me by mail <dev@brenken.org>
+Please join the adblock discussion in this [forum thread](https://forum.lede-project.org/t/adblock-2-x-support-thread/507) or contact me by mail <dev@brenken.org>  
+
+## Removal
+* stop all adblock related services with _/etc/init.d/adblock stop_
+* optional: remove the adblock package (_opkg remove adblock_)
 
 Have fun!  
-Dirk
-
+Dirk  
