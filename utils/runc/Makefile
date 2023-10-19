@@ -23,11 +23,11 @@ include $(INCLUDE_DIR)/package.mk
 include ../../lang/golang/golang-package.mk
 
 define Package/runc
-	SECTION:=utils
-	CATEGORY:=Utilities
-	TITLE:=runc container runtime
-	URL:=https://www.opencontainers.org/
-	DEPENDS:=$(GO_ARCH_DEPENDS) +KERNEL_SECCOMP_FILTER:libseccomp
+  SECTION:=utils
+  CATEGORY:=Utilities
+  TITLE:=runc container runtime
+  URL:=https://www.opencontainers.org/
+  DEPENDS:=$(GO_ARCH_DEPENDS) +KERNEL_SECCOMP_FILTER:libseccomp
 endef
 
 define Package/runc/description

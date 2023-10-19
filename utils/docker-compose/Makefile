@@ -37,10 +37,10 @@ define Package/docker-compose/description
 endef
 
 define Package/docker-compose/install
-  $(INSTALL_DIR) $(1)/usr/lib/docker/cli-plugins/
-  $(INSTALL_BIN) $(GO_PKG_BUILD_BIN_DIR)/cmd $(1)/usr/lib/docker/cli-plugins/docker-compose
-  $(INSTALL_DIR) $(1)/usr/bin/
-  $(LN) ../lib/docker/cli-plugins/docker-compose $(1)/usr/bin/docker-compose
+	$(INSTALL_DIR) $(1)/usr/lib/docker/cli-plugins/
+	$(INSTALL_BIN) $(GO_PKG_BUILD_BIN_DIR)/cmd $(1)/usr/lib/docker/cli-plugins/docker-compose
+	$(INSTALL_DIR) $(1)/usr/bin/
+	$(LN) ../lib/docker/cli-plugins/docker-compose $(1)/usr/bin/docker-compose
 endef
 
 $(eval $(call GoBinPackage,docker-compose))
