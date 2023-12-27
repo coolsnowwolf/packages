@@ -115,9 +115,9 @@ f_envload()
 			adb_dnsuser="${adb_dnsuser:-"dnsmasq"}"
 			adb_dnsdir="${adb_dnsdir:-"/tmp/dnsmasq.d"}"
 			adb_dnsheader=""
-			adb_dnsdeny="awk '{print \"server=/\"\$0\"/\"}'"
-			adb_dnsallow="awk '{print \"server=/\"\$0\"/#\"}'"
-			adb_dnshalt="server=/#/"
+			adb_dnsdeny="awk '{print \"local=/\"\$0\"/\"}'"
+			adb_dnsallow="awk '{print \"local=/\"\$0\"/#\"}'"
+			adb_dnshalt="address=/#/"
 		;;
 		unbound)
 			adb_dnsinstance="${adb_dnsinstance:-"0"}"
