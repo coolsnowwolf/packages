@@ -8,11 +8,11 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=openconnect
-PKG_VERSION:=9.01
+PKG_VERSION:=9.12
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=ftp://ftp.infradead.org/pub/openconnect/
+PKG_SOURCE_URL:=https://www.infradead.org/openconnect/download
 PKG_HASH:=b3d7faf830e9793299d6a41e81d84cd4a3e2789c148c9e598e4585010090e4c7
 
 PKG_LICENSE:=LGPL-2.1-or-later
