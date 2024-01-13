@@ -37,6 +37,10 @@ MAKE_FLAGS+= \
 	OPTFLAGS="$(TARGET_CXXFLAGS)" \
 	LDCXXFLAGS="$(TARGET_LDFLAGS) -pthread"
 
+ifneq ($(CONFIG_USE_MUSL),)
+  TARGET_CFLAGS += -D_LARGEFILE64_SOURCE
+endif
+
 define Package/btop/install
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/local/bin/btop $(1)/usr/bin/
