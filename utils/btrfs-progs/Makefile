@@ -25,6 +25,10 @@ PKG_FIXUP:=autoreconf
 
 include $(INCLUDE_DIR)/package.mk
 
+ifneq ($(CONFIG_USE_MUSL),)
+  TARGET_CFLAGS += -D_LARGEFILE64_SOURCE
+endif
+
 define Package/btrfs-progs
   SECTION:=utils
   CATEGORY:=Utilities

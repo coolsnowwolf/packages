@@ -1,6 +1,6 @@
 --- a/wgengine/router/router_linux.go
 +++ b/wgengine/router/router_linux.go
-@@ -129,7 +129,7 @@ func newUserspaceRouter(logf logger.Logf
+@@ -129,7 +129,7 @@ func newUserspaceRouter(logf logger.Logf, tunDev tun.Device, netMon *netmon.Moni
  
  	ipt4, err := iptables.NewWithProtocol(iptables.ProtocolIPv4)
  	if err != nil {
@@ -9,7 +9,7 @@
  	}
  
  	v6err := checkIPv6(logf)
-@@ -148,7 +148,7 @@ func newUserspaceRouter(logf logger.Logf
+@@ -148,7 +148,7 @@ func newUserspaceRouter(logf logger.Logf, tunDev tun.Device, netMon *netmon.Moni
  		// if unavailable. We want that to be a non-fatal error.
  		ipt6, err = iptables.NewWithProtocol(iptables.ProtocolIPv6)
  		if err != nil {
@@ -18,7 +18,7 @@
  		}
  	}
  
-@@ -1635,11 +1635,6 @@ func checkIPv6(logf logger.Logf) error {
+@@ -1676,11 +1676,6 @@ func checkIPv6(logf logger.Logf) error {
  		return fmt.Errorf("kernel doesn't support IPv6 policy routing: %w", err)
  	}
  
