@@ -180,6 +180,10 @@ MARIADB_COMMON_DEPENDS := \
 # ignore them.
 TARGET_CFLAGS+=$(TARGET_CPPFLAGS)
 
+ifneq ($(CONFIG_USE_MUSL),)
+  TARGET_CFLAGS += -D_LARGEFILE64_SOURCE
+endif
+
 define Package/mariadb/disable/engine
 	echo > $(1)/storage/$(2)/CMakeLists.txt
 endef
