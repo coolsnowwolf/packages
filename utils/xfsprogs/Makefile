@@ -67,7 +67,7 @@ CONFIGURE_ARGS += \
 	--disable-scrub \
 	--disable-libicu
 
-TARGET_CFLAGS += -DHAVE_MAP_SYNC
+TARGET_CFLAGS += -DHAVE_MAP_SYNC -D_LARGEFILE64_SOURCE
 TARGET_LDFLAGS += $(if $(CONFIG_USE_GLIBC),-lrt)
 
 define Package/xfs-admin/install
