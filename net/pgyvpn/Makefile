@@ -64,16 +64,42 @@ define Package/pgyvpn/description
   system, traffic monitoring, cloud application access, virtual serial port, etc.
 endef
 
-define Download/extra
+define Download/oraysl
   FILE:=pgyvpn_oraysl
   URL:=$(PKG_SOURCE_URL)
   HASH:=skip
 endef
-$(eval $(call Download,extra))
+
+ifeq ($(PKG_ARCH_PGYYPN),arm_cortex-a9-musl-unknown)
+  PKG_ARCH_LIB:=arm_cortex-a9_neon-musl-unknown
+ else
+  PKG_ARCH_LIB:=$(PKG_ARCH_PGYYPN)
+endif
+PKG_LIB_VER:=3.0.9
+define Download/libssl
+  FILE:=libssl.so.1.1
+  URL:=https://mirrors.oray.com/orayos/packages/$(PKG_NAME)/$(PKG_ARCH_LIB)/$(PKG_LIB_VER)/bin
+  HASH:=skip
+endef
+
+define Download/libcrypto
+  FILE:=libcrypto.so.1.1
+  URL:=https://mirrors.oray.com/orayos/packages/$(PKG_NAME)/$(PKG_ARCH_LIB)/$(PKG_LIB_VER)/bin
+  HASH:=skip
+endef
+
+define Download/oraysl
+  FILE:=pgyvpn_oraysl
+  URL:=$(PKG_SOURCE_URL)
+  HASH:=skip
+endef
+$(eval $(call Download,libssl))
+$(eval $(call Download,libcrypto))
+$(eval $(call Download,oraysl))
 
 define Build/Prepare
 	mkdir -p $(PKG_BUILD_DIR)
-	mv $(DL_DIR)/{pgyvpn_oraysl,pgyvpnsvr} $(PKG_BUILD_DIR)
+	mv $(DL_DIR)/{pgyvpn_oraysl,pgyvpnsvr,libssl.so.1.1,libcrypto.so.1.1} $(PKG_BUILD_DIR)
 	chmod +x $(PKG_BUILD_DIR)/{pgyvpn_oraysl,pgyvpnsvr}
 endef
 
@@ -87,8 +113,10 @@ define Package/pgyvpn/install
 	$(INSTALL_DIR) $(1)/etc/hotplug.d/iface
 	$(INSTALL_DIR) $(1)/usr/sbin
 	$(INSTALL_DIR) $(1)/usr/share/pgyvpn
+	$(INSTALL_DIR) $(1)/usr/lib
 
 	$(CP) $(PKG_BUILD_DIR)/{pgyvpn_oraysl,pgyvpnsvr} $(1)/usr/sbin
+	$(CP) $(PKG_BUILD_DIR)/{libssl.so.1.1,libcrypto.so.1.1} $(1)/usr/lib
 	$(INSTALL_BIN) ./files/etc/init.d/* $(1)/etc/init.d
 	$(INSTALL_CONF) ./files/etc/config/* $(1)/etc/config
 	$(INSTALL_BIN) ./files/etc/hotplug.d/iface/* $(1)/etc/hotplug.d/iface
