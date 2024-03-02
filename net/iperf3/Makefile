@@ -45,6 +45,7 @@ $(call Package/iperf3/default)
   TITLE+= with iperf_auth support
   VARIANT:=ssl
   DEPENDS:=+libopenssl
+  CONFLICTS:=iperf3
 endef
 
 define Package/libiperf3
