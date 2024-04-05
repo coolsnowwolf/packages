@@ -43,7 +43,7 @@ CMAKE_OPTIONS += \
 	-DCONFDIR=/etc/msd_lite
 
 define Package/msd_lite/install
-	$(INSTALL_DIR) $(1)/etc/msd_lite $(1)/usr/bin
+	$(INSTALL_DIR) $(1)/etc/msd_lite $(1)/etc/
 	$(INSTALL_CONF) $(PKG_BUILD_DIR)/conf/msd_lite.conf $(1)/etc/msd_lite/
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/msd_lite $(1)/usr/bin/
 endef
