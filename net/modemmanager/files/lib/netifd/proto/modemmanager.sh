@@ -8,6 +8,7 @@
 	. /lib/functions.sh
 	. ../netifd-proto.sh
 	. ./ppp.sh
+	. /usr/share/ModemManager/modemmanager.common
 	init_proto "$@"
 }
 
@@ -22,72 +23,6 @@ cdr2mask ()
 		shift
 	fi
 	echo "${1-0}"."${2-0}"."${3-0}"."${4-0}"
-}
-
-# This method expects as first argument a list of key-value pairs, as returned by mmcli --output-keyvalue
-# The second argument must be exactly the name of the field to read
-#
-# Sample output:
-#     $ mmcli -m 0 -K
-#     modem.dbus-path                                 : /org/freedesktop/ModemManager1/Modem/0
-#     modem.generic.device-identifier                 : ed6eff2e3e0f90463da1c2a755b2acacd1335752
-#     modem.generic.manufacturer                      : Dell Inc.
-#     modem.generic.model                             : DW5821e Snapdragon X20 LTE
-#     modem.generic.revision                          : T77W968.F1.0.0.4.0.GC.009\n026
-#     modem.generic.carrier-configuration             : GCF
-#     modem.generic.carrier-configuration-revision    : 08E00009
-#     modem.generic.hardware-revision                 : DW5821e Snapdragon X20 LTE
-#     ....
-modemmanager_get_field() {
-	local list=$1
-	local field=$2
-	local value=""
-
-	[ -z "${list}" ] || [ -z "${field}" ] && return
-
-	# there is always at least a whitespace after each key, and we use that as part of the
-	# key matching we do (e.g. to avoid getting 'modem.generic.state-failed-reason' as a result
-	# when grepping for 'modem.generic.state'.
-	line=$(echo "${list}" | grep "${field} ")
-	value=$(echo ${line#*:})
-
-	# not found?
-	[ -n "${value}" ] || return 2
-
-	# only print value if set
-	[ "${value}" != "--" ] && echo "${value}"
-	return 0
-}
-
-# build a comma-separated list of values from the list
-modemmanager_get_multivalue_field() {
-	local list=$1
-	local field=$2
-	local value=""
-	local length idx item
-
-	[ -z "${list}" ] || [ -z "${field}" ] && return
-
-	length=$(modemmanager_get_field "${list}" "${field}.length")
-	[ -n "${length}" ] || return 0
-	[ "$length" -ge 1 ] || return 0
-
-	idx=1
-	while [ $idx -le "$length" ]; do
-		item=$(modemmanager_get_field "${list}" "${field}.value\[$idx\]")
-		[ -n "${item}" ] && [ "${item}" != "--" ] && {
-			[ -n "${value}" ] && value="${value}, "
-			value="${value}${item}"
-		}
-		idx=$((idx + 1))
-	done
-
-	# nothing built?
-	[ -n "${value}" ] || return 2
-
-	# only print value if set
-	echo "${value}"
-	return 0
 }
 
 modemmanager_cleanup_connection() {
@@ -323,29 +258,157 @@ modemmanager_connected_method_static_ipv6() {
 	proto_send_update "${interface}"
 }
 
-modemmanager_disconnected_method_common() {
-	local interface="$1"
-
-	echo "running disconnection (common)"
-	proto_notify_error "${interface}" MM_DISCONNECT_IN_PROGRESS
-
-	proto_init_update "*" 0
-	proto_send_update "${interface}"
-}
-
 proto_modemmanager_init_config() {
 	available=1
 	no_device=1
-	proto_config_add_string	 device
-	proto_config_add_string	 apn
-	proto_config_add_string	 'allowedauth:list(string)'
-	proto_config_add_string	 username
-	proto_config_add_string	 password
-	proto_config_add_string	 pincode
-	proto_config_add_string	 iptype
-	proto_config_add_int	 signalrate
+	proto_config_add_string device
+	proto_config_add_string apn
+	proto_config_add_string 'allowedauth:list(string)'
+	proto_config_add_string username
+	proto_config_add_string password
+	proto_config_add_string allowedmode
+	proto_config_add_string preferredmode
+	proto_config_add_string pincode
+	proto_config_add_string iptype
+	proto_config_add_string plmn
+	proto_config_add_int signalrate
 	proto_config_add_boolean lowpower
+	proto_config_add_boolean allow_roaming
+	proto_config_add_string init_epsbearer
+	proto_config_add_string init_iptype
+	proto_config_add_string 'init_allowedauth:list(string)'
+	proto_config_add_string init_password
+	proto_config_add_string init_user
+	proto_config_add_string init_apn
 	proto_config_add_defaults
+}
+
+# Append param to the global 'connectargs' variable.
+append_param() {
+	local param="$1"
+
+	[ -z "$param" ] && return
+	[ -z "$connectargs" ] || connectargs="${connectargs},"
+	connectargs="${connectargs}${param}"
+}
+
+modemmanager_set_allowed_mode() {
+	local device="$1"
+	local interface="$2"
+	local allowedmode="$3"
+
+	echo "setting allowed mode to '${allowedmode}'"
+	mmcli --modem="${device}" --set-allowed-modes="${allowedmode}" || {
+		proto_notify_error "${interface}" MM_INVALID_ALLOWED_MODES_LIST
+		proto_block_restart "${interface}"
+		return 1
+	}
+}
+
+modemmanager_check_state() {
+	local device="$1"
+	local modemstatus="$2"
+	local pincode="$3"
+
+	local state reason
+
+	state="$(modemmanager_get_field "${modemstatus}" "state")"
+	state="${state%% *}"
+	reason="$(modemmanager_get_field "${modemstatus}" "state-failed-reason")"
+
+	case "$state" in
+		"failed")
+			case "$reason" in
+				"sim-missing")
+					echo "SIM missing"
+					proto_notify_error "${interface}" MM_FAILED_REASON_SIM_MISSING
+					proto_block_restart "${interface}"
+					return 1
+					;;
+				*)
+					proto_notify_error "${interface}" MM_FAILED_REASON_UNKNOWN
+					proto_block_restart "${interface}"
+					return 1
+					;;
+			esac
+			;;
+		"locked")
+			if [ -n "$pincode" ]; then
+				mmcli --modem="${device}" -i any --pin=${pincode} || {
+					proto_notify_error "${interface}" MM_PINCODE_WRONG
+					proto_block_restart "${interface}"
+					return 1
+				}
+			else
+				echo "PIN required"
+				proto_notify_error "${interface}" MM_PINCODE_REQUIRED
+				proto_block_restart "${interface}"
+				return 1
+			fi
+			;;
+	esac
+}
+
+modemmanager_set_preferred_mode() {
+	local device="$1"
+	local interface="$2"
+	local allowedmode="$3"
+	local preferredmode="$4"
+
+	[ -z "${preferredmode}" ] && {
+		echo "no preferred mode configured"
+		proto_notify_error "${interface}" MM_NO_PREFERRED_MODE_CONFIGURED
+		proto_block_restart "${interface}"
+		return 1
+	}
+
+	[ -z "${allowedmode}" ] && {
+		echo "no allowed mode configured"
+		proto_notify_error "${interface}" MM_NO_ALLOWED_MODE_CONFIGURED
+		proto_block_restart "${interface}"
+		return 1
+	}
+
+	echo "setting preferred mode to '${preferredmode}' (${allowedmode})"
+	mmcli --modem="${device}" \
+		--set-preferred-mode="${preferredmode}" \
+		--set-allowed-modes="${allowedmode}" || {
+		proto_notify_error "${interface}" MM_FAILED_SETTING_PREFERRED_MODE
+		proto_block_restart "${interface}"
+		return 1
+	}
+}
+
+modemmanager_init_epsbearer() {
+	local eps="$1"
+	local device="$2"
+	local connectargs="$3"
+	local apn="$4"
+
+	[ "$eps" != 'none' ] && [ -z "${apn}" ] && {
+		echo "No '$eps' init eps bearer apn configured"
+		proto_notify_error "${interface}" MM_INIT_EPS_BEARER_APN_NOT_CONFIGURED
+		proto_block_restart "${interface}"
+		return 1
+	}
+
+	if [ "$eps" = "none" ]; then
+		echo "Deleting inital EPS bearer..."
+	else
+		echo "Setting '$eps' inital EPS bearer apn to '$apn'..."
+	fi
+
+	mmcli --modem="${device}" \
+		--timeout 120 \
+		--3gpp-set-initial-eps-bearer-settings="${connectargs}" || {
+		proto_notify_error "${interface}" MM_INIT_EPS_BEARER_SET_FAILED
+		proto_block_restart "${interface}"
+		return 1
+	}
+
+	# Wait here so that the modem can set the init EPS bearer
+	# for registration
+	sleep 2
 }
 
 proto_modemmanager_setup() {
@@ -354,22 +417,29 @@ proto_modemmanager_setup() {
 	local modempath modemstatus bearercount bearerpath connectargs bearerstatus beareriface
 	local bearermethod_ipv4 bearermethod_ipv6 auth cliauth
 	local operatorname operatorid registration accesstech signalquality
+	local allowedmode preferredmode
 
-	local device apn allowedauth username password pincode iptype metric signalrate
+	local device apn allowedauth username password pincode
+	local iptype plmn metric signalrate allow_roaming
+
+	local init_epsbearer
+	local init_iptype init_allowedauth
+	local init_password init_user init_apn
 
 	local address prefix gateway mtu dns1 dns2
 
-	json_get_vars device apn allowedauth username password pincode iptype metric signalrate
+	json_get_vars device apn allowedauth username password
+	json_get_vars pincode iptype plmn metric signalrate allow_roaming
+	json_get_vars allowedmode preferredmode
+
+	json_get_vars init_epsbearer
+	json_get_vars init_iptype init_allowedauth
+	json_get_vars init_password init_user init_apn
 
 	# validate sysfs path given in config
 	[ -n "${device}" ] || {
 		echo "No device specified"
 		proto_notify_error "${interface}" NO_DEVICE
-		proto_set_available "${interface}" 0
-		return 1
-	}
-	[ -e "${device}" ] || {
-		echo "Device not found in sysfs"
 		proto_set_available "${interface}" 0
 		return 1
 	}
@@ -385,19 +455,124 @@ proto_modemmanager_setup() {
 	}
 	echo "modem available at ${modempath}"
 
+	modemmanager_check_state "$device" "${modemstatus}" "$pincode"
+	[ "$?" -ne "0" ] && return 1
+
 	# always cleanup before attempting a new connection, just in case
 	modemmanager_cleanup_connection "${modemstatus}"
 
-	# if allowedauth list given, build option string
-	for auth in $allowedauth; do
-		cliauth="${cliauth}${cliauth:+|}$auth"
-	done
+	mmcli --modem="${device}" --timeout 120 --enable || {
+		proto_notify_error "${interface}" MM_MODEM_DISABLED
+		return 1
+	}
+
+	[ -z "${plmn}" ] || {
+		echo "starting network registraion with plmn '${plmn}'..."
+		mmcli --modem="${device}" \
+			--timeout 120 \
+			--3gpp-register-in-operator="${plmn}" || {
+			proto_notify_error "${interface}" MM_3GPP_OPERATOR_REGISTRATION_FAILED
+			proto_block_restart "${interface}"
+			return 1
+		}
+	}
+
+	if [ -z "${allowedmode}" ]; then
+		modemmanager_set_allowed_mode "$device" "$interface" "any"
+	else
+		case "$allowedmode" in
+			"2g")
+				modemmanager_set_allowed_mode "$device" \
+					"$interface" "2g"
+				;;
+			"3g")
+				modemmanager_set_allowed_mode "$device" \
+					"$interface" "3g"
+				;;
+			"4g")
+				modemmanager_set_allowed_mode "$device" \
+					"$interface" "4g"
+				;;
+			"5g")
+				modemmanager_set_allowed_mode "$device" \
+					"$interface" "5g"
+				;;
+			*)
+				modemmanager_set_preferred_mode "$device" \
+					"$interface" "${allowedmode}" "${preferredmode}"
+				;;
+		esac
+		# check error for allowed_mode and preferred_mode function call
+		[ "$?" -ne "0" ] && return 1
+	fi
+
+	# set initial eps bearer settings
+	[ -z "${init_epsbearer}" ] || {
+		case "$init_epsbearer" in
+			"none")
+				connectargs=""
+				modemmanager_init_epsbearer "none" \
+					"$device" "${connectargs}" "$apn"
+				;;
+			"default")
+				cliauth=""
+				for auth in $allowedauth; do
+					cliauth="${cliauth}${cliauth:+|}$auth"
+				done
+				connectargs=""
+				append_param "apn=${apn}"
+				append_param "${iptype:+ip-type=${iptype}}"
+				append_param "${cliauth:+allowed-auth=${cliauth}}"
+				append_param "${username:+user=${username}}"
+				append_param "${password:+password=${password}}"
+				modemmanager_init_epsbearer "default" \
+					"$device" "${connectargs}" "$apn"
+				;;
+			"custom")
+				cliauth=""
+				for auth in $init_allowedauth; do
+					cliauth="${cliauth}${cliauth:+|}$auth"
+				done
+				connectargs=""
+				append_param "apn=${init_apn}"
+				append_param "${init_iptype:+ip-type=${init_iptype}}"
+				append_param "${cliauth:+allowed-auth=${cliauth}}"
+				append_param "${init_username:+user=${init_username}}"
+				append_param "${init_password:+password=${init_password}}"
+				modemmanager_init_epsbearer "custom" \
+					"$device" "${connectargs}" "$init_apn"
+				;;
+		esac
+		# check error for init_epsbearer function call
+		[ "$?" -ne "0" ] && return 1
+	}
 
 	# setup connect args; APN mandatory (even if it may be empty)
 	echo "starting connection with apn '${apn}'..."
 	proto_notify_error "${interface}" MM_CONNECT_IN_PROGRESS
 
-	connectargs="apn=${apn}${iptype:+,ip-type=${iptype}}${cliauth:+,allowed-auth=${cliauth}}${username:+,user=${username}}${password:+,password=${password}}${pincode:+,pin=${pincode}}"
+	# setup allow-roaming parameter
+	if [ -n "${allow_roaming}" ] && [ "${allow_roaming}" -eq 0 ];then
+		allow_roaming="no"
+	else
+		# allowed unless a user set the opposite
+		allow_roaming="yes"
+	fi
+
+	cliauth=""
+	for auth in $allowedauth; do
+		cliauth="${cliauth}${cliauth:+|}$auth"
+	done
+	# Append options to 'connectargs' variable
+	connectargs=""
+	append_param "apn=${apn}"
+	append_param "allow-roaming=${allow_roaming}"
+	append_param "${iptype:+ip-type=${iptype}}"
+	append_param "${plmn:+operator-id=${plmn}}"
+	append_param "${cliauth:+allowed-auth=${cliauth}}"
+	append_param "${username:+user=${username}}"
+	append_param "${password:+password=${password}}"
+
 	mmcli --modem="${device}" --timeout 120 --simple-connect="${connectargs}" || {
 		proto_notify_error "${interface}" MM_CONNECT_FAILED
 		proto_block_restart "${interface}"
@@ -509,7 +684,6 @@ proto_modemmanager_teardown() {
 	json_get_vars device lowpower iptype
 
 	echo "stopping network"
-	proto_notify_error "${interface}" MM_TEARDOWN_IN_PROGRESS
 
 	# load connected bearer information, just the first one should be ok
 	modemstatus=$(mmcli --modem="${device}" --output-keyvalue)
@@ -531,7 +705,6 @@ proto_modemmanager_teardown() {
 
 	# disconnection handling only requires special treatment in IPv4/PPP
 	[ "${bearermethod_ipv4}" = "ppp" ] && modemmanager_disconnected_method_ppp_ipv4 "${interface}"
-	modemmanager_disconnected_method_common "${interface}"
 
 	# disconnect
 	mmcli --modem="${device}" --simple-disconnect ||
@@ -539,7 +712,6 @@ proto_modemmanager_teardown() {
 
 	# disable
 	mmcli --modem="${device}" --disable
-	proto_notify_error "${interface}" MM_MODEM_DISABLED
 
 	# low power, only if requested
 	[ "${lowpower:-0}" -lt 1 ] ||

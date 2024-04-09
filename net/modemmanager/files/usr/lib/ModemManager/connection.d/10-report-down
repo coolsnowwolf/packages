@@ -16,9 +16,8 @@ STATE="$4"
 
 [ "${STATE}" = "disconnected" ] || exit 0
 
-. /usr/share/ModemManager/modemmanager.common
 . /lib/netifd/netifd-proto.sh
-INCLUDE_ONLY=1 . /lib/netifd/proto/modemmanager.sh
+. /usr/share/ModemManager/modemmanager.common
 
 MODEM_STATUS=$(mmcli --modem="${MODEM_PATH}" --output-keyvalue)
 [ -n "${MODEM_STATUS}" ] || exit 1
@@ -29,7 +28,12 @@ MODEM_DEVICE=$(modemmanager_get_field "${MODEM_STATUS}" "modem.generic.device")
 CFG=$(mm_get_modem_config "${MODEM_DEVICE}")
 [ -n "${CFG}" ] || exit 3
 
-logger -t "modemmanager" "interface ${CFG} (network device ${INTERFACE}) ${STATE}"
-proto_init_update $INTERFACE 0
-proto_send_update $CFG
+IFUP=$(ifstatus "${CFG}" | jsonfilter -e "@.up")
+
+[ "${IFUP}" = "true" ] && {
+	mm_log "info" "Reconnecting '${CFG}' on '${STATE}' event"
+	ubus call network.interface down "{ 'interface': '${CFG}'}"
+	ubus call network.interface up "{ 'interface': '${CFG}'}"
+}
+
 exit 0

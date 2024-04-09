@@ -8,14 +8,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libxml2
-PKG_VERSION:=2.10.3
-PKG_RELEASE:=2
+PKG_VERSION:=2.10.4
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=@GNOME/libxml2/$(basename $(PKG_VERSION))
-PKG_HASH:=5d2cc3d78bec3dbe212a9d7fa629ada25a7da928af432c93060ff5c17ee28a9c
+PKG_HASH:=ed0c91c5845008f1936739e4eee2035531c1c94742c6541f44ee66d885948d45
 
-PKG_MAINTAINER:=Michael Heimpold <mhei@heimpold.de>
 PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=COPYING
 PKG_CPE_ID:=cpe:/a:xmlsoft:libxml2
@@ -99,7 +98,6 @@ CONFIGURE_ARGS += \
 	--with-xpath \
 	--with-xptr \
 	--with-zlib=$(STAGING_DIR)/usr \
-	--with-iconv$(if $(ICONV_PREFIX),="$(ICONV_PREFIX)") \
 	--without-lzma
 
 HOST_CONFIGURE_ARGS += \
