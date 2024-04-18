@@ -52,6 +52,10 @@ CONFIGURE_ARGS += \
 	--disable-g13-test \
 	--enable-languages="cpp"
 
+ifneq ($(CONFIG_USE_MUSL),)
+  TARGET_CFLAGS += -D_LARGEFILE64_SOURCE
+endif
+
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include/gpgme++
 	$(INSTALL_DATA) \
