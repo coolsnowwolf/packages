@@ -1,0 +1,27 @@
+config igmpproxy
+	option quickleave 1
+#	option verbose [0-3](none, minimal[default], more, maximum)
+
+config phyint
+	option network wan
+	option zone wan
+	option direction upstream
+	list altnet 192.168.1.0/24
+
+config phyint
+	option network lan
+	option zone lan
+	option direction downstream
+
+# This section configures the QCA MCS support
+# Uncomment to enable QCA NSS ECM multicast acceleration.
+#
+# 'lan' should be the LAN bridge device
+# 'brport' should be the bridge port(s)
+#
+# Up to 16 bridges with up to 16 bridge ports(per bridge) can be configured.
+#config phyint
+#	option network lan
+#	option zone lan
+#	option direction qca-mcs-bridge
+#	list brport eth1.1
