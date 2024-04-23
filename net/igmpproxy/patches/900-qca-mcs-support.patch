@@ -11,7 +11,7 @@
  /**
  *   Initializes common config..
  */
-@@ -132,17 +136,25 @@ int loadConfig(char *configFile) {
+@@ -136,17 +140,25 @@ int loadConfig(char *configFile) {
                  my_log(LOG_WARNING, 0, "Unknown token '%s' in configfile", token);
                  return 0;
              } else {
@@ -48,7 +48,7 @@
              }
          }
          else if(strcmp("quickleave", token)==0) {
-@@ -244,6 +256,9 @@ struct vifconfig *parsePhyintToken(void)
+@@ -294,6 +306,9 @@ struct vifconfig *parsePhyintToken(void)
      struct SubnetList **anetPtr, **agrpPtr;
      char *token;
      short parseError = 0;
@@ -58,7 +58,7 @@
  
      // First token should be the interface name....
      token = nextConfigToken();
-@@ -273,6 +288,10 @@ struct vifconfig *parsePhyintToken(void)
+@@ -323,6 +338,10 @@ struct vifconfig *parsePhyintToken(void)
          my_log(LOG_ERR, 0, "Out of memory.");
      }
  
@@ -69,7 +69,7 @@
      // Set the altnet pointer to the allowednets pointer.
      anetPtr = &tmpPtr->allowednets;
      agrpPtr = &tmpPtr->allowedgroups;
-@@ -345,6 +364,20 @@ struct vifconfig *parsePhyintToken(void)
+@@ -411,6 +430,20 @@ struct vifconfig *parsePhyintToken(void)
                  break;
              }
          }
@@ -90,7 +90,7 @@
          else {
              // Unknown token. Break...
              break;
-@@ -359,6 +392,13 @@ struct vifconfig *parsePhyintToken(void)
+@@ -425,6 +458,13 @@ struct vifconfig *parsePhyintToken(void)
          tmpPtr = NULL;
      }
  
@@ -106,7 +106,7 @@
  
 --- a/src/igmpproxy.h
 +++ b/src/igmpproxy.h
-@@ -122,6 +122,10 @@ void my_log( int Serverity, int Errno, c
+@@ -124,6 +124,10 @@ void my_log( int Serverity, int Errno, c
  #define IF_STATE_LOST          3   // aimwang: Temp from downstream to hidden
  #define IF_STATE_HIDDEN        4   // aimwang: Interface is hidden
  
@@ -132,8 +132,8 @@
  // Global vars...
  static int sighandled = 0;
  #define GOT_SIGINT  0x01
-@@ -152,9 +158,21 @@ int main( int ArgCn, char *ArgVc[] ) {
-             }
+@@ -185,9 +191,21 @@ int main( int ArgCn, char *ArgVc[] ) {
+                 close(devnull);
          }
  
 +#ifdef IGMPPROXY_QCA_MCS_SUPPORT
@@ -156,7 +156,7 @@
  
 --- a/src/rttable.c
 +++ b/src/rttable.c
-@@ -71,6 +71,11 @@ void logRouteTable(const char *header);
+@@ -75,6 +75,11 @@ void logRouteTable(const char *header);
  int internAgeRoute(struct RouteTable *croute);
  int internUpdateKernelRoute(struct RouteTable *route, int activate);
  
@@ -165,11 +165,11 @@
 +void qca_mcs_flood_brport(u_int32_t mc_addr, bool is_join);
 +#endif
 +
- // Socket for sending join or leave requests.
- int mcGroupSock = 0;
  
-@@ -159,6 +164,12 @@ static void sendJoinLeaveUpstream(struct
-                     joinMcGroup( getMcGroupSock(), upstrIf, route->group );
+ /**
+ *   Functions for downstream hosts hash table
+@@ -192,6 +197,12 @@ static void sendJoinLeaveUpstream(struct
+                     k_join(upstrIf, route->group);
  
                      route->upstrState = ROUTESTATE_JOINED;
 +
@@ -181,8 +181,8 @@
                  } else {
                      my_log(LOG_DEBUG, 0, "No downstream listeners for group %s. No join sent.",
                          inetFmt(route->group, s1));
-@@ -174,6 +185,12 @@ static void sendJoinLeaveUpstream(struct
-                     leaveMcGroup( getMcGroupSock(), upstrIf, route->group );
+@@ -206,6 +217,12 @@ static void sendJoinLeaveUpstream(struct
+                     k_leave(upstrIf, route->group);
  
                      route->upstrState = ROUTESTATE_NOTJOINED;
 +
@@ -194,7 +194,7 @@
                  }
              }
          }
---- a/dev/null
+--- /dev/null
 +++ b/src/qca-mcs.h
 @@ -0,0 +1,91 @@
 +/*
@@ -288,7 +288,7 @@
 +	u_int32_t ifindex[MC_DEF_IF_MAX];
 +} __attribute__ ((packed));
 +
---- a/dev/null
+--- /dev/null
 +++ b/src/qca-mcs.c
 @@ -0,0 +1,319 @@
 +/*
@@ -612,10 +612,9 @@
 +}
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
-@@ -21,4 +21,5 @@ igmpproxy_SOURCES = \
+@@ -19,4 +19,5 @@ igmpproxy_SOURCES = \
+ 	os-qnxnto.h \
  	request.c \
  	rttable.c \
- 	syslog.c \
--	udpsock.c
-+	udpsock.c \
-+	qca-mcs.c
++	qca-mcs.c \
+ 	syslog.c

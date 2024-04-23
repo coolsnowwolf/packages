@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=igmpproxy
-PKG_VERSION:=0.2.1
-PKG_RELEASE:=4
+PKG_VERSION:=0.4
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://github.com/pali/igmpproxy/releases/download/${PKG_VERSION}/
-PKG_HASH:=d351e623037390f575c1203d9cbb7ba33a8bdef85a3c5e1d2901c5a2a38449a1
+PKG_HASH:=afa4b75a823b82f71ce99f33eae4e8136b906ae8a5ede5caaad93bac38cdae24
 PKG_MAINTAINER:=Felix Fietkau <nbd@nbd.name>
 
 include $(INCLUDE_DIR)/package.mk
