@@ -6,6 +6,12 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=node
 
+ifeq ($(CONFIG_NODEJS_20),y)
+PKG_VERSION:=v20.12.2
+PKG_RELEASE:=1
+PKG_HASH:=d7cbcc5fbfb31e9001f3f0150bbeda59abe5dd7137aaa6273958cd59ce35ced7
+PATCH_DIR:=./patches/v20.x
+else
 ifeq ($(CONFIG_NODEJS_18),y)
 PKG_VERSION:=v18.15.0
 PKG_RELEASE:=1
@@ -28,6 +34,7 @@ PKG_VERSION:=v12.22.12
 PKG_RELEASE:=2
 PKG_HASH:=bc42b7f8495b9bfc7f7850dd180bb02a5bdf139cc232b8c6f02a6967e20714f2
 PATCH_DIR:=./patches/v12.x
+endif
 endif
 endif
 endif
@@ -59,7 +66,7 @@ define Package/node
   TITLE:=Node.js is a platform built on Chrome's JavaScript runtime
   URL:=https://nodejs.org/
   DEPENDS:=@(HAS_FPU||KERNEL_MIPS_FPU_EMULATOR||SOFT_FLOAT) @!arc @!armeb @!powerpc \
-	   +libstdcpp +NODEJS_18:libopenssl +zlib +libnghttp2 +libuv \
+	   +libstdcpp +(NODEJS_18||NODEJS_20):libopenssl +zlib +libnghttp2 +libuv \
 	   +libcares +libatomic +NODEJS_ICU_SYSTEM:icu +NODEJS_ICU_SYSTEM:icu-full-data
 endef
 
@@ -94,25 +101,29 @@ define Package/node/config
 	choice
 		prompt "Version Selection"
 		default NODEJS_12 if mips||mipsel||mips64||mips64el
-		default NODEJS_16
+		default NODEJS_18
 		help
 		 Select node.js version.
 		 The host package version is also the same.
 
 		config NODEJS_12
-			bool "12.x Maintenance LTS"
+			bool "12.x End-of-life : Only for MIPS"
 
 		config NODEJS_14
 			depends on !(mips||mipsel||mips64||mips64el)
-			bool "14.x Maintenance"
+			bool "14.x End-of-Life"
 
 		config NODEJS_16
 			depends on !(mips||mipsel||mips64||mips64el)
-			bool "16.x Maintenance"
+			bool "16.x End-of-Life"
 
 		config NODEJS_18
 			depends on !(mips||mipsel||mips64||mips64el)
-			bool "18.x Active LTS"
+			bool "18.x Maintenance LTS"
+			
+		config NODEJS_20
+			depends on !(mips||mipsel||mips64||mips64el)
+			bool "20.x Active LTS"
 	endchoice
 
 	if PACKAGE_node
