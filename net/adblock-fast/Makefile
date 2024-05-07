@@ -22,7 +22,6 @@ define Package/adblock-fast
 	DEPENDS+=+!BUSYBOX_DEFAULT_GREP:grep
 	DEPENDS+=+!BUSYBOX_DEFAULT_SED:sed
 	DEPENDS+=+!BUSYBOX_DEFAULT_SORT:coreutils-sort
-  CONFLICTS:=simple-adblock
   PROVIDES:=simple-adblock
   PKGARCH:=all
 endef
