@@ -336,7 +336,6 @@ CONFIGURE_ARGS +=			\
 
 # accel
 CONFIGURE_ARGS +=			\
-	--disable-hax			\
 	--disable-hvf			\
 	--disable-whpx			\
 	--disable-xen			\
