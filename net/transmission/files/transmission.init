@@ -128,11 +128,13 @@ transmission() {
 		logger -t transmission "Starting with $USE virt mem"
 	fi
 
+	procd_add_jail transmission log
+	
 	if test -d "$web_home"; then
+		procd_add_jail_mount "$web_home"
 		procd_set_param env TRANSMISSION_WEB_HOME="$web_home"
 	fi
 
-	procd_add_jail transmission log
 	procd_add_jail_mount "$config_file"
 	procd_add_jail_mount_rw "$download_dir"
 	procd_close_instance
