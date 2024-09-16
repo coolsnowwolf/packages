@@ -14,8 +14,8 @@ The compilers for arm_cortex-a9 do not recognize this argument.
  #override CXXFLAGS+=-fPIC -fPIE
  
  # Non-executable stack
--override ASFLAGS+=--noexecstack
-+# override ASFLAGS+=--noexecstack
+-override LDFLAGS+=-Wl,-z,noexecstack
++# override LDFLAGS+=-Wl,-z,noexecstack
  
  .PHONY: all
  all:	one
