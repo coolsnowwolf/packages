@@ -9,22 +9,33 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=lxc
-PKG_VERSION:=4.0.12
-PKG_RELEASE:=$(AUTORELEASE)
+PKG_VERSION:=6.0.2
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://linuxcontainers.org/downloads/lxc/
-PKG_HASH:=db242f8366fc63e8c7588bb2017b354173cf3c4b20abc18780debdc48b14d3ef
+PKG_HASH:=1930aa10d892db8531d1353d15f7ebf5913e74a19e134423e4d074c07f2d6e8b
 
 PKG_MAINTAINER:=Marko Ratkaj <markoratkaj@gmail.com>
 PKG_LICENSE:=LGPL-2.1-or-later BSD-2-Clause GPL-2.0
-
-PKG_FIXUP:=autoreconf
-PKG_INSTALL:=1
-PKG_BUILD_PARALLEL:=1
-PKG_USE_MIPS16:=0
+PKG_LICENSE_FILES:=COPYING LICENSE.GPL2 LICENSE.LGPL2.1
+PKG_CPE_ID:=cpe:/a:linuxcontainers:lxc
+PKG_BUILD_FLAGS:=no-mips16
 
 include $(INCLUDE_DIR)/package.mk
+include $(INCLUDE_DIR)/meson.mk
+
+MESON_ARGS += \
+	-Db_lto=$(if $(findstring mips,$(CONFIG_ARCH)),false,true) \
+	-Dwerror=false \
+	-Dinit-script=sysvinit \
+	-Dman=false \
+	-Dapparmor=false \
+	-Dselinux=false \
+	-Dseccomp=$(if $(CONFIG_LXC_SECCOMP),true,false) \
+	-Dexamples=false \
+	-Db_pie=true \
+	-Druntime-path=/var/run
 
 LXC_APPLETS_BIN += \
 	attach autostart cgroup copy config console create destroy device \
@@ -59,6 +70,10 @@ define Package/lxc-auto
   $(call Package/lxc/Default)
   TITLE:= (initscript)
   DEPENDS+=+lxc-start +lxc-stop
+endef
+
+define Package/lxc-auto/postinst
+[ -n "$${IPKG_INSTROOT}" ] || [ "$${PKG_UPGRADE}" = 1 ] || /etc/init.d/lxc-auto boot
 endef
 
 define Package/lxc-auto/description
@@ -122,7 +137,7 @@ define Package/liblxc
   SECTION:=libs
   CATEGORY:=Libraries
   TITLE:=LXC userspace library
-  DEPENDS+= +libcap +libpthread +LXC_SECCOMP:libseccomp +libopenssl
+  DEPENDS+= +libcap +libpthread +LXC_SECCOMP:libseccomp +libopenssl +libdbus
 endef
 
 define Package/lxc-init
@@ -130,17 +145,6 @@ define Package/lxc-init
   TITLE:=LXC Lua bindings
   DEPENDS+= +liblxc
 endef
-
-CONFIGURE_ARGS += \
-	--disable-werror \
-	--disable-rpath \
-	--disable-doc \
-	--disable-api-docs \
-	--disable-apparmor \
-	--disable-selinux \
-	--$(if $(CONFIG_LXC_SECCOMP),en,dis)able-seccomp \
-	--enable-capabilities \
-	--disable-examples
 
 ifdef CONFIG_USE_MIPS16
   TARGET_CFLAGS += -minterlink-mips16
@@ -258,7 +262,6 @@ define GenPlugin
   $$(eval $$(call BuildPackage,lxc-$(1)))
 endef
 
-
 $(eval $(call BuildPackage,lxc))
 $(eval $(call BuildPackage,lxc-common))
 $(eval $(call BuildPackage,lxc-hooks))
@@ -269,5 +272,5 @@ $(eval $(call BuildPackage,lxc-init))
 $(eval $(call BuildPackage,lxc-auto))
 $(eval $(call BuildPackage,lxc-unprivileged))
 $(foreach u,$(LXC_APPLETS_BIN),$(eval $(call GenPlugin,$(u),$(DEPENDS_APPLETS),"/usr/bin")))
-$(foreach u,$(LXC_APPLETS_LIB),$(eval $(call GenPlugin,$(u),$(DEPENDS_APPLETS),"/usr/lib/lxc")))
+$(foreach u,$(LXC_APPLETS_LIB),$(eval $(call GenPlugin,$(u),$(DEPENDS_APPLETS),"/usr/libexec/lxc")))
 $(foreach u,$(LXC_SCRIPTS),$(eval $(call GenPlugin,$(u),,"/usr/bin")))
