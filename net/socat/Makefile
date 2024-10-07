@@ -6,12 +6,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=socat
-PKG_VERSION:=1.7.4.4
-PKG_RELEASE:=1
+PKG_VERSION:=1.8.0.1
+PKG_RELEASE:=2
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
 PKG_SOURCE_URL:=http://www.dest-unreach.org/socat/download
-PKG_HASH:=fbd42bd2f0e54a3af6d01bdf15385384ab82dbc0e4f1a5e153b3e0be1b6380ac
+PKG_HASH:=6a283565db7cf86292c6f70504c58abb03e29888adeed5a6c5f3457e803c1b81
 
 PKG_MAINTAINER:=Ted Hess <thess@kitschensync.net>
 PKG_LICENSE:=GPL-2.0-or-later OpenSSL
@@ -32,12 +32,12 @@ define Package/socat
 endef
 
 define Package/socat/description
-	SoCat (for SOcket CAT) establishes two bidirectional byte streams and
-	transfers data between them.
-	Data channels may be files, pipes, devices (terminal or modem, etc.), or
-	sockets (Unix, IPv4, IPv6, raw, UDP, TCP, SSL). It provides forking,
-	logging and tracing, different modes for interprocess communication and
-	many more options.
+        SoCat (for SOcket CAT) establishes two bidirectional byte streams and
+        transfers data between them.
+        Data channels may be files, pipes, devices (terminal or modem, etc.), or
+        sockets (Unix, IPv4, IPv6, raw, UDP, TCP, SSL). It provides forking,
+        logging and tracing, different modes for interprocess communication and
+        many more options.
 endef
 
 define Package/socat/config
@@ -54,9 +54,12 @@ define Package/socat/conffiles
 endef
 
 CONFIGURE_ARGS += \
-	--disable-libwrap \
-	--disable-readline \
-	--enable-termios
+        --disable-libwrap \
+        --disable-readline \
+        --enable-termios
+
+## procan.c fails to compile when ccache is enabled
+MAKE_FLAGS += CC="$(TARGET_CC_NOCACHE)"
 
 ifneq ($(CONFIG_SOCAT_SSL),y)
   CONFIGURE_ARGS+= --disable-openssl
@@ -65,29 +68,29 @@ endif
 # PowerPC has different TERMIOS bits
 ifneq ($(findstring powerpc,$(CONFIG_ARCH)),)
   CONFIGURE_VARS += \
-	  sc_cv_sys_crdly_shift=12 \
-	  sc_cv_sys_tabdly_shift=10 \
-	  sc_cv_sys_csize_shift=8
+          sc_cv_sys_crdly_shift=12 \
+          sc_cv_sys_tabdly_shift=10 \
+          sc_cv_sys_csize_shift=8
 else
   CONFIGURE_VARS += \
-	  sc_cv_sys_crdly_shift=9 \
-	  sc_cv_sys_tabdly_shift=11 \
-	  sc_cv_sys_csize_shift=4
+          sc_cv_sys_crdly_shift=9 \
+          sc_cv_sys_tabdly_shift=11 \
+          sc_cv_sys_csize_shift=4
 endif
 
 CONFIGURE_VARS += \
-	sc_cv_termios_ispeed="no" \
-	ac_cv_header_bsd_libutil_h=no \
-	ac_cv_lib_bsd_openpty=no \
-	BUILD_DATE=$(SOURCE_DATE_EPOCH)
+        sc_cv_termios_ispeed="no" \
+        ac_cv_header_bsd_libutil_h=no \
+        ac_cv_lib_bsd_openpty=no \
+        BUILD_DATE=$(SOURCE_DATE_EPOCH)
 
 define Package/socat/install
-	$(INSTALL_DIR) $(1)/usr/bin
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/socat $(1)/usr/bin/
-	$(INSTALL_DIR) $(1)/etc/config
-	$(INSTALL_CONF) ./files/socat.config $(1)/etc/config/socat
-	$(INSTALL_DIR) $(1)/etc/init.d
-	$(INSTALL_BIN) ./files/socat.init $(1)/etc/init.d/socat
+        $(INSTALL_DIR) $(1)/usr/bin
+        $(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/socat $(1)/usr/bin/
+        $(INSTALL_DIR) $(1)/etc/config
+        $(INSTALL_CONF) ./files/socat.config $(1)/etc/config/socat
+        $(INSTALL_DIR) $(1)/etc/init.d
+        $(INSTALL_BIN) ./files/socat.init $(1)/etc/init.d/socat
 endef
 
 $(eval $(call BuildPackage,socat))
