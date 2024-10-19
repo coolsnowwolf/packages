@@ -1,12 +1,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=kcptun
-PKG_VERSION:=20230207
+PKG_VERSION:=20240919
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/xtaci/kcptun/tar.gz/v${PKG_VERSION}?
-PKG_HASH:=09054b52d5799a8e47edb36f2db335d929d5bbb63a26f7ba2fe03c64ec39d550
+PKG_HASH:=80c2dfe277196e5aac19272f30d83b588f57f6e180b22c5865b7864080cfed09
 
 PKG_MAINTAINER:=Dengfeng Liu <liudf0716@gmail.com>, Chao Liu <expiron18@gmail.com>
 PKG_LICENSE:=MIT
@@ -23,26 +23,6 @@ GO_PKG_LDFLAGS_X:=main.VERSION=$(PKG_VERSION)
 include $(INCLUDE_DIR)/package.mk
 include ../../lang/golang/golang-package.mk
 
-define Package/kcptun-config
-  SECTION:=net
-  CATEGORY:=Network
-  SUBMENU:=Web Servers/Proxies
-  TITLE:=Kcptun Config Scripts
-  URL:=https://github.com/xtaci/kcptun
-  DEPENDS:=$(GO_ARCH_DEPENDS)
-endef
-
-define Package/kcptun-config/conffiles
-/etc/config/kcptun
-endef
-
-define Package/kcptun-config/install
-	$(INSTALL_DIR) $(1)/etc/config
-	$(INSTALL_CONF) ./files/kcptun.config $(1)/etc/config/kcptun
-	$(INSTALL_DIR) $(1)/etc/init.d
-	$(INSTALL_BIN) ./files/kcptun.init $(1)/etc/init.d/kcptun
-endef
-
 define Package/kcptun/Default
   define Package/kcptun-$(1)
     SECTION:=net
@@ -50,7 +30,6 @@ define Package/kcptun/Default
     SUBMENU:=Web Servers/Proxies
     TITLE:=KCP-based Secure Tunnel $(1)
     URL:=https://github.com/xtaci/kcptun
-    DEPENDS:=+kcptun-config
   endef
 
   define Package/kcptun-$(1)/description
@@ -66,7 +45,6 @@ This package only contains kcptun $(1).
   endef
 endef
 
-$(eval $(call BuildPackage,kcptun-config))
 KCPTUN_COMPONENTS:=server client
 $(foreach component,$(KCPTUN_COMPONENTS), \
   $(eval $(call Package/kcptun/Default,$(component))) \
