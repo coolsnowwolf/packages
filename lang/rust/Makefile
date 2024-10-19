@@ -5,12 +5,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=rust
-PKG_VERSION:=1.78.0
-PKG_RELEASE:=2
+PKG_VERSION:=1.80.1
+PKG_RELEASE:=1
 
-PKG_SOURCE:=rustc-$(PKG_VERSION)-src.tar.xz
+PKG_SOURCE:=rustc-$(PKG_VERSION)-src.tar.gz
 PKG_SOURCE_URL:=https://static.rust-lang.org/dist/
-PKG_HASH:=8065824f0255faa3901db8206e6f9423f6f8c07cec28bc6f2797c6c948310ece
+PKG_HASH:=2c0b8f643942dcb810cbcc50f292564b1b6e44db5d5f45091153996df95d2dc4
 HOST_BUILD_DIR:=$(BUILD_DIR)/host/rustc-$(PKG_VERSION)-src
 
 PKG_MAINTAINER:=Luca Barbato <lu_zero@luminem.org>
@@ -19,7 +19,6 @@ PKG_LICENSE_FILES:=LICENSE-APACHE LICENSE-MIT
 
 PKG_HOST_ONLY:=1
 PKG_BUILD_FLAGS:=no-mips16
-PKG_USE_MIPS16:=0
 
 include $(INCLUDE_DIR)/host-build.mk
 include $(INCLUDE_DIR)/package.mk
