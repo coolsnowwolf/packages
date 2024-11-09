@@ -15,7 +15,7 @@
 # option password  - cloudflare api key, you can get it from cloudflare.com/my-account/
 # option domain    - "hostname@yourdomain.TLD"	# syntax changed to remove split_FQDN() function and tld_names.dat.gz
 #
-# The proxy status would not be changed by this script. Please change it in Cloudflare dashboard manually.
+# The proxy status would not be changed by this script. Please change it in Cloudflare dashboard manually. 
 #
 # variable __IP already defined with the ip-address to use for update
 #
@@ -27,26 +27,21 @@
 [ $use_https -eq 0 ] && use_https=1	# force HTTPS
 
 # used variables
-local __HOST __DOMAIN __TYPE __URLBASE __PRGBASE __RUNPROG __DATA __IPV6 __ZONEID __RECID __PROXIED
+local __HOST __DOMAIN __FULLDOMAIN __TYPE __URLBASE __PRGBASE __RUNPROG __DATA __IPV6 __ZONEID __RECID __PROXIED
 local __URLBASE="https://api.cloudflare.com/client/v4"
 local __TTL=120
 
 # split __HOST __DOMAIN from $domain
-# given data:
-# @example.com for "domain record"
-# host.sub@example.com for a "host record"
-__HOST=$(printf %s "$domain" | cut -d@ -f1)
-__DOMAIN=$(printf %s "$domain" | cut -d@ -f2)
-
-# Cloudflare v4 needs:
-# __DOMAIN = the base domain i.e. example.com
-# __HOST   = the FQDN of record to modify
-# i.e. example.com for the "domain record" or host.sub.example.com for "host record"
-
-# handling domain record then set __HOST = __DOMAIN
-[ -z "$__HOST" ] && __HOST=$__DOMAIN
-# handling host record then rebuild fqdn host@domain.tld => host.domain.tld
-[ "$__HOST" != "$__DOMAIN" ] && __HOST="${__HOST}.${__DOMAIN}"
+[ "${domain:0:2}" == "@." ] && domain="${domain/./}"
+[ "$domain" == "${domain/@/}" ] && domain="${domain/./@}"
+__HOST="${domain%%@*}"
+__DOMAIN="${domain#*@}"
+[ -z "$__HOST" -o "$__HOST" == "$__DOMAIN" ] && __HOST="@"
+if [ "$__HOST" = "@" ]; then
+__FULLDOMAIN="${__DOMAIN}"
+else
+__FULLDOMAIN="${__HOST}.${__DOMAIN}"
+fi
 
 # set record type
 [ $use_ipv6 -eq 0 ] && __TYPE="A" || __TYPE="AAAA"
@@ -134,27 +129,23 @@ else
 fi
 __PRGBASE="$__PRGBASE --header 'Content-Type: application/json' "
 
-if [ -n "$zone_id" ]; then
-	__ZONEID="$zone_id"
-else
-	# read zone id for registered domain.TLD
-	__RUNPROG="$__PRGBASE --request GET '$__URLBASE/zones?name=$__DOMAIN'"
-	cloudflare_transfer || return 1
-	# extract zone id
-	__ZONEID=$(grep -o '"id":\s*"[^"]*' $DATFILE | grep -o '[^"]*$' | head -1)
-	[ -z "$__ZONEID" ] && {
-		write_log 4 "Could not detect 'zone id' for domain.tld: '$__DOMAIN'"
-		return 127
-	}
-fi
+# read zone id for registered domain.TLD
+__RUNPROG="$__PRGBASE --request GET '$__URLBASE/zones?name=$__DOMAIN'"
+cloudflare_transfer || return 1
+# extract zone id
+__ZONEID=$(grep -o '"id":\s*"[^"]*' $DATFILE | grep -o '[^"]*$' | head -1)
+[ -z "$__ZONEID" ] && {
+	write_log 4 "Could not detect 'zone id' for domain.tld: '$__DOMAIN'"
+	return 127
+}
 
 # read record id for A or AAAA record of host.domain.TLD
-__RUNPROG="$__PRGBASE --request GET '$__URLBASE/zones/$__ZONEID/dns_records?name=$__HOST&type=$__TYPE'"
+__RUNPROG="$__PRGBASE --request GET '$__URLBASE/zones/$__ZONEID/dns_records?name=${__FULLDOMAIN}&type=$__TYPE'"
 cloudflare_transfer || return 1
 # extract record id
 __RECID=$(grep -o '"id":\s*"[^"]*' $DATFILE | grep -o '[^"]*$' | head -1)
 [ -z "$__RECID" ] && {
-	write_log 4 "Could not detect 'record id' for host.domain.tld: '$__HOST'"
+	write_log 4 "Could not detect 'record id' for host.domain.tld: '${__FULLDOMAIN}'"
 	return 127
 }
 
@@ -191,7 +182,7 @@ __PROXIED=$(grep -o '"proxied":\s*[^",]*' $DATFILE | grep -o '[^:]*$')
 
 # use file to work around " needed for json
 cat > $DATFILE << EOF
-{"id":"$__ZONEID","type":"$__TYPE","name":"$__HOST","content":"$__IP","ttl":$__TTL,"proxied":$__PROXIED}
+{"id":"$__ZONEID","type":"$__TYPE","name":"${__FULLDOMAIN}","content":"$__IP","ttl":$__TTL,"proxied":$__PROXIED}
 EOF
 
 # let's complete transfer command
@@ -199,4 +190,3 @@ __RUNPROG="$__PRGBASE --request PUT --data @$DATFILE '$__URLBASE/zones/$__ZONEID
 cloudflare_transfer || return 1
 
 return 0
-
