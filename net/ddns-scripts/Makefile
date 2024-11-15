@@ -374,7 +374,6 @@ fi
 exit 0
 endef
 
-
 define Package/ddns-scripts-services/install
 	$(INSTALL_DIR) $(1)/usr/share/ddns/default
 	$(INSTALL_DATA) ./files/usr/share/ddns/default/* \
@@ -429,6 +428,24 @@ fi
 exit 0
 endef
 
+define Package/ddns-scripts-cloudflare/postinst
+	#!/bin/sh
+	# remove old services file entries
+	/bin/sed -i '/cloudflare\.com-v4/d' $${IPKG_INSTROOT}/etc/ddns/services		>/dev/null 2>&1
+	/bin/sed -i '/cloudflare\.com-v4/d' $${IPKG_INSTROOT}/etc/ddns/services_ipv6	>/dev/null 2>&1
+	# and create new
+	printf "%s\\t%s\\n" '"cloudflare.com-v4"' '"update_cloudflare_com_v4.sh"' >> $${IPKG_INSTROOT}/etc/ddns/services
+	printf "%s\\t%s\\n" '"cloudflare.com-v4"' '"update_cloudflare_com_v4.sh"' >> $${IPKG_INSTROOT}/etc/ddns/services_ipv6
+	# on real system restart service if enabled
+	[ -z "$${IPKG_INSTROOT}" ] && {
+		[ -x /etc/uci-defaults/ddns_cloudflare.com-v4 ] && \
+			/etc/uci-defaults/ddns_cloudflare.com-v4 && \
+				rm -f /etc/uci-defaults/ddns_cloudflare.com-v4 >/dev/null 2>&1
+		/etc/init.d/ddns enabled && \
+			/etc/init.d/ddns start >/dev/null 2>&1
+	}
+	exit 0	# suppress errors
+endef
 
 define Package/ddns-scripts-cloudflare/install
 	$(INSTALL_DIR) $(1)/usr/lib/ddns
@@ -445,6 +462,9 @@ define Package/ddns-scripts-cloudflare/prerm
 if [ -z "$${IPKG_INSTROOT}" ]; then
 	/etc/init.d/ddns stop
 fi
+	# remove services file entries
+	/bin/sed -i '/cloudflare\.com-v4/d' $${IPKG_INSTROOT}/etc/ddns/services		>/dev/null 2>&1
+	/bin/sed -i '/cloudflare\.com-v4/d' $${IPKG_INSTROOT}/etc/ddns/services_ipv6	>/dev/null 2>&1
 exit 0
 endef
 
@@ -543,6 +563,22 @@ fi
 exit 0
 endef
 
+define Package/ddns-scripts_no-ip_com/postinst
+	#!/bin/sh
+	# remove old services file entries
+	/bin/sed -i '/no-ip\.com/d' $${IPKG_INSTROOT}/etc/ddns/services	>/dev/null 2>&1
+	# and create new
+	printf "%s\\t%s\\n" '"no-ip.com"' '"update_no-ip_com.sh"' >> $${IPKG_INSTROOT}/etc/ddns/services
+	# on real system restart service if enabled
+	[ -z "$${IPKG_INSTROOT}" ] && {
+		[ -x /etc/uci-defaults/ddns_no-ip_com ] && \
+			/etc/uci-defaults/ddns_no-ip_com && \
+				rm -f /etc/uci-defaults/ddns_no-ip_com >/dev/null 2>&1
+		/etc/init.d/ddns enabled && \
+			/etc/init.d/ddns start >/dev/null 2>&1
+	}
+	exit 0	# suppress errors
+endef
 
 define Package/ddns-scripts-noip/install
 	$(INSTALL_DIR) $(1)/usr/lib/ddns
@@ -559,6 +595,8 @@ define Package/ddns-scripts-noip/prerm
 if [ -z "$${IPKG_INSTROOT}" ]; then
 	/etc/init.d/ddns stop
 fi
+	# remove services file entries
+	/bin/sed -i '/no-ip\.com/d' $${IPKG_INSTROOT}/etc/ddns/services	>/dev/null 2>&1
 exit 0
 endef
 
