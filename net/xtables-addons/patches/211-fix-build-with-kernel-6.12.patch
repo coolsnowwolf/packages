@@ -1,0 +1,11 @@
+--- a/extensions/rtsp/nf_conntrack_rtsp.c
++++ b/extensions/rtsp/nf_conntrack_rtsp.c
+@@ -735,7 +735,7 @@
+ 		}
+ 
+ #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0)
+-		strlcpy(hlpr->name, tmpname, sizeof(hlpr->name));
++		strscpy(hlpr->name, tmpname, sizeof(hlpr->name));
+ #else
+ 		hlpr->name = tmpname;
+ #endif
