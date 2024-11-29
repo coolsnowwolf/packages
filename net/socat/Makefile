@@ -6,12 +6,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=socat
-PKG_VERSION:=1.7.4.4
-PKG_RELEASE:=1
+PKG_VERSION:=1.8.0.0
+PKG_RELEASE:=2
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
 PKG_SOURCE_URL:=http://www.dest-unreach.org/socat/download
-PKG_HASH:=fbd42bd2f0e54a3af6d01bdf15385384ab82dbc0e4f1a5e153b3e0be1b6380ac
+PKG_HASH:=e1de683dd22ee0e3a6c6bbff269abe18ab0c9d7eb650204f125155b9005faca7
 
 PKG_MAINTAINER:=Ted Hess <thess@kitschensync.net>
 PKG_LICENSE:=GPL-2.0-or-later OpenSSL
@@ -58,6 +58,9 @@ CONFIGURE_ARGS += \
 	--disable-readline \
 	--enable-termios
 
+## procan.c fails to compile when ccache is enabled
+MAKE_FLAGS += CC="$(TARGET_CC_NOCACHE)"
+
 ifneq ($(CONFIG_SOCAT_SSL),y)
   CONFIGURE_ARGS+= --disable-openssl
 endif
@@ -84,10 +87,6 @@ CONFIGURE_VARS += \
 define Package/socat/install
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/socat $(1)/usr/bin/
-	$(INSTALL_DIR) $(1)/etc/config
-	$(INSTALL_CONF) ./files/socat.config $(1)/etc/config/socat
-	$(INSTALL_DIR) $(1)/etc/init.d
-	$(INSTALL_BIN) ./files/socat.init $(1)/etc/init.d/socat
 endef
 
 $(eval $(call BuildPackage,socat))
