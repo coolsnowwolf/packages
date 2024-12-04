@@ -59,7 +59,7 @@ define Package/xupnpd/install
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/xupnpd $(1)/usr/bin
 	$(INSTALL_DIR) $(1)/etc/init.d
-	$(INSTALL_BIN) ./files/xupnpd.init $(1)/etc/init.d/xupnpd
+#	$(INSTALL_BIN) ./files/xupnpd.init $(1)/etc/init.d/xupnpd
 	$(INSTALL_DIR) $(1)/usr/share/xupnpd
 	$(CP) $(PKG_BUILD_DIR)/src/*.lua $(1)/usr/share/xupnpd
 	$(INSTALL_DIR) $(1)/usr/share/xupnpd/ui
