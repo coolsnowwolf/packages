@@ -6,6 +6,12 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=node
 
+ifeq ($(CONFIG_NODEJS_22),y)
+PKG_VERSION:=v22.11.0
+PKG_RELEASE:=1
+PKG_HASH:=bbf0297761d53aefda9d7855c57c7d2c272b83a7b5bad4fea9cb29006d8e1d35
+PATCH_DIR:=./patches/v22.x
+else
 ifeq ($(CONFIG_NODEJS_20),y)
 PKG_VERSION:=v20.12.2
 PKG_RELEASE:=1
@@ -34,6 +40,7 @@ PKG_VERSION:=v12.22.12
 PKG_RELEASE:=2
 PKG_HASH:=bc42b7f8495b9bfc7f7850dd180bb02a5bdf139cc232b8c6f02a6967e20714f2
 PATCH_DIR:=./patches/v12.x
+endif
 endif
 endif
 endif
@@ -101,7 +108,7 @@ define Package/node/config
 	choice
 		prompt "Version Selection"
 		default NODEJS_12 if mips||mipsel||mips64||mips64el
-		default NODEJS_18
+		default NODEJS_22
 		help
 		 Select node.js version.
 		 The host package version is also the same.
@@ -124,6 +131,10 @@ define Package/node/config
 		config NODEJS_20
 			depends on !(mips||mipsel||mips64||mips64el)
 			bool "20.x Active LTS"
+			
+		config NODEJS_22
+			depends on !(mips||mipsel||mips64||mips64el)
+			bool "22.x Active LTS"
 	endchoice
 
 	if PACKAGE_node
