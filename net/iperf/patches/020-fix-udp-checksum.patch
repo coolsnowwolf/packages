@@ -1,0 +1,11 @@
+--- a/src/checksums.c
++++ b/src/checksums.c
+@@ -172,7 +172,7 @@ uint32_t udpchecksum(const void *l3pdu,
+     int i;
+ 
+     const struct udphdr *udp_hdr = (const struct udphdr *)l4pdu;
+-    if (!udp_hdr->check) {
++    if (!udp_hdr->uh_sum) {
+ 	if (v6)
+ 	    // v6 requires checksums
+ 	    return -1;
