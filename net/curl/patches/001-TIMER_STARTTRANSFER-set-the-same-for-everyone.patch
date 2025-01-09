@@ -1,0 +1,93 @@
+From 1db0792c0d11855dcad1ac78817818f8f270c241 Mon Sep 17 00:00:00 2001
+From: Stefan Eissing <stefan@eissing.org>
+Date: Tue, 5 Mar 2024 11:48:16 +0100
+Subject: [PATCH] TIMER_STARTTRANSFER: set the same for everyone
+
+- set TIMER_STARTTRANSFER on seeing the first response bytes
+  in the download client writer, not coming from a CONNECT
+- initialized the timer the same way for all protocols
+- remove explicit setting of TIMER_STARTTRANSFER in file.c
+  and c-hyper.c
+
+Closes #13052
+---
+ lib/c-hyper.c |  3 ---
+ lib/file.c    |  2 --
+ lib/sendf.c   | 22 +++++++++++++---------
+ 3 files changed, 13 insertions(+), 14 deletions(-)
+
+--- a/lib/c-hyper.c
++++ b/lib/c-hyper.c
+@@ -152,9 +152,6 @@ static int hyper_each_header(void *userd
+     return HYPER_ITER_BREAK;
+   }
+ 
+-  if(!data->req.bytecount)
+-    Curl_pgrsTime(data, TIMER_STARTTRANSFER);
+-
+   Curl_dyn_reset(&data->state.headerb);
+   if(name_len) {
+     if(Curl_dyn_addf(&data->state.headerb, "%.*s: %.*s\r\n",
+--- a/lib/file.c
++++ b/lib/file.c
+@@ -541,8 +541,6 @@ static CURLcode file_do(struct Curl_easy
+       return CURLE_BAD_DOWNLOAD_RESUME;
+   }
+ 
+-  Curl_pgrsTime(data, TIMER_STARTTRANSFER);
+-
+   while(!result) {
+     char tmpbuf[8*1024];
+     ssize_t nread;
+--- a/lib/sendf.c
++++ b/lib/sendf.c
+@@ -541,28 +541,32 @@ static size_t get_max_body_write_len(str
+   return SIZE_T_MAX;
+ }
+ 
++struct cw_download_ctx {
++  struct Curl_cwriter super;
++  BIT(started_response);
++};
+ /* Download client writer in phase CURL_CW_PROTOCOL that
+  * sees the "real" download body data. */
+ static CURLcode cw_download_write(struct Curl_easy *data,
+                                   struct Curl_cwriter *writer, int type,
+                                   const char *buf, size_t nbytes)
+ {
++  struct cw_download_ctx *ctx = (struct cw_download_ctx *)writer;
+   CURLcode result;
+   size_t nwrite, excess_len = 0;
++  bool is_connect = !!(type & CLIENTWRITE_CONNECT);
++
++  if(!is_connect && !ctx->started_response) {
++    Curl_pgrsTime(data, TIMER_STARTTRANSFER);
++    ctx->started_response = TRUE;
++  }
+ 
+   if(!(type & CLIENTWRITE_BODY)) {
+-    if((type & CLIENTWRITE_CONNECT) && data->set.suppress_connect_headers)
++    if(is_connect && data->set.suppress_connect_headers)
+       return CURLE_OK;
+     return Curl_cwriter_write(data, writer->next, type, buf, nbytes);
+   }
+ 
+-  if(!data->req.bytecount) {
+-    Curl_pgrsTime(data, TIMER_STARTTRANSFER);
+-    if(data->req.exp100 > EXP100_SEND_DATA)
+-      /* set time stamp to compare with when waiting for the 100 */
+-      data->req.start100 = Curl_now();
+-  }
+-
+   /* Here, we deal with REAL BODY bytes. All filtering and transfer
+    * encodings have been applied and only the true content, e.g. BODY,
+    * bytes are passed here.
+@@ -646,7 +650,7 @@ static const struct Curl_cwtype cw_downl
+   Curl_cwriter_def_init,
+   cw_download_write,
+   Curl_cwriter_def_close,
+-  sizeof(struct Curl_cwriter)
++  sizeof(struct cw_download_ctx)
+ };
+ 
+ /* RAW client writer in phase CURL_CW_RAW that
