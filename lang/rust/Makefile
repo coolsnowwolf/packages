@@ -5,12 +5,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=rust
-PKG_VERSION:=1.80.1
+PKG_VERSION:=1.84.0
 PKG_RELEASE:=1
 
 PKG_SOURCE:=rustc-$(PKG_VERSION)-src.tar.gz
 PKG_SOURCE_URL:=https://static.rust-lang.org/dist/
-PKG_HASH:=2c0b8f643942dcb810cbcc50f292564b1b6e44db5d5f45091153996df95d2dc4
+PKG_HASH:=15cee7395b07ffde022060455b3140366ec3a12cbbea8f1ef2ff371a9cca51bf
 HOST_BUILD_DIR:=$(BUILD_DIR)/host/rustc-$(PKG_VERSION)-src
 
 PKG_MAINTAINER:=Luca Barbato <lu_zero@luminem.org>
@@ -54,7 +54,7 @@ TARGET_CONFIGURE_ARGS = \
 	--set=target.$(RUSTC_TARGET_ARCH).linker=$(TARGET_CC_NOCACHE) \
 	--set=target.$(RUSTC_TARGET_ARCH).ranlib=$(TARGET_RANLIB) \
 	--set=target.$(RUSTC_TARGET_ARCH).crt-static=false \
-	$(if $(CONFIG_USE_MUSL),--set=target.$(RUSTC_TARGET_ARCH).musl-root=$(TOOLCHAIN_DIR))
+	$(if $(CONFIG_USE_MUSL),--set=target.$(RUSTC_TARGET_ARCH).musl-root=$(TOOLCHAIN_ROOT_DIR))
 
 # CARGO_HOME is an environmental
 HOST_CONFIGURE_VARS += CARGO_HOME="$(CARGO_HOME)"
