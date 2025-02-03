@@ -1,0 +1,11 @@
+--- a/src/iperf_api.c
++++ b/src/iperf_api.c
+@@ -4137,7 +4137,7 @@ iperf_print_results(struct iperf_test *test)
+                                 iperf_printf(test, report_sender_not_available_summary_format, "SUM");
+                         }
+                         else {
+-                          iperf_printf(test, report_sum_bw_retrans_format, mbuf, start_time, sender_time, ubuf, nbuf, total_retransmits, report_sender);
++                          iperf_printf(test, report_sum_bw_retrans_format, mbuf, start_time, sender_time, ubuf, nbuf, (int)total_retransmits, report_sender);
+                         }
+                 } else {
+                     /* Summary sum, TCP without retransmits. */
