@@ -17,28 +17,6 @@ json_add_array_string() {
 	json_add_string "" "${1}"
 }
 
-find_network_device() {
-	local device="${1}"
-	local device_section=""
-
-	check_device() {
-		local cfg="${1}"
-		local device="${2}"
-
-		local type name
-		config_get type "${cfg}" type
-		config_get name "${cfg}" name
-
-		[ "${type}" = "bridge" ] && [ "${name}" = "${device}" ] \
-			&& device_section="${cfg}"
-	}
-
-	config_load network
-	config_foreach check_device device "${device}"
-
-	echo "${device_section}"
-}
-
 boot() {
 	uciadd
 	rc_procd start_service
@@ -62,42 +40,36 @@ uciadd() {
 
 	# Add network interface
 	if ! uci_quiet get network.${iface}; then
-		logger -t "dockerd-init" -p notice "Adding interface '${iface}' to network config"
+		logger -t "dockerd-init" -p notice "Adding docker default interface to network uci config (${iface})"
 		uci_quiet add network interface
 		uci_quiet rename network.@interface[-1]="${iface}"
-		uci_quiet set network.@interface[-1].device="${device}"
+		uci_quiet set network.@interface[-1].ifname="${device}"
 		uci_quiet set network.@interface[-1].proto="none"
 		uci_quiet set network.@interface[-1].auto="0"
 		uci_quiet commit network
 	fi
 
 	# Add docker bridge device
-	if [ "$(find_network_device "$device")" = "" ]; then
-		logger -t "dockerd-init" -p notice "Adding bridge device '${device}' to network config"
+	if ! uci_quiet get network.${device}; then
+		logger -t "dockerd-init" -p notice "Adding docker default bridge device to network uci config (${device})"
 		uci_quiet add network device
+		uci_quiet rename network.@device[-1]="${device}"
 		uci_quiet set network.@device[-1].type="bridge"
 		uci_quiet set network.@device[-1].name="${device}"
+		uci_quiet add_list network.@device[-1].ifname="${device}"
 		uci_quiet commit network
-	else
-		logger -t "dockerd-init" -p notice "Bridge device '${device}' already defined in network config"
 	fi
 
 	# Add firewall zone
 	if ! uci_quiet get firewall.${zone}; then
-		logger -t "dockerd-init" -p notice "Adding firewall zone '${zone}' to firewall config"
+		logger -t "dockerd-init" -p notice "Adding docker default firewall zone to firewall uci config (${zone})"
 		uci_quiet add firewall zone
 		uci_quiet rename firewall.@zone[-1]="${zone}"
+		uci_quiet set firewall.@zone[-1].network="${iface}"
 		uci_quiet set firewall.@zone[-1].input="ACCEPT"
 		uci_quiet set firewall.@zone[-1].output="ACCEPT"
 		uci_quiet set firewall.@zone[-1].forward="ACCEPT"
 		uci_quiet set firewall.@zone[-1].name="${zone}"
-		uci_quiet commit firewall
-	fi
-
-	# Add interface to firewall zone
-	if uci_quiet get firewall.${zone}; then
-		uci_quiet del_list firewall.${zone}.network="${iface}"
-		uci_quiet add_list firewall.${zone}.network="${iface}"
 		uci_quiet commit firewall
 	fi
 
@@ -120,29 +92,21 @@ ucidel() {
 		exit 0
 	}
 
-	# Remove network device
-	if uci_quiet delete network.$(find_network_device "${device}"); then
-		logger -t "dockerd-init" -p notice "Deleting bridge device '${device}' from network config"
+	if uci_quiet get network.${device}; then
+		logger -t "dockerd-init" -p notice "Deleting docker default bridge device from network uci config (${device})"
+		uci_quiet delete network.${device}
 		uci_quiet commit network
 	fi
 
-	# Remove network interface
 	if uci_quiet get network.${iface}; then
-		logger -t "dockerd-init" -p notice "Deleting interface '${iface}' from network config"
+		logger -t "dockerd-init" -p notice "Deleting docker default interface from network uci config (${iface})"
 		uci_quiet delete network.${iface}
 		uci_quiet commit network
 	fi
 
-	# Remove interface from firewall zone
 	if uci_quiet get firewall.${zone}; then
-		logger -t "dockerd-init" -p notice "Deleting network interface '${iface}' in zone '${zone}' from firewall config"
-		uci_quiet del_list firewall.${zone}.network="${iface}"
-		uci_quiet commit firewall
-		# Remove Firewall zone if network is empty
-		if ! uci_quiet get firewall.${zone}.network; then
-			logger -t "dockerd-init" -p notice "Deleting firewall zone '${zone}' from firewall config"
-			uci_quiet delete firewall.${zone}
-		fi
+		logger -t "dockerd-init" -p notice "Deleting docker firewall zone from firewall uci config (${zone})"
+		uci_quiet delete firewall.${zone}
 		uci_quiet commit firewall
 	fi
 
@@ -175,7 +139,6 @@ process_config() {
 
 	# Don't add these options by default
 	# omission == docker defaults
-	config_get log_driver globals log_driver ""
 	config_get bip globals bip ""
 	config_get registry_mirrors globals registry_mirrors ""
 	config_get hosts globals hosts ""
@@ -190,7 +153,6 @@ process_config() {
 	json_add_string "data-root" "${data_root}"
 	json_add_string "log-level" "${log_level}"
 	json_add_boolean "iptables" "${iptables}"
-	[ -z "${log_driver}" ] || json_add_string "log-driver" "${log_driver}"
 	[ -z "${bip}" ] || json_add_string "bip" "${bip}"
 	[ -z "${registry_mirrors}" ] || json_add_array "registry-mirrors"
 	[ -z "${registry_mirrors}" ] || config_list_foreach globals registry_mirrors json_add_array_string
