@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libgpiod
-PKG_VERSION:=1.6.4
+PKG_VERSION:=1.6.5
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=@KERNEL/software/libs/libgpiod/
-PKG_HASH:=7b146e12f28fbca3df7557f176eb778c5ccf952ca464698dba8a61b2e1e3f9b5
+PKG_HASH:=ae280f697bf035a1fb780c9972e5c81d0d2712b7ab6124fb3fba24619daa72bc
 
 PKG_MAINTAINER:=Michael Heimpold <mhei@heimpold.de>
 PKG_LICENSE:=LGPL-2.1-or-later
