@@ -6,12 +6,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=gowebdav
-PKG_VERSION:=4.2.0
-PKG_RELEASE:=$(AUTORELEASE)
+PKG_VERSION:=5.7.4
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/hacdias/webdav/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=bc8e11cf765e5506677968ccdf815e0648d93606dc3c5e8f5f2f76fe0407ee2c
+PKG_HASH:=5462eaf18292727e7af66d77c1723f729c97a31d4dfe4b47343f0644a5e63454
 
 PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=LICENSE
@@ -46,10 +46,10 @@ endef
 define Package/gowebdav/install
 	$(call GoPackage/Package/Install/Bin,$(1))
 
-	$(INSTALL_DIR) $(1)/etc/config/ $(1)/etc/init.d/ $(1)/etc/webdav/
-	$(INSTALL_BIN) $(CURDIR)/files/webdav.init $(1)/etc/init.d/webdav
-	$(INSTALL_CONF) $(CURDIR)/files/webdav.config $(1)/etc/config/webdav
-	$(INSTALL_CONF) $(CURDIR)/files/webdav.yaml $(1)/etc/webdav/webdav.yaml
+#	$(INSTALL_DIR) $(1)/etc/config/ $(1)/etc/init.d/ $(1)/etc/webdav/
+#	$(INSTALL_BIN) $(CURDIR)/files/webdav.init $(1)/etc/init.d/webdav
+#	$(INSTALL_CONF) $(CURDIR)/files/webdav.config $(1)/etc/config/webdav
+#	$(INSTALL_CONF) $(CURDIR)/files/webdav.yaml $(1)/etc/webdav/webdav.yaml
 endef
 
 $(eval $(call GoBinPackage,gowebdav))
