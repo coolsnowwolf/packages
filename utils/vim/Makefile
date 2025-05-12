@@ -8,14 +8,16 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=vim
-PKG_VERSION:=8.2
-PKG_RELEASE:=5
-VIMVER:=82
+PKG_VERSION:=9.0
+PKG_RELEASE:=1
+VIMVER:=90
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
 PKG_SOURCE_URL:=http://ftp.vim.org/pub/vim/unix
-PKG_HASH:=f087f821831b4fece16a0461d574ccd55a8279f64d635510a1e10225966ced3b
+PKG_HASH:=a6456bc154999d83d0c20d968ac7ba6e7df0d02f3cb6427fb248660bacfb336e
 PKG_MAINTAINER:=Marko Ratkaj <markoratkaj@gmail.com>
+PKG_LICENSE:=Vim
+PKG_LICENSE_FILES:=LICENSE
 PKG_CPE_ID:=cpe:/a:vim:vim
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)$(VIMVER)
@@ -41,12 +43,16 @@ endef
 define Package/vim-full
   $(call Package/vim/Default)
   TITLE+= (Normal)
+  PROVIDES:=vim
+  CONFLICTS:=vim
 endef
 
 
 define Package/vim-fuller
   $(call Package/vim/Default)
   TITLE+= (Big)
+  PROVIDES:=vim vim-full
+  CONFLICTS:=vim vim-full
 endef
 
 define Package/vim-runtime
@@ -116,6 +122,7 @@ CONFIGURE_ARGS += \
 	--disable-cscope \
 	--disable-gpm \
 	--disable-acl \
+	--disable-libsodium \
 	--disable-selinux \
 	--with-tlib=ncurses \
 	--with-compiledby="non-existent-hostname-compiled"
