@@ -44,7 +44,6 @@ define Package/vim-full
   $(call Package/vim/Default)
   TITLE+= (Normal)
   PROVIDES:=vim
-  CONFLICTS:=vim
 endef
 
 
@@ -52,7 +51,6 @@ define Package/vim-fuller
   $(call Package/vim/Default)
   TITLE+= (Big)
   PROVIDES:=vim vim-full
-  CONFLICTS:=vim vim-full
 endef
 
 define Package/vim-runtime
