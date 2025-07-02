@@ -8,7 +8,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=lucky
-PKG_VERSION:=2.10.8
+PKG_VERSION:=2.17.8
 PKG_RELEASE:=1
 
 ifeq ($(ARCH),mipsel)
@@ -41,13 +41,29 @@ endif
 ifeq ($(ARCH),x86_64)
 	LUCKY_ARCH:=x86_64
 endif
+ifeq ($(ARCH),riscv64)
+	LUCKY_ARCH:=riscv64
+endif
+ifeq ($(ARCH),arm)
+	ifeq ($(BOARD),bcm53xx)
+		LUCKY_ARCH:=armv6
+	else
+	LUCKY_ARCH:=armv7
+	endif
+endif
+ifeq ($(BOARD),bcm53xx)
+	LUCKY_ARCH:=armv6
+ifeq ($(word 2,$(subst +,$(space),$(call qstrip,$(CONFIG_CPU_TYPE)))),)
+	LUCKY_ARCH:=armv5
+endif
+endif
 
 PKG_LICENSE:=GPL-3.0-only
 PKG_LICENSE_FILES:=LICENSE
 PKG_MAINTAINER:=GDY666 <gdy666@foxmail.com>
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE_VERSION:=3626928d4a45ae606856b834614e45997b5da235
+PKG_SOURCE_VERSION:=b78c8a81cceb817904f437a81eca4260d32dd9b9
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -55,7 +71,7 @@ define Package/$(PKG_NAME)
 	SECTION:=net
 	CATEGORY:=Network
 	TITLE:=Lucky dynamic domain name ddns-go service, socat,frp 
-	DEPENDS:=@(i386||x86_64||arm||aarch64||mipsel||mips)
+	DEPENDS:=@(i386||x86_64||arm||aarch64||mipsel||mips||riscv64)
 	URL:=https://github.com/gdy666/lucky
 endef
 
