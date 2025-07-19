@@ -1,24 +1,35 @@
---- a/src/libopensc/sc-ossl-compat.h
-+++ b/src/libopensc/sc-ossl-compat.h
-@@ -101,6 +101,21 @@ extern "C" {
+--- a/src/libopensc/pkcs15-din-66291.c
++++ b/src/libopensc/pkcs15-din-66291.c
+@@ -23,12 +23,12 @@
+ #include <config.h>
  #endif
  
- /*
-+ * 1.1.0 depracated ERR_load_crypto_strings(), SSL_load_error_strings(), ERR_free_strings()
-+ * and ENGINE_load_dynamic.EVP_CIPHER_CTX_cleanup and EVP_CIPHER_CTX_init are replaced
-+ * by EVP_CIPHER_CTX_reset.
-+ * But for compatability with LibreSSL and older OpenSSL. OpenSC uses the older functions
-+ */
-+#if OPENSSL_API_COMPAT >= 0x10100000L  && !defined(LIBRESSL_VERSION_NUMBER)
-+#define ERR_load_crypto_strings(x) {}
-+#define SSL_load_error_strings(x)  {}
-+#define ERR_free_strings(x)        {}
-+#define ENGINE_load_dynamic(x)     {}
-+#define EVP_CIPHER_CTX_cleanup(x) EVP_CIPHER_CTX_reset(x)
-+#define EVP_CIPHER_CTX_init(x) EVP_CIPHER_CTX_reset(x)
-+#endif
-+
-+/*
-  * OpenSSL-1.1.0-pre5 has hidden the RSA and DSA structures
-  * One can no longer use statements like rsa->n = ...
-  * Macros and defines don't work on all systems, so use inline versions
++#include <stdlib.h>
++#include <string.h>
+ #include "internal.h"
+ #include "common/compat_strlcpy.h"
+ #include "log.h"
+ #include "pkcs15.h"
+-#include <stdlib.h>
+-#include <string.h>
+ 
+ static const unsigned char aid_CIA[] = {0xE8, 0x28, 0xBD, 0x08, 0x0F,
+     0xA0, 0x00, 0x00, 0x01, 0x67, 0x45, 0x53, 0x49, 0x47, 0x4E};
+--- a/src/libopensc/pkcs15-starcos-esign.c
++++ b/src/libopensc/pkcs15-starcos-esign.c
+@@ -23,14 +23,14 @@
+ #include <config.h>
+ #endif
+ 
++#include <stdlib.h>
++#include <string.h>
+ #include "common/compat_strlcpy.h"
+ #include "internal.h"
+ #include "log.h"
+ #include "pkcs15.h"
+ #include "cards.h"
+ 
+-#include <stdlib.h>
+-#include <string.h>
+ 
+ /* compile time option: define ENABLE_ESIGN_ISSUER_CONTAINERS to enable containers holding the issuer certificates */
