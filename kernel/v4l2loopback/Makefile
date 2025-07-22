@@ -6,14 +6,16 @@ include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/kernel.mk
 
 PKG_NAME:=v4l2loopback
-PKG_RELEASE:=2
+PKG_VERSION:=0.13.2
+PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=https://github.com/umlaeute/v4l2loopback.git
-PKG_SOURCE_VERSION:=v0.12.7
-PKG_MIRROR_HASH:=e5e5d897bdaa7f2fb0b897e503cecaeee234fcdc7f2f138aae501ef742f5b2b2
+PKG_SOURCE_URL:=https://github.com/umlaeute/v4l2loopback
+PKG_SOURCE_VERSION:=v$(PKG_VERSION)
+PKG_MIRROR_HASH:=261ee0f983885beaa663d4775d0ad5260fd1bea0136a61375a522618f936da8b
 
 PKG_MAINTAINER:=Michel Promonet <michel.promonet@free.fr>
+PKG_CPE_ID:=cpe:/o:v4l2loopback_project:v4l2loopback
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -46,4 +48,3 @@ define Build/Compile
 endef
 
 $(eval $(call KernelPackage,v4l2loopback))
-
