@@ -5,12 +5,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ddns-go
-PKG_VERSION:=6.11.0
+PKG_VERSION:=6.11.3
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/jeessy2/ddns-go/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=49e2e3374911c5d0c1124dba1e6a565c2e810be9328d0b05d1cfbafb8c937958
+PKG_HASH:=09b798664ce28859ac6a8578b61ef3bad0c72636b19c77fa200af8dfa33a839e
 
 PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=LICENSE
@@ -50,18 +50,8 @@ define Package/ddns-go/description
     - Custom callback
 endef
 
-define Package/ddns-go/conffiles
-/etc/config/ddns-go
-/etc/ddns-go/config.yaml
-endef
-
 define Package/ddns-go/install
 	$(call GoPackage/Package/Install/Bin,$(1))
-
-	$(INSTALL_DIR) $(1)/etc/config/
-	$(INSTALL_CONF) $(CURDIR)/files/ddns-go.conf $(1)/etc/config/ddns-go
-	$(INSTALL_DIR) $(1)/etc/init.d/
-	$(INSTALL_BIN) $(CURDIR)/files/ddns-go.init $(1)/etc/init.d/ddns-go
 endef
 
 $(eval $(call GoBinPackage,ddns-go))
