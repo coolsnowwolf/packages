@@ -1,0 +1,14 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2007 OpenWrt.org
+
+STOP=90
+START=90
+
+stop(){
+	qiyougameboost.sh stop
+}
+
+start(){
+	qiyougameboost.sh start &
+}
+
