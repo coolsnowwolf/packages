@@ -300,7 +300,7 @@ $(call Package/strongswan/Default)
 	+strongswan-mod-des \
 	+strongswan-mod-gmpdh \
 	+strongswan-mod-hmac \
-	@(PACKAGE_strongswan-mod-kdf||PACKAGE_strongswan-mod-openssl||PACKAGE_strongswan-mod-wolfssl) \
+	+strongswan-mod-kdf \
 	+strongswan-mod-kernel-netlink \
 	+strongswan-mod-md5 \
 	+strongswan-mod-nonce \
@@ -329,7 +329,7 @@ $(call Package/strongswan/Default)
 	+strongswan-mod-aes \
 	+strongswan-mod-gmp \
 	+strongswan-mod-hmac \
-	@(PACKAGE_strongswan-mod-kdf||PACKAGE_strongswan-mod-openssl||PACKAGE_strongswan-mod-wolfssl) \
+	+strongswan-mod-kdf \
 	+strongswan-mod-kernel-netlink \
 	+strongswan-mod-nonce \
 	+strongswan-mod-pubkey \
@@ -471,6 +471,7 @@ CONFIGURE_ARGS+= \
 	--disable-scripts \
 	--disable-static \
 	--disable-fast \
+	--enable-mgf1 \
 	--enable-mediation \
 	--with-systemdsystemunitdir=no \
 	$(if $(CONFIG_PACKAGE_strongswan-charon-cmd),--enable-cmd,--disable-cmd) \
