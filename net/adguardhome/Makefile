@@ -6,17 +6,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=adguardhome
-PKG_VERSION:=0.107.63
+PKG_VERSION:=0.107.64
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/AdguardTeam/AdGuardHome/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=f445eb98fc1beba326433da7c999799fe36c7f15297fdebe59a41914eaffe3ad
+PKG_HASH:=a6b61d3c102fa47072a7230382d438f3d408f74ffae3aff7d330adad90ed169c
 PKG_BUILD_DIR:=$(BUILD_DIR)/AdGuardHome-$(PKG_VERSION)
-
-FRONTEND_DEST:=$(PKG_NAME)-frontend-$(PKG_VERSION).tar.gz
-FRONTEND_URL:=https://github.com/AdguardTeam/AdGuardHome/releases/download/v$(PKG_VERSION)/
-FRONTEND_HASH:=74bda6f7c7334342b33fff50a0cdff4e206f84a471bab983ee16d3f6f112c53a
 
 PKG_LICENSE:=GPL-3.0-only
 PKG_LICENSE_FILES:=LICENSE.txt
@@ -25,7 +21,7 @@ PKG_MAINTAINER:=Dobroslaw Kijowski <dobo90@gmail.com>, George Sapkin <george@sap
 
 PKG_BUILD_DEPENDS:=golang/host
 PKG_BUILD_PARALLEL:=1
-PKG_BUILD_FLAGS:=no-mips16
+PKG_USE_MIPS16:=0
 
 GO_PKG:=github.com/AdguardTeam/AdGuardHome
 GO_PKG_BUILD_PKG:=$(GO_PKG)
@@ -57,17 +53,18 @@ define Package/adguardhome/description
   Free and open source, powerful network-wide ads and trackers blocking DNS server.
 endef
 
-define Download/adguardhome-frontend
-	URL:=$(FRONTEND_URL)
+FRONTEND_FILE:=$(PKG_NAME)_frontend-$(PKG_VERSION).tar.gz
+define Download/adguardhome_frontend
+	URL:=https://github.com/AdguardTeam/AdGuardHome/releases/download/v$(PKG_VERSION)/
 	URL_FILE:=AdGuardHome_frontend.tar.gz
-	FILE:=$(FRONTEND_DEST)
-	HASH:=$(FRONTEND_HASH)
+	FILE:=$(FRONTEND_FILE)
+	HASH:=f0c1e4d6e673d4d26d52947cdb220682aa554158d331fa044576d1794b82e325
 endef
 
 define Build/Prepare
 	$(call Build/Prepare/Default)
 
-	gzip -dc $(DL_DIR)/$(FRONTEND_DEST) | $(HOST_TAR) -C $(PKG_BUILD_DIR)/ $(TAR_OPTIONS)
+	gzip -dc $(DL_DIR)/$(FRONTEND_FILE) | $(HOST_TAR) -C $(PKG_BUILD_DIR)/ $(TAR_OPTIONS)
 endef
 
 define Package/adguardhome/install
@@ -82,6 +79,6 @@ define Package/adguardhome/install
 	$(INSTALL_CONF) ./files/adguardhome.sysctl $(1)/etc/sysctl.d/50-adguardhome.conf
 endef
 
-$(eval $(call Download,adguardhome-frontend))
+$(eval $(call Download,adguardhome_frontend))
 $(eval $(call GoBinPackage,adguardhome))
 $(eval $(call BuildPackage,adguardhome))
