@@ -7,18 +7,18 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=clouddrive2
-PKG_VERSION:=0.9.1
-PKG_RELEASE=2
+PKG_VERSION:=0.9.5
+PKG_RELEASE=1
 
 ifeq ($(ARCH),aarch64)
 	PKG_ARCH:=aarch64
-	PKG_HASH:=1cccee442495071c32b91c43db7f9893b6d3adac831e2e97d094af6866497ef5
+	PKG_HASH:=33e942533a22cbfb0898166b3a38de3f87aa1b7178c1b90c420f47a3710b185a
 else ifeq ($(ARCH),arm)
 	PKG_ARCH:=armv7
-	PKG_HASH:=cad9046776e313e5dce886d94806947a71303322f3f11541aadfb71a88a5f4cb
+	PKG_HASH:=85a0a6efea4cccf2a01bba4e8f17518129e02edf8696021a8ac8af1f49c9c987
 else ifeq ($(ARCH),x86_64)
 	PKG_ARCH:=x86_64
-	PKG_HASH:=c66da48c2b5f36f6d99957dde36517fa2e06e387ea42c2cfe15d624c2766dcf0
+	PKG_HASH:=1acab9aefaf449e1b1091c0079e1516413ce7b7d8421aeee3ba48022e8a77b30
 endif
 
 include $(INCLUDE_DIR)/package.mk
@@ -47,9 +47,9 @@ endef
 
 define Package/clouddrive2/install
 	$(INSTALL_DIR) $(1)/etc/init.d
-	$(INSTALL_BIN) ./files/clouddrive2.init $(1)/etc/init.d/clouddrive2
+	$(INSTALL_BIN) $(CURDIR)/files/clouddrive2.init $(1)/etc/init.d/clouddrive2
 	$(INSTALL_DIR) $(1)/etc/config
-	$(INSTALL_CONF) ./files/clouddrive2.config $(1)/etc/config/clouddrive2
+	$(INSTALL_CONF) $(CURDIR)/files/clouddrive2.config $(1)/etc/config/clouddrive2
 	$(INSTALL_DIR) $(1)/usr/share/clouddrive2
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/clouddrive-2-linux-$(PKG_ARCH)-$(PKG_VERSION)/clouddrive $(1)/usr/share/clouddrive2/
 	cp -rf $(PKG_BUILD_DIR)/clouddrive-2-linux-$(PKG_ARCH)-$(PKG_VERSION)/wwwroot $(1)/usr/share/clouddrive2/
