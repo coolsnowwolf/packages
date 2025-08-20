@@ -16,7 +16,7 @@ define Package/$(PKG_NAME)
   SECTION:=net
   CATEGORY:=Network
   TITLE:=QiYou Game Booster
-  DEPENDS:=+kmod-tun +curl
+  DEPENDS:=@(aarch64||arm||mips||mipsel||i386||x86_64) +kmod-tun +curl
   URL:=https://www.qiyou.cn
 endef
 
