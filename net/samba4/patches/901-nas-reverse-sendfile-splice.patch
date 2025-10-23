@@ -1,0 +1,195 @@
+--- a/source3/lib/recvfile.c
++++ b/source3/lib/recvfile.c
+@@ -25,6 +25,9 @@
+ #include "includes.h"
+ #include "system/filesys.h"
+ #include "lib/util/sys_rw.h"
++#if defined(LINUX_SENDFILE_API)
++#include <sys/sendfile.h>
++#endif
+ 
+ /* Do this on our own in TRANSFER_BUF_SIZE chunks.
+  * It's safe to make direct syscalls to lseek/write here
+@@ -42,6 +45,10 @@
+ #define TRANSFER_BUF_SIZE (128*1024)
+ #endif
+ 
++#define SPLICE_F_COPY 0
++#define MAX_ITERATIONS 4
++#define RECEIVE_BUF_SIZE (64*1024)
++ssize_t sys_recvfile_splice(int fromfd, int tofd, off_t offset, size_t count);
+ static ssize_t default_sys_recvfile(int fromfd,
+ 			int tofd,
+ 			off_t offset,
+@@ -127,6 +134,73 @@ static ssize_t default_sys_recvfile(int
+ 	return (ssize_t)total_written;
+ }
+ 
++#if defined(LINUX_SENDFILE_API)
++static bool try_sendfile_call = true;
++ssize_t sys_recvfile_rsendfile(int fromfd,
++			int tofd,
++			off_t offset,
++			size_t count)
++{
++    size_t total_written = 0;
++	loff_t splice_offset = offset;
++
++	DEBUG(10,("sys_recvfile: from = %d, to = %d, "
++		"offset=%.0f, count = %lu\n",
++		fromfd, tofd, (double)offset,
++		(unsigned long)count));
++
++	if (count == 0) {
++		return 0;
++	}
++
++	if (!try_sendfile_call) {
++		return default_sys_recvfile(fromfd,
++				tofd,
++				offset,
++				count);
++	}
++
++	while (count > 0) {
++		ssize_t nwritten;
++		do {
++			nwritten = sendfile(tofd, fromfd, &offset, MIN(count, TRANSFER_BUF_SIZE));
++#if defined(EWOULDBLOCK)
++		} while (nwritten == -1 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK));
++#else
++		} while (nwritten == -1 && (errno == EINTR || errno == EAGAIN));
++#endif
++		if (nwritten == -1) {
++			if (total_written == 0 &&
++			    (errno == EBADF || errno == ESPIPE || errno == EINVAL)) {
++				try_sendfile_call = false;
++#if defined(HAVE_LINUX_SPLICE)
++				return sys_recvfile_splice(fromfd, tofd,
++							    offset, count);
++#else
++				return default_sys_recvfile(fromfd, tofd,
++							    offset, count);
++#endif
++			}
++
++			goto done_sendfile;
++		}
++		total_written += nwritten;
++		count -= nwritten;
++	}
++ done_sendfile:
++	if (count) {
++		int saved_errno = errno;
++		if (drain_socket(fromfd, count) != count) {
++			/* socket is dead. */
++			return -1;
++		}
++		errno = saved_errno;
++	}
++
++	return total_written;
++}
++
++#endif
+ #if defined(HAVE_LINUX_SPLICE)
+ 
+ /*
+@@ -137,16 +211,15 @@ static ssize_t default_sys_recvfile(int
+  * from the network in the case of return != -1.
+  */
+ 
+-
+-ssize_t sys_recvfile(int fromfd,
++static bool try_splice_call = true;
++ssize_t sys_recvfile_splice(int fromfd,
+ 			int tofd,
+ 			off_t offset,
+ 			size_t count)
+ {
+-	static int pipefd[2] = { -1, -1 };
+-	static bool try_splice_call = false;
+ 	size_t total_written = 0;
+ 	loff_t splice_offset = offset;
++	size_t current_count;
+ 
+ 	DEBUG(10,("sys_recvfile: from = %d, to = %d, "
+ 		"offset=%.0f, count = %lu\n",
+@@ -171,20 +244,22 @@ ssize_t sys_recvfile(int fromfd,
+ 				count);
+ 	}
+ 
+-	if ((pipefd[0] == -1) && (pipe(pipefd) == -1)) {
+-		try_splice_call = false;
+-		return default_sys_recvfile(fromfd, tofd, offset, count);
+-	}
+-
+ 	while (count > 0) {
+-		int nread, to_write;
++		int nread, try_again;
++
++		if (count > RECEIVE_BUF_SIZE){
++			current_count=RECEIVE_BUF_SIZE;
++		} else {
++			current_count=count;
++		}
++		try_again = MAX_ITERATIONS;
++		do {
++			nread = splice(fromfd, NULL, tofd, &offset, current_count, SPLICE_F_COPY);
++			if (nread == -1)
++				try_again--;
++		} while(nread ==-1 && try_again);
+ 
+-		nread = splice(fromfd, NULL, pipefd[1], NULL,
+-			       MIN(count, 16384), SPLICE_F_MOVE);
+ 		if (nread == -1) {
+-			if (errno == EINTR) {
+-				continue;
+-			}
+ 			if (total_written == 0 &&
+ 			    (errno == EBADF || errno == EINVAL)) {
+ 				try_splice_call = false;
+@@ -194,18 +269,6 @@ ssize_t sys_recvfile(int fromfd,
+ 			break;
+ 		}
+ 
+-		to_write = nread;
+-		while (to_write > 0) {
+-			int thistime;
+-			thistime = splice(pipefd[0], NULL, tofd,
+-					  &splice_offset, to_write,
+-					  SPLICE_F_MOVE);
+-			if (thistime == -1) {
+-				goto done;
+-			}
+-			to_write -= thistime;
+-		}
+-
+ 		total_written += nread;
+ 		count -= nread;
+ 	}
+@@ -222,7 +285,7 @@ ssize_t sys_recvfile(int fromfd,
+ 
+ 	return total_written;
+ }
+-#else
++#endif
+ 
+ /*****************************************************************
+  No recvfile system call - use the default 128 chunk implementation.
+@@ -233,9 +296,14 @@ ssize_t sys_recvfile(int fromfd,
+ 			off_t offset,
+ 			size_t count)
+ {
++#if defined(LINUX_SENDFILE_API)
++	if(try_sendfile_call) return sys_recvfile_rsendfile(fromfd, tofd, offset, count);
++#endif
++#if defined(HAVE_LINUX_SPLICE)
++	if(try_splice_call) return sys_recvfile_splice(fromfd, tofd, offset, count);
++#endif
+ 	return default_sys_recvfile(fromfd, tofd, offset, count);
+ }
+-#endif
+ 
+ /*****************************************************************
+  Throw away "count" bytes from the client socket.

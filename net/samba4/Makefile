@@ -321,6 +321,8 @@ ifeq ($(CONFIG_SAMBA4_SERVER_AD_DC),y)
 		PYTHON_CONFIG="$(STAGING_DIR)/host/bin/$(PYTHON3)-config"
 endif
 
+CONFIGURE_VARS += samba_cv_HAVE_BROKEN_LINUX_SENDFILE=no samba_cv_HAVE_SENDFILE=yes samba_cv_HAVE_AIO=yes
+
 # we dont need GnuTLS for the host helpers
 define Host/Prepare
 	$(call Host/Prepare/Default)
