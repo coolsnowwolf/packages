@@ -1,0 +1,19 @@
+#!/bin/sh
+
+samba_name=`uci get system.@system[0].hostname`
+ 
+[ -f /etc/config/samba4 ] && {
+uci set samba4.@samba[0].name="$samba_name"
+uci commit samba4
+}
+
+uci -q batch <<-EOF >/dev/null
+	delete ucitrack.@samba4[-1]
+	add ucitrack samba4
+	set ucitrack.@samba4[-1].init=samba4
+	commit ucitrack
+EOF
+
+rm -f /tmp/luci-indexcache
+
+exit 0

@@ -12,6 +12,13 @@ config_get_sane() {
 }
 
 smb_header() {
+ 	local enabled
+	config_get_bool enabled $1 enabled 1
+	[ $enabled == "0" ] && {
+	  echo "Samba disabled!"
+	  exit 0
+	}
+	
 	config_get_sane SAMBA_IFACE "$1" interface "lan"
 
 	# resolve interfaces
@@ -103,7 +110,7 @@ smb_add_share() {
 	config_get_sane vfs_objects "$1" vfs_objects
 	config_get_bool timemachine "$1" timemachine 0
 	config_get_sane timemachine_maxsize "$1" timemachine_maxsize
-	config_get_bool force_root "$1" force_root 0
+	config_get_bool force_root "$1" force_root 1
 	config_get_sane write_list "$1" write_list
 	config_get_sane read_list "$1" read_list
 	
@@ -115,8 +122,9 @@ smb_add_share() {
 		if [ "$force_root" -eq 1 ]; then
 			printf "\tforce user = root\n"
 			printf "\tforce group = root\n"
+		else
+			[ -n "$users" ] && printf "\tvalid users = %s\n" "$users"
 		fi
-		[ -n "$users" ] && printf "\tvalid users = %s\n" "$users"
 
 		[ -n "$create_mask" ] && printf "\tcreate mask = %s\n" "$create_mask"
 		[ -n "$dir_mask" ] && printf "\tdirectory mask = %s\n" "$dir_mask"
