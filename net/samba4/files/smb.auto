@@ -65,8 +65,8 @@ case "$ACTION" in
                                 echo -e "\toption force_root '1'" >> $config_file
                                 echo -e "\toption name '$name'" >> $config_file
                                 echo -e "\toption path '$target'" >> $config_file
-                                echo -e "\toption read_only 'no'" >> $config_file
-                                echo -e "\toption guest_ok 'yes'" >> $config_file
+                                echo -e "\toption read_only '0'" >> $config_file
+                                echo -e "\toption guest_ok '1'" >> $config_file
 								echo -e "\toption device '$device'" >> $config_file
 				/etc/init.d/samba4 reload
 				return
