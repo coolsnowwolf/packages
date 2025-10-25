@@ -29,6 +29,7 @@ chk_en() {
 }
 
 config_load samba4
+config_foreach chk_en samba
 config_foreach chk_en samba4
 
 device=`basename $DEVPATH`
