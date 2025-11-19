@@ -29,7 +29,6 @@ CONFIGURE_PATH:=userland
 MAKE_PATH:=userland/lib
 
 define Package/libpfring
-define Package/libpfring
   SECTION:=libs
   CATEGORY:=Libraries
   TITLE:=Library for PR_RING (package process framework)
