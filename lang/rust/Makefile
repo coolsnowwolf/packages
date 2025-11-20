@@ -5,12 +5,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=rust
-PKG_VERSION:=1.91.0
+PKG_VERSION:=1.91.1
 PKG_RELEASE:=1
 
 PKG_SOURCE:=rustc-$(PKG_VERSION)-src.tar.xz
 PKG_SOURCE_URL:=https://static.rust-lang.org/dist/
-PKG_HASH:=9b94161dba3aa32192e0e75f7891912d98095ffb86087b07a05af35a0265a938
+PKG_HASH:=66401bb815e236cc6b2aacbbe23b61b286c1fe27a67902e7c0222cfe77b3dbab
 HOST_BUILD_DIR:=$(BUILD_DIR)/host/rustc-$(PKG_VERSION)-src
 
 PKG_MAINTAINER:=Luca Barbato <lu_zero@luminem.org>
