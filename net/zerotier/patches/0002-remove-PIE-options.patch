@@ -10,7 +10,7 @@ Signed-off-by: Moritz Warning <moritzwarning@web.de>
 
 --- a/make-linux.mk
 +++ b/make-linux.mk
-@@ -71,7 +71,7 @@ else
+@@ -86,7 +86,7 @@ else
  	override CFLAGS+=-Wall -Wno-deprecated -pthread $(INCLUDES) -DNDEBUG $(DEFS)
  	CXXFLAGS?=-O3 -fstack-protector
  	override CXXFLAGS+=-Wall -Wno-deprecated -std=c++17 -pthread $(INCLUDES) -DNDEBUG $(DEFS)
@@ -19,7 +19,7 @@ Signed-off-by: Moritz Warning <moritzwarning@web.de>
  	ZT_CARGO_FLAGS=--release
  endif
  
-@@ -333,7 +333,7 @@ ifeq ($(ZT_CONTROLLER),1)
+@@ -359,7 +359,7 @@ ifeq ($(ZT_CONTROLLER),1)
  endif
  
  # ARM32 hell -- use conservative CFLAGS
@@ -28,7 +28,7 @@ Signed-off-by: Moritz Warning <moritzwarning@web.de>
  	ifeq ($(shell if [ -e /usr/bin/dpkg ]; then dpkg --print-architecture; fi),armel)
  		override CFLAGS+=-march=armv5t -mfloat-abi=soft -msoft-float -mno-unaligned-access -marm
  		override CXXFLAGS+=-march=armv5t -mfloat-abi=soft -msoft-float -mno-unaligned-access -marm
-@@ -360,8 +360,8 @@ ifeq ($(ZT_USE_ARM32_NEON_ASM_CRYPTO),1)
+@@ -390,8 +390,8 @@ ifeq ($(ZT_USE_ARM32_NEON_ASM_CRYPTO),1)
  endif
  
  # Position Independence
