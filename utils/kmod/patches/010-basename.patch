@@ -1,0 +1,57 @@
+--- a/libkmod/libkmod-config.c
++++ b/libkmod/libkmod-config.c
+@@ -929,7 +929,9 @@ static int conf_files_insert_sorted(struct kmod_ctx *ctx, struct kmod_list **lis
+ 	bool is_single = false;
+ 
+ 	if (name == NULL) {
+-		name = basename(path);
++		char *pathc = strdup(path);
++		name = basename(pathc);
++		free(pathc);
+ 		is_single = true;
+ 	}
+ 
+--- a/shared/util.c
++++ b/shared/util.c
+@@ -160,8 +160,10 @@ char *modname_normalize(const char *modname, char buf[static PATH_MAX], size_t *
+ char *path_to_modname(const char *path, char buf[static PATH_MAX], size_t *len)
+ {
+ 	const char *modname;
++	char *pathc = strdup(path);
+ 
+-	modname = basename(path);
++	modname = basename(pathc);
++	free(pathc);
+ 	if (modname == NULL || modname[0] == '\0')
+ 		return NULL;
+ 
+--- a/tools/depmod.c
++++ b/tools/depmod.c
+@@ -797,14 +797,17 @@ static int cfg_files_insert_sorted(struct cfg_file ***p_files, size_t *p_n_files
+ 	struct cfg_file **files, *f;
+ 	size_t i, n_files, namelen, dirlen;
+ 	void *tmp;
++	char *dirc;
+ 
+ 	dirlen = strlen(dir);
+ 	if (name != NULL)
+ 		namelen = strlen(name);
+ 	else {
+-		name = basename(dir);
++		dirc = strdup(dir);
++		name = basename(dirc);
+ 		namelen = strlen(name);
+ 		dirlen -= namelen + 1;
++		free(dirc);
+ 	}
+ 
+ 	n_files = *p_n_files;
+@@ -2621,7 +2624,7 @@ static int depmod_output(struct depmod *depmod, FILE *out)
+ 			int fd;
+ 			int n;
+ 
+-			n = snprintf(tmp, sizeof(tmp), "%s.%i.%lli.%lli", itr->name,
++			n = snprintf(tmp, sizeof(tmp), "%s.%i.%" PRId64 ".%" PRId64, itr->name,
+ 				     getpid(), (long long)tv.tv_usec,
+ 				     (long long)tv.tv_sec);
+ 			if (n >= (int)sizeof(tmp)) {
