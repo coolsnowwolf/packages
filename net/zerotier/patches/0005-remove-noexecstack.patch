@@ -10,7 +10,7 @@ The compilers for arm_cortex-a9 do not recognize this argument.
 
 --- a/make-linux.mk
 +++ b/make-linux.mk
-@@ -364,7 +364,7 @@ endif
+@@ -394,7 +394,7 @@ endif
  #override CXXFLAGS+=-fPIC -fPIE
  
  # Non-executable stack
