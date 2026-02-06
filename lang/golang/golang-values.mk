@@ -1,9 +1,8 @@
 #
 # Copyright (C) 2018-2023 Jeffery To
+# Copyright (C) 2025-2026 George Sapkin
 #
-# This is free software, licensed under the GNU General Public License v2.
-# See /LICENSE for more information.
-#
+# SPDX-License-Identifier: GPL-2.0-only
 
 ifeq ($(origin GO_INCLUDE_DIR),undefined)
   GO_INCLUDE_DIR:=$(dir $(lastword $(MAKEFILE_LIST)))
@@ -264,6 +263,8 @@ GO_PIE_SUPPORTED_OS_ARCH:= \
   ios_amd64    ios_arm64 \
   \
   freebsd_amd64 \
+  \
+  openbsd_arm64 \
   \
   aix_ppc64 \
   \

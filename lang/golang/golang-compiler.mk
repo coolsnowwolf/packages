@@ -1,9 +1,8 @@
 #
 # Copyright (C) 2018, 2020-2021, 2023 Jeffery To
+# Copyright (C) 2025-2026 George Sapkin
 #
-# This is free software, licensed under the GNU General Public License v2.
-# See /LICENSE for more information.
-#
+# SPDX-License-Identifier: GPL-2.0-only
 
 ifeq ($(origin GO_INCLUDE_DIR),undefined)
   GO_INCLUDE_DIR:=$(dir $(lastword $(MAKEFILE_LIST)))
@@ -21,30 +20,24 @@ endef
 # $(1) source go root
 # $(2) additional environment variables (optional)
 define GoCompiler/Default/Make
-	( \
-		cd "$(1)/src" ; \
-		$(2) \
-		$(BASH) make.bash \
+	cd "$(1)/src" ; \
+	$(2) $(BASH) make.bash \
 		$(if $(findstring s,$(OPENWRT_VERBOSE)),-v) \
-		--no-banner \
-		; \
-	)
+		--no-banner
 endef
 
 # $(1) destination prefix
 # $(2) go version id
 define GoCompiler/Default/Install/make-dirs
 	$(INSTALL_DIR) "$(1)/lib/go-$(2)"
-	$(INSTALL_DIR) "$(1)/share/go-$(2)"
 endef
 
 # $(1) source go root
 # $(2) destination prefix
 # $(3) go version id
 # $(4) file/directory name
-define GoCompiler/Default/Install/install-share-data
-	$(CP) "$(1)/$(4)" "$(2)/share/go-$(3)/"
-	$(LN) "../../share/go-$(3)/$(4)" "$(2)/lib/go-$(3)/"
+define GoCompiler/Default/Install/install-lib-data
+	$(CP) "$(1)/$(4)" "$(2)/lib/go-$(3)/"
 endef
 
 # $(1) source go root
@@ -55,32 +48,34 @@ endef
 define GoCompiler/Default/Install/Bin
 	$(call GoCompiler/Default/Install/make-dirs,$(2),$(3))
 
-	$(call GoCompiler/Default/Install/install-share-data,$(1),$(2),$(3),api)
+	$(call GoCompiler/Default/Install/install-lib-data,$(1),$(2),$(3),api)
 
 	$(INSTALL_DATA) -p "$(1)/go.env" "$(2)/lib/go-$(3)/"
 	$(INSTALL_DATA) -p "$(1)/VERSION" "$(2)/lib/go-$(3)/"
 
 	for file in CONTRIBUTING.md LICENSE PATENTS README.md SECURITY.md; do \
 		if [ -f "$(1)/$$$$file" ]; then \
-			$(INSTALL_DATA) -p "$(1)/$$$$file" "$(2)/share/go-$(3)/" ; \
+			$(INSTALL_DATA) -p "$(1)/$$$$file" "$(2)/lib/go-$(3)/" ; \
 		fi ; \
 	done
 
 	$(INSTALL_DIR) "$(2)/lib/go-$(3)/bin"
 
+	$(eval GO_HOST_OS_ARCH_PATH:=$(subst /,_,$(4)))
+
   ifeq ($(4),$(GO_HOST_OS_ARCH))
 	$(INSTALL_BIN) -p "$(1)/bin"/* "$(2)/lib/go-$(3)/bin/"
   else
-	$(INSTALL_BIN) -p "$(1)/bin/$(4)"/* "$(2)/lib/go-$(3)/bin/"
+	$(INSTALL_BIN) -p "$(1)/bin/$(GO_HOST_OS_ARCH_PATH)"/* "$(2)/lib/go-$(3)/bin/"
   endif
 
-	if [ -d "$(1)/pkg/$(4)$(if $(5),_$(5))" ]; then \
+	if [ -d "$(1)/pkg/$(GO_HOST_OS_ARCH_PATH)$(if $(5),_$(5))" ]; then \
 		$(INSTALL_DIR) "$(2)/lib/go-$(3)/pkg" ; \
-		$(CP) "$(1)/pkg/$(4)$(if $(5),_$(5))" "$(2)/lib/go-$(3)/pkg/" ; \
+		$(CP) "$(1)/pkg/$(GO_HOST_OS_ARCH_PATH)$(if $(5),_$(5))" "$(2)/lib/go-$(3)/pkg/" ; \
 	fi
 
-	$(INSTALL_DIR) "$(2)/lib/go-$(3)/pkg/tool/$(4)"
-	$(INSTALL_BIN) -p "$(1)/pkg/tool/$(4)"/* "$(2)/lib/go-$(3)/pkg/tool/$(4)/"
+	$(INSTALL_DIR) "$(2)/lib/go-$(3)/pkg/tool/$(GO_HOST_OS_ARCH_PATH)"
+	$(INSTALL_BIN) -p "$(1)/pkg/tool/$(GO_HOST_OS_ARCH_PATH)"/* "$(2)/lib/go-$(3)/pkg/tool/$(GO_HOST_OS_ARCH_PATH)/"
 endef
 
 # $(1) destination prefix
@@ -97,7 +92,7 @@ endef
 define GoCompiler/Default/Install/Doc
 	$(call GoCompiler/Default/Install/make-dirs,$(2),$(3))
 
-	$(call GoCompiler/Default/Install/install-share-data,$(1),$(2),$(3),doc)
+	$(call GoCompiler/Default/Install/install-lib-data,$(1),$(2),$(3),doc)
 endef
 
 # $(1) source go root
@@ -106,21 +101,19 @@ endef
 define GoCompiler/Default/Install/Src
 	$(call GoCompiler/Default/Install/make-dirs,$(2),$(3))
 
-	$(call GoCompiler/Default/Install/install-share-data,$(1),$(2),$(3),lib)
-	$(call GoCompiler/Default/Install/install-share-data,$(1),$(2),$(3),misc)
-	$(call GoCompiler/Default/Install/install-share-data,$(1),$(2),$(3),src)
-	$(call GoCompiler/Default/Install/install-share-data,$(1),$(2),$(3),test)
+	$(call GoCompiler/Default/Install/install-lib-data,$(1),$(2),$(3),lib)
+	$(call GoCompiler/Default/Install/install-lib-data,$(1),$(2),$(3),misc)
+	$(call GoCompiler/Default/Install/install-lib-data,$(1),$(2),$(3),src)
+	$(call GoCompiler/Default/Install/install-lib-data,$(1),$(2),$(3),test)
 
 	$(FIND) \
-		"$(2)/share/go-$(3)/src/" \
+		"$(2)/lib/go-$(3)/src/" \
 		\! -type d -a \( -name "*.bat" -o -name "*.rc" \) \
 		-delete
 
 	if [ -d "$(1)/pkg/include" ]; then \
 		$(INSTALL_DIR) "$(2)/lib/go-$(3)/pkg" ; \
-		$(INSTALL_DIR) "$(2)/share/go-$(3)/pkg" ; \
-		$(CP) "$(1)/pkg/include" "$(2)/share/go-$(3)/pkg/" ; \
-		$(LN) "../../../share/go-$(3)/pkg/include" "$(2)/lib/go-$(3)/pkg/" ; \
+		$(CP) "$(1)/pkg/include" "$(2)/lib/go-$(3)/pkg/" ; \
 	fi
 endef
 
@@ -128,7 +121,6 @@ endef
 # $(2) go version id
 define GoCompiler/Default/Uninstall
 	rm -rf "$(1)/lib/go-$(2)"
-	rm -rf "$(1)/share/go-$(2)"
 endef
 
 # $(1) destination prefix
@@ -183,7 +175,7 @@ define GoCompiler/AddProfile
 
   # $$(1) override install prefix (optional)
   define GoCompiler/$(1)/Uninstall/BinLinks
-	$$(call GoCompiler/Default/Uninstall/BinLinks,$$(or $$(1),$(3)))
+	$$(call GoCompiler/Default/Uninstall/BinLinks,$$(or $$(1),$(3)),$(4))
   endef
 
 endef
