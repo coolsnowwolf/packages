@@ -5,12 +5,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=sing-box
-PKG_VERSION:=1.12.13
+PKG_VERSION:=1.12.20
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/SagerNet/sing-box/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=e8bc2c059757af705f8e96c1909e2693f79a4c5c573464529af95c5c93046f1b
+PKG_HASH:=af0a815b54d04754e42daa0734025fb5720a26d86896a241598bc214f72a9567
 
 PKG_LICENSE:=GPL-3.0-or-later
 PKG_LICENSE_FILES:=LICENSE
@@ -23,6 +23,7 @@ PKG_CONFIG_DEPENDS:= \
 	CONFIG_SING_BOX_BUILD_EMBEDDED_TOR \
 	CONFIG_SING_BOX_BUILD_GRPC \
 	CONFIG_SING_BOX_BUILD_GVISOR \
+	CONFIG_SING_BOX_BUILD_NAIVE_OUTBOUND \
 	CONFIG_SING_BOX_BUILD_QUIC \
 	CONFIG_SING_BOX_BUILD_TAILSCALE \
 	CONFIG_SING_BOX_BUILD_UTLS \
@@ -85,6 +86,9 @@ define Package/sing-box/config
     bool "Build with gVisor support"
     default y
 
+    config SING_BOX_BUILD_NAIVE_OUTBOUND
+    bool "Build with NaiveProxy outbound support"
+
     config SING_BOX_BUILD_QUIC
     bool "Build with QUIC support"
     default y
@@ -116,6 +120,7 @@ GO_PKG_TAGS:=$(subst $(space),$(comma),$(strip \
 	$(if $(CONFIG_SING_BOX_BUILD_EMBEDDED_TOR),with_embedded_tor) \
 	$(if $(CONFIG_SING_BOX_BUILD_GRPC),with_grpc) \
 	$(if $(CONFIG_SING_BOX_BUILD_GVISOR),with_gvisor) \
+	$(if $(CONFIG_SING_BOX_BUILD_NAIVE_OUTBOUND),with_naive_outbound) \
 	$(if $(CONFIG_SING_BOX_BUILD_QUIC),with_quic) \
 	$(if $(CONFIG_SING_BOX_BUILD_TAILSCALE),with_tailscale) \
 	$(if $(CONFIG_SING_BOX_BUILD_UTLS),with_utls) \
