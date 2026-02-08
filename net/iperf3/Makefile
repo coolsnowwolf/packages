@@ -8,15 +8,16 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=iperf
-PKG_VERSION:=3.19.1
+PKG_VERSION:=3.20
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://downloads.es.net/pub/iperf
-PKG_HASH:=dc63f89ec581ea99f8b558d8eb35109de06383010db5a1906c208a562ba0c270
+PKG_HASH:=3acc572d1ecca4e0b20359c7bf0132ddc80d982efeee20c86f6726a9a6094388
 
 PKG_MAINTAINER:=Felix Fietkau <nbd@nbd.name>
 PKG_LICENSE:=BSD-3-Clause
+PKG_CPE_ID:=cpe:/a:es:iperf3
 
 PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
@@ -59,11 +60,13 @@ endef
 TARGET_CFLAGS += -D_GNU_SOURCE
 TARGET_LDFLAGS += -latomic
 
-ifeq ($(BUILD_VARIANT), ssl)
+ifeq ($(BUILD_VARIANT),ssl)
 	CONFIGURE_ARGS += --with-openssl="$(STAGING_DIR)/usr" --disable-shared
 else
 	CONFIGURE_ARGS += --without-openssl
 endif
+
+CONFIGURE_ARGS += --without-sctp
 
 MAKE_FLAGS += noinst_PROGRAMS=
 
