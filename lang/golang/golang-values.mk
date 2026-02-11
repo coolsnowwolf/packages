@@ -257,7 +257,8 @@ GO_ARCH_DEPENDS:=@(aarch64||arm||i386||i686||loongarch64||mips||mips64||mips64el
 GO_PIE_SUPPORTED_OS_ARCH:= \
   android_386  android_amd64  android_arm  android_arm64 \
   linux_386    linux_amd64    linux_arm    linux_arm64 \
-  windows_386  windows_amd64  windows_arm  windows_arm64 \
+  \
+  windows_386  windows_amd64  windows_arm64 \
   \
   darwin_amd64 darwin_arm64 \
   ios_amd64    ios_arm64 \
@@ -271,7 +272,7 @@ GO_PIE_SUPPORTED_OS_ARCH:= \
   linux_loong64 linux_ppc64le linux_riscv64 linux_s390x
 
 # From https://go.dev/src/cmd/go/internal/work/init.go
-go_pie_install_suffix=$(if $(filter $(1),aix_ppc64 windows_386 windows_amd64 windows_arm windows_arm64),,shared)
+go_pie_install_suffix=$(if $(filter $(1),aix_ppc64 windows_386 windows_amd64 windows_arm64),,shared)
 
 ifneq ($(filter $(GO_HOST_OS_ARCH),$(GO_PIE_SUPPORTED_OS_ARCH)),)
   GO_HOST_PIE_SUPPORTED:=1
