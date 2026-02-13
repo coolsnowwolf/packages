@@ -5,8 +5,8 @@
 
 include $(TOPDIR)/rules.mk
 
-GO_VERSION_MAJOR_MINOR:=1.25
-GO_VERSION_PATCH:=7
+GO_VERSION_MAJOR_MINOR:=1.26
+GO_VERSION_PATCH:=0
 
 PKG_NAME:=golang
 PKG_VERSION:=$(GO_VERSION_MAJOR_MINOR)$(if $(GO_VERSION_PATCH),.$(GO_VERSION_PATCH))
@@ -14,12 +14,13 @@ PKG_RELEASE:=1
 
 GO_SOURCE_URLS:=https://go.dev/dl/ \
                 https://dl.google.com/go/ \
+                https://golang.google.cn/dl/ \
                 https://mirrors.ustc.edu.cn/golang/ \
                 https://mirrors.nju.edu.cn/golang/
 
 PKG_SOURCE:=go$(PKG_VERSION).src.tar.gz
 PKG_SOURCE_URL:=$(GO_SOURCE_URLS)
-PKG_HASH:=178f2832820274b43e177d32f06a3ebb0129e427dd20a5e4c88df2c1763cf10a
+PKG_HASH:=c9132a8a1f6bd2aa4aad1d74b8231d95274950483a4950657ee6c56e6e817790
 
 PKG_MAINTAINER:=Jeffery To <jeffery.to@gmail.com>
 PKG_LICENSE:=BSD-3-Clause
@@ -48,7 +49,8 @@ HOST_GO_VALID_OS_ARCH:= \
   linux_386    linux_amd64    linux_arm    linux_arm64 \
   openbsd_386  openbsd_amd64  openbsd_arm  openbsd_arm64 \
   netbsd_386   netbsd_amd64   netbsd_arm   netbsd_arm64 \
-  windows_386  windows_amd64  windows_arm  windows_arm64 \
+  \
+  windows_386  windows_amd64  windows_arm64 \
   \
   plan9_386    plan9_amd64    plan9_arm \
   \
@@ -101,11 +103,17 @@ BOOTSTRAP_1_20_HASH:=1aef321a0e3e38b7e91d2d7eb64040666cabdcc77d383de3c9522d0d69b
 
 BOOTSTRAP_1_20_BUILD_DIR:=$(HOST_BUILD_DIR)/.go_bootstrap_1.20
 
-BOOTSTRAP_1_22_SOURCE:=go1.22.6.src.tar.gz
+BOOTSTRAP_1_22_SOURCE:=go1.22.12.src.tar.gz
 BOOTSTRAP_1_22_SOURCE_URL:=$(GO_SOURCE_URLS)
-BOOTSTRAP_1_22_HASH:=9e48d99d519882579917d8189c17e98c373ce25abaebb98772e2927088992a51
+BOOTSTRAP_1_22_HASH:=012a7e1f37f362c0918c1dfa3334458ac2da1628c4b9cf4d9ca02db986e17d71
 
 BOOTSTRAP_1_22_BUILD_DIR:=$(HOST_BUILD_DIR)/.go_bootstrap_1.22
+
+BOOTSTRAP_1_24_SOURCE:=go1.24.13.src.tar.gz
+BOOTSTRAP_1_24_SOURCE_URL:=$(GO_SOURCE_URLS)
+BOOTSTRAP_1_24_HASH:=639a6204c2486b137df1eb6e78ee3ed038f9877d0e4b5a465e796a2153f858d7
+
+BOOTSTRAP_1_24_BUILD_DIR:=$(HOST_BUILD_DIR)/.go_bootstrap_1.24
 
 include $(INCLUDE_DIR)/host-build.mk
 include $(INCLUDE_DIR)/package.mk
@@ -118,6 +126,7 @@ BOOTSTRAP_UNPACK:=$(HOST_TAR) -C "$(BOOTSTRAP_BUILD_DIR)" --strip-components=1 -
 BOOTSTRAP_1_17_UNPACK:=$(HOST_TAR) -C "$(BOOTSTRAP_1_17_BUILD_DIR)" --strip-components=1 -xzf "$(DL_DIR)/$(BOOTSTRAP_1_17_SOURCE)"
 BOOTSTRAP_1_20_UNPACK:=$(HOST_TAR) -C "$(BOOTSTRAP_1_20_BUILD_DIR)" --strip-components=1 -xzf "$(DL_DIR)/$(BOOTSTRAP_1_20_SOURCE)"
 BOOTSTRAP_1_22_UNPACK:=$(HOST_TAR) -C "$(BOOTSTRAP_1_22_BUILD_DIR)" --strip-components=1 -xzf "$(DL_DIR)/$(BOOTSTRAP_1_22_SOURCE)"
+BOOTSTRAP_1_24_UNPACK:=$(HOST_TAR) -C "$(BOOTSTRAP_1_24_BUILD_DIR)" --strip-components=1 -xzf "$(DL_DIR)/$(BOOTSTRAP_1_24_SOURCE)"
 
 # don't strip ELF executables in test data
 RSTRIP:=:
@@ -135,16 +144,16 @@ $(call GoPackage/GoSubMenu)
 endef
 
 define Package/golang/Default/description
-The Go programming language is an open source project to make
-programmers more productive.
+  The Go programming language is an open source project to make
+  programmers more productive.
 
-Go is expressive, concise, clean, and efficient. Its concurrency
-mechanisms make it easy to write programs that get the most out of
-multicore and networked machines, while its novel type system enables
-flexible and modular program construction. Go compiles quickly to
-machine code yet has the convenience of garbage collection and the power
-of run-time reflection. It's a fast, statically typed, compiled language
-that feels like a dynamically typed, interpreted language.
+  Go is expressive, concise, clean, and efficient. Its concurrency
+  mechanisms make it easy to write programs that get the most out of
+  multicore and networked machines, while its novel type system enables
+  flexible and modular program construction. Go compiles quickly to
+  machine code yet has the convenience of garbage collection and the power
+  of run-time reflection. It's a fast, statically typed, compiled language
+  that feels like a dynamically typed, interpreted language.
 endef
 
 # go tool requires source present:
@@ -279,6 +288,22 @@ Hooks/HostPrepare/Post+=Bootstrap-1.22/Prepare
 
 $(eval $(call GoCompiler/AddProfile,Bootstrap-1.22,$(BOOTSTRAP_1_22_BUILD_DIR),,bootstrap-1.22,$(GO_HOST_OS_ARCH)))
 
+# Bootstrap 1.24
+
+define Download/golang-bootstrap-1.24
+  FILE:=$(BOOTSTRAP_1_24_SOURCE)
+  URL:=$(BOOTSTRAP_1_24_SOURCE_URL)
+  HASH:=$(BOOTSTRAP_1_24_HASH)
+endef
+$(eval $(call Download,golang-bootstrap-1.24))
+
+define Bootstrap-1.24/Prepare
+	mkdir -p "$(BOOTSTRAP_1_24_BUILD_DIR)" && $(BOOTSTRAP_1_24_UNPACK) ;
+endef
+Hooks/HostPrepare/Post+=Bootstrap-1.24/Prepare
+
+$(eval $(call GoCompiler/AddProfile,Bootstrap-1.24,$(BOOTSTRAP_1_24_BUILD_DIR),,bootstrap-1.24,$(GO_HOST_OS_ARCH)))
+
 # Host
 
 ifeq ($(GO_HOST_PIE_SUPPORTED),1)
@@ -325,8 +350,13 @@ define Host/Compile
 		$(HOST_GO_VARS) \
 	)
 
-	$(call GoCompiler/Host/Make, \
+	$(call GoCompiler/Bootstrap-1.24/Make, \
 		GOROOT_BOOTSTRAP="$(BOOTSTRAP_1_22_BUILD_DIR)" \
+		$(HOST_GO_VARS) \
+	)
+
+	$(call GoCompiler/Host/Make, \
+		GOROOT_BOOTSTRAP="$(BOOTSTRAP_1_24_BUILD_DIR)" \
 		$(if $(HOST_GO_ENABLE_PIE),GO_LDFLAGS="-buildmode pie") \
 		$(HOST_GO_VARS) \
 	)
@@ -369,13 +399,13 @@ endif
 $(eval $(call GoCompiler/AddProfile,Package,$(PKG_BUILD_DIR),$(PKG_GO_PREFIX),$(PKG_GO_VERSION_ID),$(GO_OS_ARCH),$(PKG_GO_INSTALL_SUFFIX)))
 
 PKG_GO_ZBOOTSTRAP_MODS:= \
-	s/defaultGO386 = `[^`]*`/defaultGO386 = `$(or $(GO_386),sse2)`/; \
-	s/defaultGOAMD64 = `[^`]*`/defaultGOAMD64 = `$(or $(GO_AMD64),v1)`/; \
-	s/defaultGOARM = `[^`]*`/defaultGOARM = `$(or $(GO_ARM),7)`/; \
-	s/defaultGOARM64 = `[^`]*`/defaultGOARM64 = `$(or $(GO_ARM64),v8.0)`/; \
-	s/defaultGOMIPS = `[^`]*`/defaultGOMIPS = `$(or $(GO_MIPS),hardfloat)`/; \
-	s/defaultGOMIPS64 = `[^`]*`/defaultGOMIPS64 = `$(or $(GO_MIPS64),hardfloat)`/; \
-	s/defaultGOPPC64 = `[^`]*`/defaultGOPPC64 = `$(or $(GO_PPC64),power8)`/;
+	s/DefaultGO386 = `[^`]*`/DefaultGO386 = `$(or $(GO_386),sse2)`/; \
+	s/DefaultGOAMD64 = `[^`]*`/DefaultGOAMD64 = `$(or $(GO_AMD64),v1)`/; \
+	s/DefaultGOARM = `[^`]*`/DefaultGOARM = `$(or $(GO_ARM),7)`/; \
+	s/DefaultGOARM64 = `[^`]*`/DefaultGOARM64 = `$(or $(GO_ARM64),v8.0)`/; \
+	s/DefaultGOMIPS = `[^`]*`/DefaultGOMIPS = `$(or $(GO_MIPS),hardfloat)`/; \
+	s/DefaultGOMIPS64 = `[^`]*`/DefaultGOMIPS64 = `$(or $(GO_MIPS64),hardfloat)`/; \
+	s/DefaultGOPPC64 = `[^`]*`/DefaultGOPPC64 = `$(or $(GO_PPC64),power8)`/;
 
 PKG_GO_ZBOOTSTRAP_PATH:=$(PKG_BUILD_DIR)/src/internal/buildcfg/zbootstrap.go
 
