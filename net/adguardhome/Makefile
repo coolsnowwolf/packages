@@ -6,12 +6,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=adguardhome
-PKG_VERSION:=0.107.71
+PKG_VERSION:=0.107.72
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/AdguardTeam/AdGuardHome/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=f3dde5da6ba48270ac25bd2f501c4ce1af54ddeef93fcd84ef3a8270cec9539f
+PKG_HASH:=8f6d1cba4a7b7e986840f2a7dbaeb0dd9af51b60a49fa709cf30b9beba841c76
 PKG_BUILD_DIR:=$(BUILD_DIR)/AdGuardHome-$(PKG_VERSION)
 
 PKG_LICENSE:=GPL-3.0-only
@@ -58,7 +58,7 @@ define Download/adguardhome_frontend
 	URL:=https://github.com/AdguardTeam/AdGuardHome/releases/download/v$(PKG_VERSION)/
 	URL_FILE:=AdGuardHome_frontend.tar.gz
 	FILE:=$(FRONTEND_FILE)
-	HASH:=51b229a5dff010c17bd8894bbf4291907e93708c366801e32181be7f37dd4488
+	HASH:=bfdedb78b10269d2b263fcea658b24ee7597770be1ca635d56f6419f825dfecc
 endef
 
 define Build/Prepare
@@ -70,13 +70,13 @@ endef
 define Package/adguardhome/install
 	$(call GoPackage/Package/Install/Bin,$(1))
 	$(INSTALL_DIR) $(1)/etc/init.d
-	$(INSTALL_BIN) ./files/adguardhome.init $(1)/etc/init.d/adguardhome
+	$(INSTALL_BIN) $(CURDIR)/files/adguardhome.init $(1)/etc/init.d/adguardhome
 
 	$(INSTALL_DIR) $(1)/etc/config
-	$(INSTALL_DATA) ./files/adguardhome.config $(1)/etc/config/adguardhome
+	$(INSTALL_CONF) $(CURDIR)/files/adguardhome.config $(1)/etc/config/adguardhome
 
 	$(INSTALL_DIR) $(1)/etc/sysctl.d
-	$(INSTALL_CONF) ./files/adguardhome.sysctl $(1)/etc/sysctl.d/50-adguardhome.conf
+	$(INSTALL_CONF) $(CURDIR)/files/adguardhome.sysctl $(1)/etc/sysctl.d/50-adguardhome.conf
 endef
 
 $(eval $(call Download,adguardhome_frontend))
