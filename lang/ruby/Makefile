@@ -167,11 +167,11 @@ define RubyDependency
 endef
 
 define Package/ruby/config
-    config RUBY_ENABLE_YJIT
+config RUBY_ENABLE_YJIT
 	bool "Enable YJIT"
 	depends on PACKAGE_ruby
 	depends on x86_64||aarch64
-	default y if x86_64||aarch64
+	default n
 	help
 	 	YJIT is a lightweight, minimalistic Ruby JIT built
 	 	inside CRuby. It lazily compiles code using a Basic Block Versioning (BBV)
