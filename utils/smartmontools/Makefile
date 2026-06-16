@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=smartmontools
 PKG_VERSION:=7.4
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=@SF/smartmontools
@@ -20,6 +20,8 @@ PKG_LICENSE:=GPL-2.0-or-later
 PKG_LICENSE_FILES:=COPYING
 
 PKG_BUILD_PARALLEL:=1
+PKG_BUILD_FLAGS:=gc-sections no-lto
+PKG_ASLR_PIE_REGULAR:=1
 PKG_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk
@@ -78,9 +80,7 @@ define Package/smartd-mail/description
   A script for mailing about SMART issues
 endef
 
-TARGET_LDFLAGS += -flto
-
-TARGET_CXXFLAGS +=-fno-rtti -flto
+TARGET_CXXFLAGS += -fno-rtti
 MAKE_FLAGS +=BUILD_INFO='"(localbuild)"'
 
 CONFIGURE_ARGS += \
