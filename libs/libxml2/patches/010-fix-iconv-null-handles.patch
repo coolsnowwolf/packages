@@ -1,0 +1,55 @@
+--- a/encoding.c
++++ b/encoding.c
+@@ -1386,8 +1386,8 @@
+     handler->name = up;
+ 
+ #ifdef LIBXML_ICONV_ENABLED
+-    handler->iconv_in = NULL;
+-    handler->iconv_out = NULL;
++    handler->iconv_in = (iconv_t) -1;
++    handler->iconv_out = (iconv_t) -1;
+ #endif
+ #ifdef LIBXML_ICU_ENABLED
+     handler->uconv_in = NULL;
+@@ -1987,7 +1987,7 @@
+            ret = 0;
+     }
+ #ifdef LIBXML_ICONV_ENABLED
+-    else if (handler->iconv_in != NULL) {
++    else if (handler->iconv_in != (iconv_t) -1) {
+         ret = xmlIconvWrapper(handler->iconv_in, out, outlen, in, inlen);
+     }
+ #endif /* LIBXML_ICONV_ENABLED */
+@@ -2036,7 +2036,7 @@
+            ret = 0;
+     }
+ #ifdef LIBXML_ICONV_ENABLED
+-    else if (handler->iconv_out != NULL) {
++    else if (handler->iconv_out != (iconv_t) -1) {
+         ret = xmlIconvWrapper(handler->iconv_out, out, outlen, in, inlen);
+     }
+ #endif /* LIBXML_ICONV_ENABLED */
+@@ -2817,17 +2817,18 @@
+      * and the associated icon resources.
+      */
+     if ((handler_in_list == 0) &&
+-        ((handler->iconv_out != NULL) || (handler->iconv_in != NULL))) {
++        ((handler->iconv_out != (iconv_t) -1) ||
++	 (handler->iconv_in != (iconv_t) -1))) {
+         tofree = 1;
+-	if (handler->iconv_out != NULL) {
++	if (handler->iconv_out != (iconv_t) -1) {
+ 	    if (iconv_close(handler->iconv_out))
+ 		ret = -1;
+-	    handler->iconv_out = NULL;
++	    handler->iconv_out = (iconv_t) -1;
+ 	}
+-	if (handler->iconv_in != NULL) {
++	if (handler->iconv_in != (iconv_t) -1) {
+ 	    if (iconv_close(handler->iconv_in))
+ 		ret = -1;
+-	    handler->iconv_in = NULL;
++	    handler->iconv_in = (iconv_t) -1;
+ 	}
+     }
+ #endif /* LIBXML_ICONV_ENABLED */

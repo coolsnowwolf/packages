@@ -9,12 +9,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ffmpeg
-PKG_VERSION:=5.1.4
+PKG_VERSION:=7.1.4
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=https://ffmpeg.org/releases/
-PKG_HASH:=54383bb890a1cd62580e9f1eaa8081203196ed53bde9e98fb6b0004423f49063
+PKG_HASH:=71f4aac3573ed9060489cb62526a6c7dda815ae10993789611acd7be9fa9fbf4
 PKG_MAINTAINER:=Ted Hess <thess@kitschensync.net>, \
 		Ian Leonard <antonlacon@gmail.com>
 
@@ -300,7 +300,7 @@ $(call Package/ffmpeg/Default)
  SECTION:=libs
  CATEGORY:=Libraries
  TITLE+= libraries
- DEPENDS+= +libpthread +zlib +libbz2
+ DEPENDS+= +libpthread +zlib +libbz2 +libdrm
  PROVIDES:= libffmpeg
 endef
 
@@ -403,6 +403,7 @@ FFMPEG_CONFIGURE:= \
 	--disable-lzma \
 	--disable-vaapi \
 	--disable-vdpau \
+	--enable-libdrm \
 	--disable-outdevs
 
 ifeq ($(CONFIG_SOFT_FLOAT),y)
@@ -447,6 +448,7 @@ ifneq ($(findstring aarch64,$(CONFIG_ARCH)),)
 	FFMPEG_CONFIGURE+= \
 		--enable-lto \
 		--enable-neon \
+		--enable-v4l2-m2m \
 		--enable-vfp
 endif
 
