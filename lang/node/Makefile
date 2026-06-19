@@ -7,9 +7,9 @@ include $(TOPDIR)/rules.mk
 PKG_NAME:=node
 
 ifeq ($(CONFIG_NODEJS_22),y)
-PKG_VERSION:=v22.13.1
+PKG_VERSION:=v22.23.0
 PKG_RELEASE:=1
-PKG_HASH:=cfce282119390f7e0c2220410924428e90dadcb2df1744c0c4a0e7baae387cc2
+PKG_HASH:=3acfae100c7b855a4c76520ee0f95cadcace3f4254f16b7d4887f178fc95d4a0
 PATCH_DIR:=./patches/v22.x
 else
 ifeq ($(CONFIG_NODEJS_20),y)
@@ -108,28 +108,29 @@ define Package/node/config
 	choice
 		prompt "Version Selection"
 		default NODEJS_12 if mips||mipsel||mips64||mips64el
-		default NODEJS_20
+		default NODEJS_22
 		help
 		 Select node.js version.
 		 The host package version is also the same.
 
 		config NODEJS_12
+			depends on mips||mipsel||mips64||mips64el
 			bool "12.x End-of-life : Only for MIPS"
 
 		config NODEJS_14
-			depends on !(mips||mipsel||mips64||mips64el)
+			depends on !(mips||mipsel||mips64||mips64el||loongarch64)
 			bool "14.x End-of-Life"
 
 		config NODEJS_16
-			depends on !(mips||mipsel||mips64||mips64el)
+			depends on !(mips||mipsel||mips64||mips64el||loongarch64)
 			bool "16.x End-of-Life"
 
 		config NODEJS_18
-			depends on !(mips||mipsel||mips64||mips64el)
+			depends on !(mips||mipsel||mips64||mips64el||loongarch64)
 			bool "18.x Maintenance LTS"
 			
 		config NODEJS_20
-			depends on !(mips||mipsel||mips64||mips64el)
+			depends on !(mips||mipsel||mips64||mips64el||loongarch64)
 			bool "20.x Active LTS"
 			
 		config NODEJS_22
@@ -160,20 +161,27 @@ define Package/node/config
 	endmenu
 endef
 
-NODEJS_CPU:=$(subst powerpc,ppc,$(subst aarch64,arm64,$(subst x86_64,x64,$(subst i386,ia32,$(ARCH)))))
+NODEJS_CPU:=$(subst powerpc,ppc,$(subst loongarch64,loong64,$(subst aarch64,arm64,$(subst x86_64,x64,$(subst i386,ia32,$(ARCH))))))
 
 ifeq ($(CONFIG_NODEJS_10),y)
 TARGET_LDFLAGS+=-latomic
 endif
 
+ifeq ($(CONFIG_NODEJS_12),y)
+NODEJS_NO_LOAD:=cctest.target.mk embedtest.target.mk node_mksnapshot.target.mk overlapped-checker.target.mk \
+	mkcodecache.target.mk tools/v8_gypfiles/torque_base.target.mk \
+	tools/v8_gypfiles/v8_base.host.mk tools/v8_gypfiles/v8_base_without_compiler.host.mk \
+	tools/v8_gypfiles/v8_compiler.host.mk tools/v8_gypfiles/v8_compiler_for_mksnapshot.host.mk \
+	tools/v8_gypfiles/v8_compiler_opt.host.mk tools/v8_gypfiles/v8_init.host.mk \
+	tools/v8_gypfiles/v8_initializers.host.mk tools/v8_gypfiles/v8_nosnapshot.host.mk
+else
+NODEJS_NO_LOAD:=cctest.target.mk embedtest.target.mk node_mksnapshot.target.mk overlapped-checker.target.mk \
+	mkcodecache.target.mk tools/v8_gypfiles/torque_base.target.mk tools/v8_gypfiles/v8_init.target.mk
+endif
+
 MAKE_VARS+= \
 	DESTCPU=$(NODEJS_CPU) \
-		NO_LOAD='cctest.target.mk embedtest.target.mk node_mksnapshot.target.mk overlapped-checker.target.mk \
-			mkcodecache.target.mk tools/v8_gypfiles/torque_base.target.mk \
-			tools/v8_gypfiles/v8_base.host.mk tools/v8_gypfiles/v8_base_without_compiler.host.mk \
-			tools/v8_gypfiles/v8_compiler.host.mk tools/v8_gypfiles/v8_compiler_for_mksnapshot.host.mk \
-			tools/v8_gypfiles/v8_compiler_opt.host.mk tools/v8_gypfiles/v8_init.host.mk \
-			tools/v8_gypfiles/v8_initializers.host.mk tools/v8_gypfiles/v8_nosnapshot.host.mk' \
+		NO_LOAD='$(NODEJS_NO_LOAD)' \
 		LD_LIBRARY_PATH=$(STAGING_DIR_HOSTPKG)/share/icu/current/lib
 
 HOST_MAKE_VARS+=NO_LOAD='cctest.target.mk embedtest.target.mk overlapped-checker.target.mk'
