@@ -1,0 +1,13 @@
+diff --git a/deps/v8/src/base/build_config.h b/deps/v8/src/base/build_config.h
+--- a/deps/v8/src/base/build_config.h
++++ b/deps/v8/src/base/build_config.h
+@@ -151,7 +151,8 @@
+ #if (V8_TARGET_ARCH_ARM64 && !(V8_HOST_ARCH_X64 || V8_HOST_ARCH_ARM64))
+ #error Target architecture arm64 is only supported on arm64 and x64 host
+ #endif
+-#if (V8_TARGET_ARCH_MIPS && !(V8_HOST_ARCH_IA32 || V8_HOST_ARCH_MIPS))
++#if (V8_TARGET_ARCH_MIPS && \
++     !(V8_HOST_ARCH_IA32 || V8_HOST_ARCH_X64 || V8_HOST_ARCH_MIPS))
+ #error Target architecture mips is only supported on mips and ia32 host
+ #endif
+ #if (V8_TARGET_ARCH_MIPS64 && !(V8_HOST_ARCH_X64 || V8_HOST_ARCH_MIPS64))

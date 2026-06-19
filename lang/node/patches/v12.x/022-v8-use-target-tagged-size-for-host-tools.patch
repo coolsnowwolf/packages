@@ -1,0 +1,34 @@
+diff --git a/deps/v8/include/v8-internal.h b/deps/v8/include/v8-internal.h
+--- a/deps/v8/include/v8-internal.h
++++ b/deps/v8/include/v8-internal.h
+@@ -102,6 +102,10 @@
+     kApiSystemPointerSize == kApiInt64Size,
+     "Pointer compression can be enabled only for 64-bit architectures");
+ const int kApiTaggedSize = kApiInt32Size;
++#elif defined(V8_TARGET_ARCH_IA32) || defined(V8_TARGET_ARCH_ARM) || \
++    defined(V8_TARGET_ARCH_MIPS) || defined(V8_TARGET_ARCH_PPC) || \
++    defined(V8_TARGET_ARCH_S390)
++const int kApiTaggedSize = kApiInt32Size;
+ #else
+ const int kApiTaggedSize = kApiSystemPointerSize;
+ #endif
+diff --git a/deps/v8/src/common/globals.h b/deps/v8/src/common/globals.h
+--- a/deps/v8/src/common/globals.h
++++ b/deps/v8/src/common/globals.h
+@@ -233,6 +233,16 @@
+ using Tagged_t = int32_t;
+ using AtomicTagged_t = base::Atomic32;
+
++#elif V8_TARGET_ARCH_32_BIT
++
++constexpr int kTaggedSize = kInt32Size;
++constexpr int kTaggedSizeLog2 = 2;
++
++// These types define raw and atomic storage types for tagged values stored
++// on V8 heap.
++using Tagged_t = int32_t;
++using AtomicTagged_t = base::Atomic32;
++
+ #else
+
+ constexpr int kTaggedSize = kSystemPointerSize;

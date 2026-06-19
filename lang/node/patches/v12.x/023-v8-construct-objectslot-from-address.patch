@@ -1,0 +1,14 @@
+diff --git a/deps/v8/src/objects/elements.cc b/deps/v8/src/objects/elements.cc
+--- a/deps/v8/src/objects/elements.cc
++++ b/deps/v8/src/objects/elements.cc
+@@ -462,8 +462,8 @@
+     }
+     return !b.IsSmi() && b.IsUndefined(isolate);
+   });
+-  isolate->heap()->WriteBarrierForRange(*indices, ObjectSlot(start),
+-                                        ObjectSlot(end));
++  isolate->heap()->WriteBarrierForRange(*indices, ObjectSlot(start.address()),
++                                        ObjectSlot(end.address()));
+ }
+
+ Maybe<bool> IncludesValueSlowPath(Isolate* isolate, Handle<JSObject> receiver,

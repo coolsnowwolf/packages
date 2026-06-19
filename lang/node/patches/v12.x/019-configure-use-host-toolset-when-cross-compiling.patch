@@ -1,0 +1,13 @@
+diff --git a/configure.py b/configure.py
+--- a/configure.py
++++ b/configure.py
+@@ -1059,8 +1059,7 @@
+                      if options.cross_compiling is not None
+                      else target_arch != host_arch)
+   want_snapshots = not options.without_snapshot
+-  o['variables']['want_separate_host_toolset'] = int(
+-      cross_compiling and want_snapshots)
++  o['variables']['want_separate_host_toolset'] = int(cross_compiling)
+
+   if options.without_node_snapshot or options.node_builtin_modules_path:
+     o['variables']['node_use_node_snapshot'] = 'false'

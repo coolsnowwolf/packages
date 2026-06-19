@@ -1,0 +1,12 @@
+diff --git a/tools/v8_gypfiles/toolchain.gypi b/tools/v8_gypfiles/toolchain.gypi
+--- a/tools/v8_gypfiles/toolchain.gypi
++++ b/tools/v8_gypfiles/toolchain.gypi
+@@ -998,7 +998,7 @@
+         'target_conditions': [
+           ['_toolset=="host"', {
+             'conditions': [
+-              ['host_cxx_is_biarch==1', {
++              ['host_cxx_is_biarch==1 and v8_target_arch=="ia32"', {
+                 'conditions': [
+                   ['host_arch=="s390x"', {
+                     'cflags': [ '-m31' ],

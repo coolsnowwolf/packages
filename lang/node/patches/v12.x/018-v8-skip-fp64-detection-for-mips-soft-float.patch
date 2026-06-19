@@ -1,0 +1,19 @@
+diff --git a/deps/v8/src/base/cpu.cc b/deps/v8/src/base/cpu.cc
+--- a/deps/v8/src/base/cpu.cc
++++ b/deps/v8/src/base/cpu.cc
+@@ -140,6 +140,9 @@
+
+ #if V8_HOST_ARCH_MIPS
+ int __detect_fp64_mode(void) {
++#if defined(__mips_soft_float) && __mips_soft_float
++  return false;
++#else
+   double result = 0;
+   // Bit representation of (double)1 is 0x3FF0000000000000.
+   __asm__ volatile(
+@@ -157,6 +160,7 @@
+       : "t0", "$f0", "$f1", "memory");
+
+   return !(result == 1);
++#endif
+ }
