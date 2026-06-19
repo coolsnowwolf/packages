@@ -125,7 +125,7 @@ CONFIGURE_VARS += \
 	vim_cv_getcwd_broken=no \
 	vim_cv_memmove_handles_overlap=yes \
 	vim_cv_stat_ignores_slash=yes \
-	vim_cv_tgetent=zero \
+	vim_cv_tgetent=non-zero \
 	vim_cv_terminfo=yes \
 	vim_cv_toupper_broken=no \
 	vim_cv_tty_group=root \
@@ -138,6 +138,9 @@ endif
 define Build/Prepare
 	$(call Build/Prepare/Default)
 	$(MAKE) -C $(PKG_BUILD_DIR)/src autoconf
+endef
+
+define Build/Configure
 endef
 
 ifneq ($(CONFIG_PACKAGE_vim),)
@@ -177,17 +180,25 @@ endif
 
 ifneq ($(CONFIG_PACKAGE_xxd),)
 define Build/Compile/xxd
-	+$(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR) \
-		DESTDIR="$(PKG_INSTALL_DIR)" all
+	+$(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR)/src/xxd \
+		CC="$(TARGET_CC)" \
+		CFLAGS="$(TARGET_CFLAGS) $(TARGET_CPPFLAGS)" \
+		LDFLAGS="$(TARGET_LDFLAGS)" \
+		xxd
 endef
 endif
 
+ifneq ($(CONFIG_PACKAGE_vim-runtime)$(CONFIG_PACKAGE_vim-help),)
 define Build/Compile/vim-runtime
+	$(call Build/Configure/Default, \
+		--with-features=tiny \
+	)
 	$(MAKE) -C $(PKG_BUILD_DIR)/src DESTDIR="$(PKG_INSTALL_DIR)" installrtbase
 	(cd $(PKG_INSTALL_DIR) && tar -cf $(PKG_BUILD_DIR)/docs.tar ./usr/share/vim/vim$(VIMVER)/doc)
 	rm -rf $(PKG_INSTALL_DIR)/usr/share/vim/vim$(VIMVER)/doc
 	rm -rf $(PKG_INSTALL_DIR)/usr/man
 endef
+endif
 
 define Build/Compile
 $(call Build/Compile/vim)

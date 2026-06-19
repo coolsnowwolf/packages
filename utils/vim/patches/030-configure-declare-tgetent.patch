@@ -1,0 +1,18 @@
+--- a/src/configure.ac
++++ b/src/configure.ac
+@@ -3432,8 +3432,13 @@
+ 
+ if test "x$olibs" = "x$LIBS"; then
+   AC_MSG_CHECKING([for tgetent()])
+-  AC_TRY_LINK([],
+-      [char s[10000]; int res = tgetent(s, "thisterminaldoesnotexist");],
++  AC_TRY_LINK([
++#ifdef HAVE_TERMCAP_H
++# include <termcap.h>
++#endif
++],
++      [char s[10000];
++       int res = tgetent(s, "thisterminaldoesnotexist");],
+ 	AC_MSG_RESULT(yes),
+ 	AC_MSG_ERROR([NOT FOUND!
+       You need to install a terminal library; for example ncurses.
