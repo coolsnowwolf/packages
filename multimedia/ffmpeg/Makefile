@@ -452,6 +452,11 @@ ifneq ($(findstring aarch64,$(CONFIG_ARCH)),)
 		--enable-vfp
 endif
 
+ifneq ($(findstring riscv64,$(CONFIG_ARCH)),)
+	FFMPEG_CONFIGURE+= \
+		--enable-v4l2-m2m
+endif
+
 ifeq ($(ARCH),x86_64)
 	FFMPEG_CONFIGURE+= --enable-lto
 endif
