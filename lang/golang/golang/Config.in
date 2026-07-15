@@ -5,10 +5,10 @@ config GOLANG_EXTERNAL_BOOTSTRAP_ROOT
 	default ""
 	help
 	  Path to a working Go tree (>= Go 1.4), with bin, pkg, and src
-	  subdirectories and the Go compiler at bin/go.
+	  subdirectories and the Go compiler in bin/go.
 
-	  If specified, the existing Go installation will be used to
-	  compile host (buildroot) Go.
+	  If set, the existing Go installation will be used to compile host
+	  (buildroot) Go.
 
 	  Leave blank to compile the default bootstrap Go.
 
@@ -16,7 +16,8 @@ config GOLANG_BUILD_CACHE_DIR
 	string "Go build cache directory"
 	default ""
 	help
-	  Store the Go build cache in this directory.
+	  Path where Go should store its build cache.
+
 	  If not set, uses '$(TMP_DIR)/go-build'.
 
 config GOLANG_MOD_CACHE_WORLD_READABLE
