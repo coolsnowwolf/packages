@@ -1,0 +1,28 @@
+From: coolsnowwolf <coolsnowwolf@gmail.com>
+Date: Sun, 23 Aug 2026 13:30:00 +0800
+Subject: [PATCH] SDBM_File: use the typed memory release macro
+
+GCC 14 treats incompatible pointer types as errors.  The lowercase
+safefree() macro passes its argument directly to Perl_safesysfree(), whose
+configured Malloc_t parameter may be char *.  SDBM_File is a structure
+pointer, so this no longer compiles on such hosts.
+
+Use Safefree(), which performs the intended Malloc_t conversion before
+calling the allocator-specific release function.
+
+Signed-off-by: coolsnowwolf <coolsnowwolf@gmail.com>
+---
+ ext/SDBM_File/SDBM_File.xs | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/ext/SDBM_File/SDBM_File.xs
++++ b/ext/SDBM_File/SDBM_File.xs
+@@ -69,7 +69,7 @@ sdbm_DESTROY(db)
+ 		if (db->filter[i])
+ 		    SvREFCNT_dec_NN(db->filter[i]);
+ 	    } while (i-- > 0);
+-	    safefree(db) ;
++	    Safefree(db) ;
+ 	}
+ 
+ datum_value
