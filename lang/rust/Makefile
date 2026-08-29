@@ -5,12 +5,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=rust
-PKG_VERSION:=1.97.0
+PKG_VERSION:=1.98.0
 PKG_RELEASE:=1
 
 PKG_SOURCE:=rustc-$(PKG_VERSION)-src.tar.xz
 PKG_SOURCE_URL:=https://static.rust-lang.org/dist/
-PKG_HASH:=de002ee301c1b7422b0a7b09d7c4cb4924cd3224e6cfb24f065dad786dd3ed12
+PKG_HASH:=271fa73d8174f53d713c46a8310da7bf7cfdcfb8b7cfd1c2b74b84a83ae9fb1e
 HOST_BUILD_DIR:=$(BUILD_DIR)/host/rustc-$(PKG_VERSION)-src
 
 PKG_MAINTAINER:=Luca Barbato <lu_zero@luminem.org>
@@ -102,6 +102,7 @@ define Host/Compile
 	$(RUST_SCCACHE_VARS) \
 	CARGO_HOME=$(CARGO_HOME) \
 	TARGET_CFLAGS="$(TARGET_CFLAGS)" \
+	$(if $(RUSTC_TARGET_RUSTFLAGS),$(RUSTC_TARGET_CARGO_RUSTFLAGS)="$(RUSTC_TARGET_RUSTFLAGS)") \
 	$(PYTHON) $(HOST_BUILD_DIR)/x.py \
 		--build-dir $(HOST_BUILD_DIR)/build \
 		--ci false \
