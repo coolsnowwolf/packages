@@ -6,14 +6,14 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=mpd
-PKG_VERSION:=0.23.11
+PKG_VERSION:=0.23.17
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=https://www.musicpd.org/download/mpd/0.23
-PKG_HASH:=edb4e7a8f9dff238b5610f9e2461940ea98c727a5462fafb1cdf836304dfdca9
+PKG_HASH:=a86f4fe811695743b08db82a9f1a840b8918bb4f46b06f48aa1d8d1b5386dff2
 
-PKG_MAINTAINER:=
+PKG_MAINTAINER:=Alexandru Ardelean <ardeleanalex@gmail.com>
 PKG_LICENSE:=GPL-2.0-or-later
 PKG_LICENSE_FILES:=COPYING
 
@@ -22,7 +22,7 @@ PKG_CONFIG_DEPENDS:= \
 	CONFIG_BUILD_PATENTED \
 	CONFIG_IPV6 \
 
-PKG_USE_MIPS16:=0
+PKG_BUILD_FLAGS:=no-mips16
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/nls.mk
@@ -117,7 +117,6 @@ MESON_ARGS += \
 	-Dtcp=true \
 	-Dipv6=$(if $(CONFIG_IPV6),en,dis)abled \
 	-Dlocal_socket=true \
-	-Ddsd=false \
 	-Ddatabase=true \
 	-Dlibmpdclient=enabled \
 	-Dneighbor=false \
@@ -180,6 +179,7 @@ ifeq ($(BUILD_VARIANT),full)
   MESON_ARGS += \
 	-Dupnp=npupnp \
 	-Dmms=enabled \
+	-Ddsd=true \
 	-Dsoundcloud=enabled \
 	-Dffmpeg=enabled \
 	-Dmad=$(if $(CONFIG_BUILD_PATENTED),dis,en)abled \
@@ -206,6 +206,7 @@ ifeq ($(BUILD_VARIANT),mini)
   MESON_ARGS += \
 	-Dupnp=disabled \
 	-Dmms=disabled \
+	-Ddsd=false \
 	-Dsoundcloud=disabled \
 	-Dffmpeg=disabled \
 	-Dmad=enabled \
