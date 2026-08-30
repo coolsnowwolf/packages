@@ -1,0 +1,25 @@
+From: coolsnowwolf <coolsnowwolf@gmail.com>
+Subject: [PATCH] cachepool: stop using runtime.rawbyteslice
+
+Recent Go releases reject external linkname references to rawbyteslice.
+Use the language-provided slice allocator for the zeroed allocation path.
+
+Signed-off-by: coolsnowwolf <coolsnowwolf@gmail.com>
+---
+--- a/pcsutil/cachepool/malloc.go
++++ b/pcsutil/cachepool/malloc.go
+@@ -8,12 +8,9 @@
+ //go:linkname mallocgc runtime.mallocgc
+ func mallocgc(size uintptr, typ uintptr, needzero bool) unsafe.Pointer
+ 
+-//go:linkname rawbyteslice runtime.rawbyteslice
+-func rawbyteslice(size int) (b []byte)
+-
+-// RawByteSlice point to runtime.rawbyteslice
++// RawByteSlice allocates a zeroed byte slice.
+ func RawByteSlice(size int) (b []byte) {
+-	return rawbyteslice(size)
++	return make([]byte, size)
+ }
+ 
+ // RawMalloc allocates a new slice. The slice is not zeroed.
