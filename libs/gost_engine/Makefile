@@ -2,26 +2,25 @@ include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/openssl-module.mk
 
 PKG_NAME:=gost_engine
-PKG_VERSION:=3.0.1
-PKG_HASH:=bfeac85883724cfbe0ecc6d942ac0524b908143e019ab3d3b6abe47a3466a628
-PKG_LICENSE:=Apache-2.0
-PKG_RELEASE:=9
+PKG_VERSION:=3.0.3
+PKG_RELEASE:=12
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://github.com/gost-engine/engine/archive/v$(PKG_VERSION)
+PKG_SOURCE_PROTO:=git
+PKG_SOURCE_VERSION:=v$(PKG_VERSION)
+PKG_SOURCE_URL:=https://github.com/gost-engine/engine
+PKG_MIRROR_HASH:=b3a6701cd97e4db4f3e0f4b356c991075c6157dd3941d34851c8f36baa1d2721
 
 PKG_MAINTAINER:=Artur Petrov <github@phpchain.ru>
+PKG_LICENSE:=Apache-2.0
+PKG_LICENSE_FILES:=LICENSE
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/cmake.mk
 
-PKG_UNPACK:=$(HOST_TAR) -C "$(PKG_BUILD_DIR)" --strip-components=1 -xzf "$(DL_DIR)/$(PKG_SOURCE)"
-PKG_INSTALL:=
-
 define Package/gost_engine/Default
   $(call Package/openssl/engine/Default)
   TITLE:=GOST engine for OpenSSL
-  URL:=http://www.openssl.org/
+  URL:=https://github.com/gost-engine/engine
 endef
 
 define Package/gost_engine/Default/description
@@ -33,7 +32,6 @@ define Package/libopenssl-gost_engine
     $(call Package/gost_engine/Default)
     $(call Package/openssl/engine/Default)
     TITLE+= (library)
-    URL:=https://github.com/gost-engine/engine/
 endef
 
 define Package/libopenssl-gost_engine/description
@@ -49,7 +47,7 @@ define Package/gost_engine-util
     $(call Package/gost_engine/Default)
     SECTION:=utils
     CATEGORY:=Utilities
-    DEPENDS:=libopenssl-gost_engine
+    DEPENDS:=+libopenssl-gost_engine
     TITLE+= (utilities)
 endef
 
@@ -61,15 +59,17 @@ endef
 CMAKE_OPTIONS += -DOPENSSL_ENGINES_DIR=/usr/lib/$(ENGINES_DIR)
 
 define Package/libopenssl-gost_engine/install
-	$(INSTALL_DIR) $(1)/usr/lib/$(ENGINES_DIR) $(1)/etc/ssl/engines.cnf.d
-	$(INSTALL_DATA) $(PKG_BUILD_DIR)/bin/gost.so \
+	$(INSTALL_DIR) $(1)/usr/lib $(1)/usr/lib/$(ENGINES_DIR) $(1)/etc/ssl/modules.cnf.d
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libgost.so \
+			$(1)/usr/lib/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/$(ENGINES_DIR)/gost.so \
 			$(1)/usr/lib/$(ENGINES_DIR)/
-	$(INSTALL_DATA) ./files/gost.cnf $(1)/etc/ssl/engines.cnf.d/
+	$(INSTALL_DATA) ./files/gost.cnf $(1)/etc/ssl/modules.cnf.d/
 endef
 
 define Package/gost_engine-util/install
 	$(INSTALL_DIR) $(1)/usr/bin
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/bin/{gost12sum,gostsum} \
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/{gost12sum,gostsum} \
 			$(1)/usr/bin/
 endef
 
