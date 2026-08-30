@@ -8,13 +8,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libwebsockets
-PKG_VERSION:=4.3.2
-PKG_RELEASE:=3
+PKG_VERSION:=4.5.8
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
 PKG_SOURCE_URL:=https://codeload.github.com/warmcat/libwebsockets/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=6a85a1bccf25acc7e8e5383e4934c9b32a102880d1e4c37c70b27ae2a42406e1
+PKG_HASH:=b6ade658f4af3a823d0dc806ae5ef0623f0f4f5e2aeb895a0f77c4783840c30e
 
 PKG_SOURCE_VERSION:=v$(PKG_VERSION)
 
@@ -22,6 +22,9 @@ PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=LICENSE
 
 PKG_BUILD_DEPENDS:=libubox
+
+# GCC 15 workaround for discarded-qualifiers warning
+TARGET_CFLAGS += -Wno-error=discarded-qualifiers
 
 CMAKE_INSTALL:=1
 
