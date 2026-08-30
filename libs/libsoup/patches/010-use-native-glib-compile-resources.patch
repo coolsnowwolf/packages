@@ -1,0 +1,36 @@
+From: coolsnowwolf <coolsnowwolf@gmail.com>
+Subject: [PATCH] build: use native glib-compile-resources
+
+Meson's GNOME module resolves glib-compile-resources from the target gio
+pkg-config file. Select the native host tool explicitly for cross builds.
+
+Signed-off-by: coolsnowwolf <coolsnowwolf@gmail.com>
+---
+--- a/libsoup/meson.build
++++ b/libsoup/meson.build
+@@ -1,10 +1,20 @@
+ pkg = import('pkgconfig')
+ 
+-resources = gnome.compile_resources('soup-resources',
+-    'soup.gresource.xml',
+-    c_name: 'soup',
+-    source_dir: '.'
+-)
++glib_compile_resources = find_program('glib-compile-resources', native: true)
++resources = [
++  custom_target('soup-resources.c',
++    input: 'soup.gresource.xml',
++    output: 'soup-resources.c',
++    command: [glib_compile_resources, '@INPUT@', '--sourcedir',
++      meson.current_source_dir(), '--c-name', 'soup', '--internal',
++      '--generate-source', '--target', '@OUTPUT@']),
++  custom_target('soup-resources.h',
++    input: 'soup.gresource.xml',
++    output: 'soup-resources.h',
++    command: [glib_compile_resources, '@INPUT@', '--sourcedir',
++      meson.current_source_dir(), '--c-name', 'soup', '--internal',
++      '--generate-header', '--target', '@OUTPUT@'])
++]
+ 
+ soup_sources = [
+   resources,
