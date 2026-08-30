@@ -1,6 +1,6 @@
 --- a/ffbuild/pkgconfig_generate.sh
 +++ b/ffbuild/pkgconfig_generate.sh
-@@ -28,9 +28,9 @@ version=$(grep ${name}_VERSION= $name/${
+@@ -28,9 +28,9 @@
  
  cat <<EOF > $name/$fullname.pc
  prefix=$prefix
