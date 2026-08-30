@@ -8,18 +8,18 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=lttng-tools
-PKG_VERSION:=2.12.1
-PKG_RELEASE:=2
+PKG_VERSION:=2.15.1
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
 PKG_SOURCE_URL:=https://lttng.org/files/$(PKG_NAME)/
-PKG_HASH:=0de7afc1f40a5acbede933cdfd6cf47b32ff84d02e170a1321f7fc86141585b8
+PKG_HASH:=8b6d4ba7ae2c036f7dafbb4e29717677411078f9a9d961b2dc7c1ba16273e9e9
 
-PKG_MAINTAINER:=
+PKG_MAINTAINER:=Alexandru Ardelean <ardeleanalex@gmail.com>
 PKG_LICENSE:=LGPL-2.1 GPL-2.0
 PKG_LICENSE_FILES:=COPYING
 
-PKG_USE_MIPS16:=0
+PKG_BUILD_FLAGS:=no-mips16
 PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
 
@@ -31,7 +31,7 @@ define Package/lttng-tools
   CATEGORY:=Development
   TITLE:=Linux Trace Toolkit: next generation (tools)
   URL:=https://lttng.org/
-  DEPENDS:= +lttng-ust +libpopt +libxml2 $(ICONV_DEPENDS)
+  DEPENDS:= +lttng-ust +libpopt +libxml2 +libstdcpp $(ICONV_DEPENDS)
 endef
 
 CONFIGURE_ARGS += \
@@ -44,6 +44,14 @@ CONFIGURE_ARGS += \
 	--disable-extras \
 	--without-kmod \
 	--with-pic
+
+define Build/Prepare
+	$(call Build/Prepare/Default)
+	$(SED) 's/::TFD_CLOEXEC/TFD_CLOEXEC/g' $(PKG_BUILD_DIR)/src/common/timerfd.hpp
+	$(SED) 's/::EPOLL_CLOEXEC/EPOLL_CLOEXEC/g' $(PKG_BUILD_DIR)/src/common/poller.cpp
+	$(SED) 's/__cplusplus == 201103L/__cplusplus >= 201103L/' \
+		$(PKG_BUILD_DIR)/src/bin/lttng-sessiond/consumer.hpp
+endef
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include
