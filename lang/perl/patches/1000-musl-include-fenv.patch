@@ -1,0 +1,19 @@
+From: coolsnowwolf <coolsnowwolf@gmail.com>
+Subject: [PATCH] POSIX: include fenv.h when rounding APIs are available
+
+musl exposes fegetround and fesetround even when the cross configuration
+does not define I_FENV. Include the declarations when HAS_FEGETROUND is set.
+
+Signed-off-by: coolsnowwolf <coolsnowwolf@gmail.com>
+---
+--- a/ext/POSIX/POSIX.xs
++++ b/ext/POSIX/POSIX.xs
+@@ -36,7 +36,7 @@
+ #include <sys/errno2.h>
+ #endif
+ #include <float.h>
+-#ifdef I_FENV
++#if defined(I_FENV) || defined(HAS_FEGETROUND)
+ #if !(defined(__vax__) && defined(__NetBSD__))
+ #include <fenv.h>
+ #endif

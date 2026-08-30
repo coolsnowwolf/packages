@@ -1,0 +1,40 @@
+From: coolsnowwolf <coolsnowwolf@gmail.com>
+Subject: [PATCH] libroxml: cast pthread_t to the numeric thread ID type
+
+musl defines pthread_t as a pointer. Cast it explicitly when storing or
+comparing the numeric thread ID so the code also builds with GCC 14.
+
+Signed-off-by: coolsnowwolf <coolsnowwolf@gmail.com>
+---
+--- a/src/roxml_utils.h
++++ b/src/roxml_utils.h
+@@ -48,7 +48,7 @@
+ #else /* CONFIG_XML_THREAD_SAFE==1 */
+ ROXML_STATIC_INLINE ROXML_INT unsigned long int roxml_thread_id(node_t *n)
+ {
+-	return pthread_self();
++	return (unsigned long)pthread_self();
+ }
+ 
+ ROXML_STATIC_INLINE ROXML_INT int roxml_lock_init(node_t *n)
+--- a/src/roxml_mem.c
++++ b/src/roxml_mem.c
+@@ -20,7 +20,8 @@
+ 	memory_cell_t *ptr = &head_cell;
+ 	memory_cell_t *to_delete = NULL;
+ 
+-	while ((ptr->prev != NULL) && (ptr->prev->id != pthread_self()))
++	while ((ptr->prev != NULL) &&
++	       (ptr->prev->id != (unsigned long)pthread_self()))
+ 		ptr = ptr->prev;
+ 
+ 	if (ptr->prev == NULL)
+@@ -135,7 +136,7 @@
+ 	cell->next->prev = cell;
+ 	cell = cell->next;
+ 	cell->type = type;
+-	cell->id = pthread_self();
++	cell->id = (unsigned long)pthread_self();
+ 	cell->occ = size;
+ 	cell->ptr = calloc(num, size);
+ 	head_cell.prev = cell;
