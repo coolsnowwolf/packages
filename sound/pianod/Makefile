@@ -1,6 +1,4 @@
 #
-# Copyright (C) 2015-2017 Ted Hess <thess@kitschensync.net>
-#
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
 #
@@ -8,12 +6,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=pianod
-PKG_VERSION:=174.09
+PKG_VERSION:=174.11
 PKG_RELEASE:=1
 
 PKG_SOURCE_URL:=https://github.com/thess/pianod-sc/releases/download/$(PKG_VERSION)
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
-PKG_HASH:=744c833ee17a7c95068c6925f4301f342bcad838ad8e48b40a19fd6739533eac
+PKG_HASH:=55e914ce6e3eb753b5a66cc915ffed29ec405c8913d16495a20409c3d73d8e33
 
 PKG_MAINTAINER:=Ted Hess <thess@kitschensync.net>
 
@@ -31,7 +29,7 @@ define Package/pianod
   DEPENDS:=+libao +libfaad2 +libmpg123 +libmbedtls +libjson-c +libgcrypt +libpthread
   TITLE:=Pandora radio daemon
   USERID:=pianod=88:pianod=88
-  URL:=http://deviousfish.com/pianod1/
+  URL:=https://deviousfish.com/pianod1/
 endef
 
 define Package/pianod/description
@@ -39,7 +37,7 @@ define Package/pianod/description
   A simple protocol makes for easy clients, mix scripting, integration with a
   home automation system, use as multiple-user music system for home or office.
   Documentation and configuration information can be found at:
-      http://deviousfish.com/pianod1/
+      https://deviousfish.com/pianod1/
 endef
 
 define Package/pianod-client
@@ -47,7 +45,7 @@ define Package/pianod-client
   CATEGORY:=Sound
   DEPENDS:=+pianod
   TITLE:=Pandora radio daemon WebUI
-  URL:=http://deviousfish.com/pianod1/
+  URL:=https://deviousfish.com/pianod1/
 endef
 
 define Package/pianod-client/description
@@ -63,7 +61,7 @@ CONFIGURE_ARGS+= --with-mbedtls
 PIANOD_CLIENT:=pianod-client-compiled-51.tar.gz
 
 define Download/pianod-client
-  URL:=http://deviousfish.com/Downloads/pianod/
+  URL:=https://deviousfish.com/Downloads/pianod/
   FILE:=$(PIANOD_CLIENT)
   HASH:=1596ec2da30992e4008bbd6654333b025165399c3c7e22078f35bee6a438c5ad
 endef
