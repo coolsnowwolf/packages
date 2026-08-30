@@ -15,7 +15,7 @@ PKG_NAME:=elektra
 PKG_LICENSE:=BSD-3-Clause
 PKG_LICENSE_FILES:=LICENSE.md
 PKG_VERSION:=0.9.7
-PKG_RELEASE:=4
+PKG_RELEASE:=5
 
 # Use this for official releasees
 PKG_HASH:=12b7b046004db29317b7b937dc794abf719c400ba3115af8d41849127b562681
@@ -29,7 +29,7 @@ PKG_SOURCE_URL:=http://ftp.libelektra.org/ftp/elektra/releases
 #PKG_SOURCE_VERSION:=e97efb29a94f3a49cb952d06552fcf53708ea8c7
 #PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.xz
 
-PKG_BUILD_DEPENDS:= lua
+PKG_BUILD_DEPENDS:=lua5.4
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/cmake.mk
@@ -265,7 +265,7 @@ endef
 define Package/libelektra-lua
   $(call Package/libelektra/Default)
   TITLE:=Elektra lua plugin
-  DEPENDS:=+libelektra-core +lua5.3 +libstdcpp
+  DEPENDS:=+libelektra-core +liblua5.4 +libstdcpp
 endef
 
 define Package/libelektra-lua/description

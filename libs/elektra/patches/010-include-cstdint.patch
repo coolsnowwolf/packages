@@ -1,0 +1,19 @@
+From: coolsnowwolf <coolsnowwolf@gmail.com>
+Subject: [PATCH] bindings: include cstdint for std::uint8_t
+
+Do not rely on standard library headers indirectly declaring fixed-width
+integer types. GCC 13 no longer exposes std::uint8_t through the existing
+include set.
+
+Signed-off-by: coolsnowwolf <coolsnowwolf@gmail.com>
+---
+--- a/src/bindings/cpp/include/key.hpp
++++ b/src/bindings/cpp/include/key.hpp
+@@ -10,6 +10,7 @@
+ #define ELEKTRA_KEY_HPP
+ 
+ #include <cstdarg>
++#include <cstdint>
+ #include <cstring>
+ #include <functional>
+ #include <locale>
