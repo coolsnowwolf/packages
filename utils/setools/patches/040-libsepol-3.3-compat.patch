@@ -1,0 +1,39 @@
+From: coolsnowwolf <coolsnowwolf@gmail.com>
+Subject: [PATCH] policyrep: support libsepol before 3.8
+
+Netlink message extended permissions are unavailable in the libsepol version
+shipped by this tree. Omit that rule type while retaining ioctl xperm support.
+
+Signed-off-by: coolsnowwolf <coolsnowwolf@gmail.com>
+---
+--- a/setools/policyrep/sepol.pxd
++++ b/setools/policyrep/sepol.pxd
+@@ -157,7 +157,6 @@
+     #
+     cdef int AVTAB_XPERMS_IOCTLFUNCTION
+     cdef int AVTAB_XPERMS_IOCTLDRIVER
+-    cdef int AVTAB_XPERMS_NLMSG
+ 
+     cdef struct avtab_extended_perms:
+         uint8_t specified
+--- a/setools/policyrep/terule.pxi
++++ b/setools/policyrep/terule.pxi
+@@ -300,8 +300,7 @@
+         #
+         for curr in range(len):
+             if sepol.xperm_test(curr, xperms.perms):
+-                if (xperms.specified == sepol.AVTAB_XPERMS_IOCTLFUNCTION \
+-                    or xperms.specified == sepol.AVTAB_XPERMS_NLMSG):
++                if xperms.specified == sepol.AVTAB_XPERMS_IOCTLFUNCTION:
+                     perms.add(xperms.driver << 8 | curr)
+                 elif xperms.specified == sepol.AVTAB_XPERMS_IOCTLDRIVER:
+                     base_value = curr << 8
+@@ -318,8 +317,6 @@
+         if datum.xperms.specified == sepol.AVTAB_XPERMS_IOCTLFUNCTION \
+             or datum.xperms.specified == sepol.AVTAB_XPERMS_IOCTLDRIVER:
+             xperm_type = intern("ioctl")
+-        elif datum.xperms.specified == sepol.AVTAB_XPERMS_NLMSG:
+-            xperm_type = intern("nlmsg")
+         else:
+             raise LowLevelPolicyError(f"Unknown extended permission: {datum.xperms.specified}")
+ 
