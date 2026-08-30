@@ -1,0 +1,19 @@
+From: coolsnowwolf <coolsnowwolf@gmail.com>
+Subject: [PATCH] setup: skip native extension probe when cross-compiling
+
+The pure Python implementation uses ctypes at runtime. Avoid loading the
+target C library from the host Python process while preparing the wheel.
+
+Signed-off-by: coolsnowwolf <coolsnowwolf@gmail.com>
+---
+--- a/setup.py
++++ b/setup.py
+@@ -90,7 +90,7 @@
+ 
+ 
+ ext_mod = []
+-if compile_ext_mod or should_compile_ext_mod():
++if compile_ext_mod:
+     # add -fpic if x86_64 arch
+     if platform in ["linux-x86_64"]:
+         os.environ["CFLAGS"] = "-fpic"

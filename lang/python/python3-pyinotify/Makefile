@@ -7,7 +7,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=python3-pyinotify
 PKG_VERSION:=0.9.6
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PYPI_NAME:=pyinotify
 PKG_HASH:=9c998a5d7606ca835065cdabc013ae6c66eb9ea76a00a1e3bc6e0cfe2b4f71f4
