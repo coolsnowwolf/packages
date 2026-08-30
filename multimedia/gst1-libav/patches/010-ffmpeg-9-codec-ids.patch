@@ -1,0 +1,62 @@
+From fe4bb54ec4247882dd7c99c8d413243a2458311a Mon Sep 17 00:00:00 2001
+From: Reilly Brogan <reilly@reillybrogan.com>
+Date: Tue, 4 Aug 2026 12:09:11 -0500
+Subject: [PATCH] gst-libav: Fix build failure with FFmpeg 9.0
+
+FFmpeg 9 removes the V308, V408 and V410 codec IDs. Only reference them
+with older libavcodec versions.
+
+Signed-off-by: coolsnowwolf <coolsnowwolf@gmail.com>
+---
+ a/ext/libav/gstavviddec.c | 15 +++++++++------
+ b/ext/libav/gstavvidenc.c | 15 +++++++++------
+ 2 files changed, 18 insertions(+), 12 deletions(-)
+
+--- a/ext/libav/gstavviddec.c
++++ b/ext/libav/gstavviddec.c
+@@ -2760,12 +2760,15 @@
+     }
+ 
+     /* no quasi codecs, please */
+-    if (in_plugin->id == AV_CODEC_ID_RAWVIDEO ||
+-        in_plugin->id == AV_CODEC_ID_V210 ||
+-        in_plugin->id == AV_CODEC_ID_V210X ||
+-        in_plugin->id == AV_CODEC_ID_V308 ||
+-        in_plugin->id == AV_CODEC_ID_V408 ||
+-        in_plugin->id == AV_CODEC_ID_V410 || in_plugin->id == AV_CODEC_ID_R210
++    if (in_plugin->id == AV_CODEC_ID_RAWVIDEO
++        || in_plugin->id == AV_CODEC_ID_V210
++        || in_plugin->id == AV_CODEC_ID_V210X
++        || in_plugin->id == AV_CODEC_ID_R210
++#if LIBAVCODEC_VERSION_MAJOR < 63
++        || in_plugin->id == AV_CODEC_ID_V308
++        || in_plugin->id == AV_CODEC_ID_V408
++        || in_plugin->id == AV_CODEC_ID_V410
++#endif
+ #if LIBAVCODEC_VERSION_MAJOR < 61
+         || in_plugin->id == AV_CODEC_ID_AYUV
+ #endif
+--- a/ext/libav/gstavvidenc.c
++++ b/ext/libav/gstavvidenc.c
+@@ -1030,12 +1030,15 @@
+     }
+ 
+     /* no quasi codecs, please */
+-    if (in_plugin->id == AV_CODEC_ID_RAWVIDEO ||
+-        in_plugin->id == AV_CODEC_ID_V210 ||
+-        in_plugin->id == AV_CODEC_ID_V210X ||
+-        in_plugin->id == AV_CODEC_ID_V308 ||
+-        in_plugin->id == AV_CODEC_ID_V408 ||
+-        in_plugin->id == AV_CODEC_ID_V410 || in_plugin->id == AV_CODEC_ID_R210
++    if (in_plugin->id == AV_CODEC_ID_RAWVIDEO
++        || in_plugin->id == AV_CODEC_ID_V210
++        || in_plugin->id == AV_CODEC_ID_V210X
++        || in_plugin->id == AV_CODEC_ID_R210
++#if LIBAVCODEC_VERSION_MAJOR < 63
++        || in_plugin->id == AV_CODEC_ID_V308
++        || in_plugin->id == AV_CODEC_ID_V408
++        || in_plugin->id == AV_CODEC_ID_V410
++#endif
+ #if LIBAVCODEC_VERSION_MAJOR < 61
+         || in_plugin->id == AV_CODEC_ID_AYUV
+ #endif
