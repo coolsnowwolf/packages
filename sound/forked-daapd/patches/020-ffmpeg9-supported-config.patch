@@ -1,0 +1,117 @@
+From: ejurgensen <espenjurgensen@gmail.com>
+Subject: [PATCH] xcode: support const codec and format APIs
+
+Backport the relevant parts of upstream commit
+ec632e478cea7d870a90511dc6b219d3e43aa9b1 and the preceding FFmpeg 5
+const API compatibility used by current OwnTone.
+
+Signed-off-by: coolsnowwolf <coolsnowwolf@gmail.com>
+---
+--- a/src/transcode.c
++++ b/src/transcode.c
+@@ -43,6 +43,12 @@
+ #include "misc.h"
+ #include "transcode.h"
+ 
++// Switches for compatibility with FFmpeg's changing API
++#define USE_CONST_AVFORMAT (LIBAVFORMAT_VERSION_MAJOR > 59) || ((LIBAVFORMAT_VERSION_MAJOR == 59) && (LIBAVFORMAT_VERSION_MINOR > 15))
++#define USE_CONST_AVCODEC (LIBAVCODEC_VERSION_MAJOR > 59) || ((LIBAVCODEC_VERSION_MAJOR == 59) && (LIBAVCODEC_VERSION_MINOR > 15))
++#define USE_NO_CLEAR_AVFMT_NOFILE USE_CONST_AVFORMAT
++#define USE_AVCODEC_GET_SUPPORTED_CONFIG (LIBAVCODEC_VERSION_MAJOR > 61) || ((LIBAVCODEC_VERSION_MAJOR == 61) && (LIBAVCODEC_VERSION_MINOR > 13))
++
+ // Interval between ICY metadata checks for streams, in seconds
+ #define METADATA_ICY_INTERVAL 5
+ // Maximum number of streams in a file that we will accept
+@@ -425,8 +431,13 @@
+ stream_add(struct encode_ctx *ctx, struct stream_ctx *s, enum AVCodecID codec_id)
+ {
+   const AVCodecDescriptor *codec_desc;
++#if USE_CONST_AVCODEC
++  const AVCodec *encoder;
++#else
+   AVCodec *encoder;
++#endif
+   AVDictionary *options = NULL;
++  const enum AVPixelFormat *pix_fmts = NULL;
+   int ret;
+ 
+   codec_desc = avcodec_descriptor_get(codec_id);
+@@ -450,7 +461,12 @@
+ 
+   if (!s->codec->pix_fmt)
+     {
+-      s->codec->pix_fmt = avcodec_default_get_format(s->codec, encoder->pix_fmts);
++#if USE_AVCODEC_GET_SUPPORTED_CONFIG
++      avcodec_get_supported_config(s->codec, NULL, AV_CODEC_CONFIG_PIX_FORMAT, 0, (const void **)&pix_fmts, NULL);
++#else
++      pix_fmts = encoder->pix_fmts;
++#endif
++      s->codec->pix_fmt = pix_fmts ? avcodec_default_get_format(s->codec, pix_fmts) : AV_PIX_FMT_NONE;
+       DPRINTF(E_DBG, L_XCODE, "Pixel format set to %s (encoder is %s)\n", av_get_pix_fmt_name(s->codec->pix_fmt), codec_desc->name);
+     }
+ 
+@@ -759,7 +775,11 @@
+ open_decoder(unsigned int *stream_index, struct decode_ctx *ctx, enum AVMediaType type)
+ {
+   AVCodecContext *dec_ctx;
++#if USE_CONST_AVCODEC
++  const AVCodec *decoder;
++#else
+   AVCodec *decoder;
++#endif
+   AVDictionary *options = NULL;
+ #ifdef HAVE_FFMPEG_CH_LAYOUT
+   char downmix_layout[64];
+@@ -815,7 +835,11 @@
+ {
+   AVDictionary *options = NULL;
+   AVCodecContext *dec_ctx;
++#if USE_CONST_AVFORMAT
++  const AVInputFormat *ifmt;
++#else
+   AVInputFormat *ifmt;
++#endif
+   unsigned int stream_index;
+   const char *user_agent;
+   int ret;
+@@ -931,7 +955,11 @@
+ static int
+ open_output(struct encode_ctx *ctx, struct decode_ctx *src_ctx)
+ {
++#if USE_CONST_AVFORMAT
++  const AVOutputFormat *oformat;
++#else
+   AVOutputFormat *oformat;
++#endif
+   int ret;
+ 
+   oformat = av_guess_format(ctx->settings.format, NULL, NULL);
+@@ -941,12 +969,14 @@
+       return -1;
+     }
+ 
++#if USE_NO_CLEAR_AVFMT_NOFILE
++  CHECK_ERRNO(L_XCODE, avformat_alloc_output_context2(&ctx->ofmt_ctx, oformat, NULL, NULL));
++#else
+   // Clear AVFMT_NOFILE bit, it is not allowed as we will set our own AVIOContext
+   oformat->flags &= ~AVFMT_NOFILE;
+-
+   CHECK_NULL(L_XCODE, ctx->ofmt_ctx = avformat_alloc_context());
+-
+   ctx->ofmt_ctx->oformat = oformat;
++#endif
+ 
+   ctx->obuf = evbuffer_new();
+   if (!ctx->obuf)
+@@ -1375,7 +1405,11 @@
+ {
+   const AVCodecDescriptor *codec_desc;
+   struct decode_ctx *ctx;
++#if USE_CONST_AVCODEC
++  const AVCodec *decoder;
++#else
+   AVCodec *decoder;
++#endif
+   int ret;
+ 
+   CHECK_NULL(L_XCODE, ctx = calloc(1, sizeof(struct decode_ctx)));
