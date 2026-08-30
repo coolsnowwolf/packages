@@ -6,11 +6,11 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=numpy
-PKG_VERSION:=2.3.3
+PKG_VERSION:=2.4.6
 PKG_RELEASE:=1
 
 PYPI_NAME:=$(PKG_NAME)
-PKG_HASH:=ddc7c39727ba62b80dfdbedf400d1c10ddfa8eefbd7ec8dcb118be8b56d31029
+PKG_HASH:=f3a3570c4a2a16746ac2c31a7c7c7b0c186b95ce902e33db6f28094ed7387dda
 
 PKG_MAINTAINER:=Alexandru Ardelean <ardeleanalex@gmail.com>
 
@@ -35,6 +35,8 @@ include ../python3-package.mk
 include $(INCLUDE_DIR)/meson.mk
 
 MESON_ARGS+= \
+	-Dblas=$(if $(CONFIG_NUMPY_OPENBLAS_SUPPORT),openblas,none) \
+	-Dlapack=$(if $(CONFIG_NUMPY_OPENBLAS_SUPPORT),openblas,none) \
 	-Ddisable-optimization=true \
 	-Dcpu-baseline=min
 
@@ -79,7 +81,7 @@ define Package/python3-numpy
 	   +NUMPY_OPENBLAS_SUPPORT:openblas
 endef
 
-# We need to duplicate the omitted arhitectures same as openblas
+# We need to duplicate the omitted architectures same as openblas
 define Package/python3-numpy/config
 menu "Configuration"
 depends on !powerpc
