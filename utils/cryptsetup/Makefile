@@ -8,16 +8,17 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=cryptsetup
-PKG_VERSION:=2.6.0
+PKG_VERSION:=2.8.7
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
-PKG_SOURCE_URL:=@KERNEL/linux/utils/cryptsetup/v2.6
-PKG_HASH:=44397ba76e75a9cde5b02177bc63cd7af428a785788e3a7067733e7761842735
+PKG_SOURCE_URL:=@KERNEL/linux/utils/cryptsetup/v$(subst $(space),.,$(wordlist 1, 2, $(subst .,$(space),$(PKG_VERSION))))
+PKG_HASH:=e776f0d381e86ca61042c457069491fe8e0ac286780c7c3b1e4f9921abc961da
 
 PKG_MAINTAINER:=Daniel Golle <daniel@makrotopia.org>
 PKG_LICENSE:=GPL-2.0-or-later LGPL-2.1-or-later
 PKG_LICENSE_FILES:=COPYING COPYING.LGPL
+PKG_CPE_ID:=cpe:/a:cryptsetup_project:cryptsetup
 
 PKG_FIXUP:=autoreconf
 PKG_INSTALL:=1
@@ -34,7 +35,7 @@ define Package/cryptsetup
   SUBMENU:=Encryption
   TITLE:=Cryptsetup
   DEPENDS:=$(ICONV_DEPENDS) $(INTL_DEPENDS) +libblkid +libuuid +libpopt +lvm2 \
-           +libdevmapper +libjson-c +@KERNEL_DIRECT_IO +kmod-crypto-user
+           +libdevmapper +libjson-c +@KERNEL_DIRECT_IO +kmod-crypto-user +libopenssl
   URL:=https://gitlab.com/cryptsetup/cryptsetup/
 endef
 
@@ -55,17 +56,41 @@ define Package/cryptsetup-ssh/description
   Experimental SSH token support for cryptsetup.
 endef
 
+define Package/integritysetup
+  SECTION:=utils
+  CATEGORY:=Utilities
+  SUBMENU:=Encryption
+  TITLE:=integritysetup
+  DEPENDS:=+cryptsetup
+  URL:=https://gitlab.com/cryptsetup/cryptsetup/
+endef
+
+define Package/integritysetup/description
+  Manage dm-integrity (block level integrity) volumes
+endef
+
+define Package/veritysetup
+  SECTION:=utils
+  CATEGORY:=Utilities
+  SUBMENU:=Encryption
+  TITLE:=veritysetup
+  DEPENDS:=+cryptsetup
+  URL:=https://gitlab.com/cryptsetup/cryptsetup/
+endef
+
+define Package/veritysetup/description
+  Manage dm-verity (block level verification) volumes
+endef
+
 CONFIGURE_ARGS += \
 	--disable-asciidoc \
-	--disable-cryptsetup-reencrypt \
-	--disable-integritysetup \
 	--disable-selinux \
 	--disable-rpath \
-	--disable-veritysetup \
 	--disable-udev \
 	--with-default-luks-format=LUKS2 \
 	--with-luks2-lock-path=/var/run/cryptsetup \
-	--with-crypto_backend=kernel
+	--with-crypto_backend=openssl \
+	--disable-kernel_crypto
 
 ifeq ($(CONFIG_PACKAGE_cryptsetup-ssh),)
 CONFIGURE_ARGS += --disable-ssh-token
@@ -100,5 +125,17 @@ define Package/cryptsetup-ssh/install
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/cryptsetup-ssh $(1)/usr/sbin
 endef
 
+define Package/integritysetup/install
+	$(INSTALL_DIR) $(1)/usr/sbin
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/integritysetup $(1)/usr/sbin
+endef
+
+define Package/veritysetup/install
+	$(INSTALL_DIR) $(1)/usr/sbin
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/veritysetup $(1)/usr/sbin
+endef
+
 $(eval $(call BuildPackage,cryptsetup))
 $(eval $(call BuildPackage,cryptsetup-ssh))
+$(eval $(call BuildPackage,integritysetup))
+$(eval $(call BuildPackage,veritysetup))
