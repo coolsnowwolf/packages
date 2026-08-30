@@ -8,23 +8,25 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ooniprobe
-PKG_VERSION:=3.16.5
+PKG_VERSION:=3.30.0
 PKG_RELEASE:=1
 
 PKG_SOURCE:=probe-cli-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/ooni/probe-cli/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=198f7a3507482bfbf0fb24c24f34e17c9f5adbfdf5d8c63774ecd816708a4438
+PKG_HASH:=8ddd7bf5f831e635dada1f8eca2db688f8da9c37e06deed03fa94826d943315b
 
 PKG_MAINTAINER:=Jan Pavlinec <jan.pavlinec1@gmail.com>
 PKG_LICENSE:=BSD-3-Clause
-PKG_LICENSE_FILES:=LICENSE.md
+PKG_LICENSE_FILES:=LICENSE
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/probe-cli-$(PKG_VERSION)
 PKG_BUILD_DEPENDS:=golang/host
 PKG_BUILD_PARALLEL:=1
 PKG_USE_MIPS16:=0
 
-GO_PKG:=github.com/ooni/probe-cli
+GO_PKG:=github.com/ooni/probe-cli/v3
+GO_PKG_BUILD_PKG:=$(GO_PKG)/cmd/ooniprobe
+GO_PKG_TAGS:=nouserauth
 
 include $(INCLUDE_DIR)/package.mk
 include ../../lang/golang/golang-package.mk
