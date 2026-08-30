@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=jose
 PKG_VERSION:=11
-PKG_RELEASE:=$(AUTORELEASE)
+PKG_RELEASE:=6
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=https://github.com/latchset/$(PKG_NAME)/releases/download/v$(PKG_VERSION)/
@@ -18,6 +18,7 @@ PKG_HASH:=e272afe7717e22790c383f3164480627a567c714ccb80c1ee96f62c9929d8225
 PKG_MAINTAINER:=Tibor Dudlák <tibor.dudlak@gmail.com>
 PKG_LICENSE:=Apache-2.0
 PKG_LICENSE_FILES:=COPYING
+PKG_CPE_ID:=cpe:/a:latchset:jose
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/meson.mk
