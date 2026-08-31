@@ -22,12 +22,25 @@ PKG_LICENSE:=GPL-2.0-only
 
 include $(INCLUDE_DIR)/package.mk
 
+ifeq ($(call kernel_patchver_ge,6.16),1)
+OVPN_KCONFIG:= \
+	CONFIG_OVPN \
+	CONFIG_STREAM_PARSER=y \
+	CONFIG_CRYPTO_CHACHA20POLY1305=y
+OVPN_FILES:=$(LINUX_DIR)/drivers/net/ovpn/ovpn.ko
+OVPN_AUTOLOAD:=$(call AutoLoad,30,ovpn)
+else
+OVPN_FILES:=$(PKG_BUILD_DIR)/drivers/net/ovpn-dco/ovpn-dco-v2.ko
+OVPN_AUTOLOAD:=$(call AutoLoad,30,ovpn-dco-v2)
+endif
+
 define KernelPackage/ovpn-dco-v2
   SUBMENU:=Network Support
   TITLE:=OpenVPN data channel offload
   DEPENDS:=+kmod-crypto-aead +kmod-udptunnel4 +IPV6:kmod-udptunnel6
-  FILES:=$(PKG_BUILD_DIR)/drivers/net/ovpn-dco/ovpn-dco-v2.ko
-  AUTOLOAD:=$(call AutoLoad,30,ovpn-dco-v2)
+  KCONFIG:=$(OVPN_KCONFIG)
+  FILES:=$(OVPN_FILES)
+  AUTOLOAD:=$(OVPN_AUTOLOAD)
 endef
 
 define KernelPackage/ovpn-dco-v2/description
@@ -35,6 +48,7 @@ define KernelPackage/ovpn-dco-v2/description
   by offloading the data channel processing to kernelspace.
 endef
 
+ifneq ($(call kernel_patchver_ge,6.16),1)
 NOSTDINC_FLAGS += \
 	$(KERNEL_NOSTDINC_FLAGS) \
 	-I$(PKG_BUILD_DIR)/include \
@@ -57,5 +71,9 @@ define Build/Compile
 		$(MAKE_OPTS) \
 		modules
 endef
+else
+define Build/Compile
+endef
+endif
 
 $(eval $(call KernelPackage,ovpn-dco-v2))

@@ -44,7 +44,7 @@ config OPENVPN_wolfssl_ENABLE_DCO
 	select WOLFSSL_HAS_OPENVPN
 	help
 	  enable data channel offload support
-	  using the ovpn-dco-v2 kernel module
+	  using the kernel OpenVPN data channel offload module
 
 config OPENVPN_wolfssl_ENABLE_SMALL
 	bool "Enable size optimization"

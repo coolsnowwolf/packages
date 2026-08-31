@@ -34,7 +34,7 @@ config OPENVPN_mbedtls_ENABLE_DCO
 	default y if !OPENVPN_mbedtls_ENABLE_IPROUTE2
 	help
 	  enable data channel offload support
-	  using the ovpn-dco-v2 kernel module
+	  using the kernel OpenVPN data channel offload module
 
 config OPENVPN_mbedtls_ENABLE_SMALL
 	bool "Enable size optimization"
