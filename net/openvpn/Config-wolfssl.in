@@ -11,15 +11,19 @@ config OPENVPN_wolfssl_ENABLE_LZO
 
 config OPENVPN_wolfssl_ENABLE_LZ4
 	bool "Enable LZ4 compression support"
-	default n
+	default y
 
 config OPENVPN_wolfssl_ENABLE_X509_ALT_USERNAME
 	bool "Enable the --x509-username-field feature"
 	default n
 
+#config OPENVPN_wolfssl_ENABLE_EUREPHIA
+#	bool "Enable support for the eurephia plug-in"
+#	default n
+
 config OPENVPN_wolfssl_ENABLE_MANAGEMENT
 	bool "Enable management server support"
-	default y
+	default n
 
 #config OPENVPN_wolfssl_ENABLE_PKCS11
 #	bool "Enable pkcs11 support"
@@ -44,7 +48,7 @@ config OPENVPN_wolfssl_ENABLE_DCO
 	select WOLFSSL_HAS_OPENVPN
 	help
 	  enable data channel offload support
-	  using the kernel OpenVPN data channel offload module
+	  using the ovpn-dco-v2 kernel module
 
 config OPENVPN_wolfssl_ENABLE_SMALL
 	bool "Enable size optimization"

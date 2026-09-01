@@ -6,11 +6,15 @@ config OPENVPN_mbedtls_ENABLE_LZO
 
 config OPENVPN_mbedtls_ENABLE_LZ4
 	bool "Enable LZ4 compression support"
-	default n
+	default y
+
+#config OPENVPN_mbedtls_ENABLE_EUREPHIA
+#	bool "Enable support for the eurephia plug-in"
+#	default n
 
 config OPENVPN_mbedtls_ENABLE_MANAGEMENT
 	bool "Enable management server support"
-	default y
+	default n
 
 #config OPENVPN_mbedtls_ENABLE_PKCS11
 #	bool "Enable pkcs11 support"
@@ -34,7 +38,7 @@ config OPENVPN_mbedtls_ENABLE_DCO
 	default y if !OPENVPN_mbedtls_ENABLE_IPROUTE2
 	help
 	  enable data channel offload support
-	  using the kernel OpenVPN data channel offload module
+	  using the ovpn-dco-v2 kernel module
 
 config OPENVPN_mbedtls_ENABLE_SMALL
 	bool "Enable size optimization"
