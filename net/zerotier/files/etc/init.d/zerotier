@@ -30,7 +30,8 @@ start_service() {
 	config_get secret global secret
 	config_get local_conf_path global local_conf_path
 	config_get config_path global config_path
-	config_get_bool copy_config_path global copy_config_path 0
+	# Keep persistent planet/moon files while confining runtime writes to RAM.
+	config_get_bool copy_config_path global copy_config_path 1
 	[ "$enabled" -ne 0 ] || { echo "disabled in /etc/config/zerotier"; return; }
 	rm -rf "$CONFIG_PATH"
 	if [ -n "$config_path" ]; then
