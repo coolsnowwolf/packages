@@ -8,69 +8,73 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=miniupnpd
-PKG_VERSION:=2.0.20170421
+PKG_VERSION:=2.3.9
 PKG_RELEASE:=3
 
-PKG_SOURCE_URL:=http://miniupnp.tuxfamily.org/files
+PKG_SOURCE_URL:=https://github.com/miniupnp/miniupnp/releases/download/miniupnpd_$(subst .,_,$(PKG_VERSION))
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_HASH:=9677aeccadf73b4bf8bb9d832c32b5da8266b4d58eed888f3fd43d7656405643
+PKG_HASH:=66cb3c3d697ab2bb3a61d3c48628166d6ba328d7c2dbeb95898fdf2a3202af7b
 
-PKG_MAINTAINER:=Markus Stenberg <fingon@iki.fi>
+PKG_MAINTAINER:=Alexandru Ardelean <ardeleanalex@gmail.com>
 PKG_LICENSE:=BSD-3-Clause
+PKG_LICENSE_FILES:=LICENSE
+PKG_CPE_ID:=cpe:/a:miniupnp_project:miniupnpd
 
+PKG_INSTALL:=1
+PKG_BUILD_PARALLEL:=1
 include $(INCLUDE_DIR)/package.mk
+include $(INCLUDE_DIR)/version.mk
 
 define Package/miniupnpd-iptables
   SECTION:=net
   CATEGORY:=Network
-  DEPENDS:=+iptables +libip4tc +libuuid
+  DEPENDS:= \
+	+libcap-ng \
+	+libmnl \
+	+libuuid \
+	+IPV6:ip6tables \
+	+IPV6:libip6tc \
+	+iptables \
+	+libip4tc \
+	+libnetfilter-conntrack
   PROVIDES:=miniupnpd
-  TITLE:=Lightweight UPnP IGD, NAT-PMP & PCP daemon (iptables)
+  CONFLICTS:=miniupnpd-nftables
+  TITLE:=Lightweight UPnP IGD & PCP/NAT-PMP daemon (iptables)
   SUBMENU:=Firewall
-  URL:=http://miniupnp.free.fr/
-endef
-
-define Package/miniupnpd-iptables/config
-config MINIUPNPD_IPTABLES_IGDv2
-	bool
-	default n
-	prompt "Enable IGDv2"
+  URL:=https://miniupnp.tuxfamily.org/
+  VARIANT:=iptables
 endef
 
 define Package/miniupnpd-iptables/conffiles
 /etc/config/upnpd
 endef
 
-define Package/miniupnpd-iptables/postinst
-#!/bin/sh
-
-if [ -z "$$IPKG_INSTROOT" ]; then
-  ( . /etc/uci-defaults/99-miniupnpd )
-  rm -f /etc/uci-defaults/99-miniupnpd
-fi
-
-exit 0
-endef
-
 define Build/Prepare
 	$(call Build/Prepare/Default)
-	echo "OpenWrt" | tr \(\)\  _ >$(PKG_BUILD_DIR)/os.openwrt
+	echo "$(VERSION_NUMBER)" | tr '() ' '_' >$(PKG_BUILD_DIR)/os.openwrt
 endef
 
-MAKE_FLAGS += \
-	TARGET_OPENWRT=1 TEST=0 \
-	LIBS="" \
-	CC="$(TARGET_CC) -DIPTABLES_143 \
-		-lip4tc -luuid" \
-	CONFIG_OPTIONS="--portinuse --leasefile \
-		$(if $(CONFIG_MINIUPNPD_IPTABLES_IGDv2),--igd2)" \
-	-f Makefile.linux \
-	miniupnpd
+CONFIGURE_ARGS = \
+	--disable-fork \
+	--disable-pppconn \
+	--firewall=iptables \
+	--igd2 \
+	$(if $(CONFIG_IPV6),--ipv6) \
+	--leasefile \
+	--portinuse \
+	--regex \
+	--vendorcfg
 
+TARGET_CFLAGS += $(FPIC)
+TARGET_LDFLAGS += -Wl,--gc-sections,--as-needed
+
+ifeq ($(filter $(ARCH),mips mipsel),)
+	TARGET_CFLAGS += -flto
+endif
 
 define Package/miniupnpd-iptables/install
 	$(INSTALL_DIR) $(1)/usr/sbin $(1)/etc/init.d $(1)/etc/config $(1)/etc/uci-defaults $(1)/etc/hotplug.d/iface $(1)/usr/share/miniupnpd
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/miniupnpd $(1)/usr/sbin/miniupnpd
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/miniupnpd $(1)/usr/sbin/miniupnpd
 	$(INSTALL_BIN) ./files/miniupnpd.init $(1)/etc/init.d/miniupnpd
 	$(INSTALL_CONF) ./files/upnpd.config $(1)/etc/config/upnpd
 	$(INSTALL_DATA) ./files/miniupnpd.hotplug $(1)/etc/hotplug.d/iface/50-miniupnpd
