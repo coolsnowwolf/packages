@@ -10,6 +10,10 @@ local function scrape()
   local u = ubus.connect()
   local status = u:call("network.wireless", "status", {})
 
+  if not status then
+    return
+  end
+
   for dev, dev_table in pairs(status) do
     for _, intf in ipairs(dev_table['interfaces']) do
       local ifname = intf['ifname']
@@ -18,7 +22,7 @@ local function scrape()
         local labels = {
           channel = iw.channel(ifname),
           ssid = iw.ssid(ifname),
-          bssid = iw.bssid(ifname),
+          bssid = string.lower(iw.bssid(ifname)),
           mode = iw.mode(ifname),
           ifname = ifname,
           country = iw.country(ifname),
