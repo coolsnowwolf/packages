@@ -6,12 +6,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=adguardhome
-PKG_VERSION:=0.107.74
+PKG_VERSION:=0.107.79
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/AdguardTeam/AdGuardHome/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=abce6463c4e0072051c6c66c4b03d3798f234c168438db9b6d3394b7df2870f2
+PKG_HASH:=5f4fa119f24ea741bb8cecfa74203165fe6b86b904cef05ff429fb227b07d425
 PKG_BUILD_DIR:=$(BUILD_DIR)/AdGuardHome-$(PKG_VERSION)
 
 PKG_LICENSE:=GPL-3.0-only
@@ -51,7 +51,7 @@ define Package/adguardhome/conffiles
 endef
 
 define Package/adguardhome/description
-  Free and open source, powerful network-wide ads and trackers blocking DNS server.
+Free and open source, powerful network-wide ads and trackers blocking DNS server.
 endef
 
 FRONTEND_FILE:=$(PKG_NAME)_frontend-$(PKG_VERSION).tar.gz
@@ -59,7 +59,7 @@ define Download/adguardhome_frontend
 	URL:=https://github.com/AdguardTeam/AdGuardHome/releases/download/v$(PKG_VERSION)/
 	URL_FILE:=AdGuardHome_frontend.tar.gz
 	FILE:=$(FRONTEND_FILE)
-	HASH:=bca5a8a4d777f984d9a6992214dc158cb35c12e6fd6fd61a30f677896aaa1758
+	HASH:=30184c157d4aefe5371b575a43c0ab5a7314aef039a820cc421ea67bab994ce8
 endef
 
 define Build/Prepare
