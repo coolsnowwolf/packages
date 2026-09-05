@@ -1,10 +1,10 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=wsdd2
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=https://github.com/Netgear/wsdd2.git
+PKG_SOURCE_URL:=https://github.com/NextOs-Ports/wsdd2.git
 PKG_SOURCE_DATE:=2023-12-21
 PKG_SOURCE_VERSION:=b676d8ac8f1aef792cb0761fb68a0a589ded3207
 PKG_MIRROR_HASH:=ac817f63605508779ebebf612fcb7d594ff87d3050b788f240d1fea9fdbaa3a0
@@ -19,7 +19,7 @@ define Package/wsdd2
   CATEGORY:=Network
   SUBMENU:=IP Addresses and Names
   TITLE:=Web Services for Devices (WSD) daemon
-  URL:=https://github.com/Netgear/wsdd2
+  URL:=https://github.com/NextOs-Ports/wsdd2
 endef
 
 define Package/wsdd2/description
