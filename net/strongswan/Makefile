@@ -376,7 +376,7 @@ endef
 define Package/strongswan-pki
 $(call Package/strongswan/Default)
   TITLE+= PKI tool
-  DEPENDS:= +strongswan +strongswan-libtls
+  DEPENDS:= strongswan strongswan-libtls
 endef
 
 define Package/strongswan-pki/description
@@ -409,7 +409,7 @@ endef
 define Package/strongswan-libtls
 $(call Package/strongswan/Default)
   TITLE+= libtls
-  DEPENDS:= +strongswan
+  DEPENDS:= strongswan
 endef
 
 define Package/strongswan-libtls/description
