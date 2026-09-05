@@ -1,5 +1,5 @@
 
-config zerotier sample_config
+config zerotier 'global'
 	option enabled 0
 
 	# persistent configuration folder (for ZT controller mode)
@@ -10,11 +10,15 @@ config zerotier sample_config
 	#option port '9993'
 
 	# path to the local.conf
-	#option local_conf '/etc/zerotier.conf'
+	#option local_conf_path '/etc/zerotier.conf'
 
 	# Generate secret on first start
 	option secret ''
 
-	# Join a public network called Earth
-	list join '8056c2e21c000001'
-	#list join '<other_network>'
+
+config network 'earth'
+	option id '8056c2e21c000001'
+	option allow_managed '1'
+	option allow_global '0'
+	option allow_default '0'
+	option allow_dns '0'
