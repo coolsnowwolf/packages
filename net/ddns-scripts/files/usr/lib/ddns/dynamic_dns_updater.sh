@@ -98,6 +98,7 @@ esac
 # set file names
 PIDFILE="$ddns_rundir/$SECTION_ID.pid"	# Process ID file
 UPDFILE="$ddns_rundir/$SECTION_ID.update"	# last update successful send (system uptime)
+CHKFILE="$ddns_rundir/$SECTION_ID.nextcheck"	# next check (system uptime + check interval)
 DATFILE="$ddns_rundir/$SECTION_ID.dat"	# save stdout data of WGet and other extern programs called
 ERRFILE="$ddns_rundir/$SECTION_ID.err"	# save stderr output of WGet and other extern programs called
 IPFILE="$ddns_rundir/$SECTION_ID.ip"	#
@@ -393,6 +394,8 @@ while : ; do
 
 	# now we wait for check interval before testing if update was recognized
 	[ $DRY_RUN -eq 0 ] && {
+		get_uptime NOW_TIME
+		echo $(($NOW_TIME + $CHECK_SECONDS)) > $CHKFILE	# save the next scheduled check time
 		write_log 7 "Waiting $CHECK_SECONDS seconds (Check Interval)"
 		sleep $CHECK_SECONDS &
 		PID_SLEEP=$!
