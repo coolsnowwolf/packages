@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=strongswan
 PKG_VERSION:=6.0.7
-PKG_RELEASE:=7
+PKG_RELEASE:=8
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
 PKG_SOURCE_URL:=https://download.strongswan.org/ https://download2.strongswan.org/
@@ -376,7 +376,7 @@ endef
 define Package/strongswan-pki
 $(call Package/strongswan/Default)
   TITLE+= PKI tool
-  DEPENDS:= strongswan strongswan-libtls
+  DEPENDS:= +strongswan +strongswan-libtls
 endef
 
 define Package/strongswan-pki/description
@@ -409,7 +409,7 @@ endef
 define Package/strongswan-libtls
 $(call Package/strongswan/Default)
   TITLE+= libtls
-  DEPENDS:= strongswan
+  DEPENDS:= +strongswan
 endef
 
 define Package/strongswan-libtls/description
