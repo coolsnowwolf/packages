@@ -7,12 +7,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=qbittorrent
-PKG_VERSION:=4.4.5
-PKG_RELEASE=2
+PKG_VERSION:=5.2.4
+PKG_RELEASE:=1
 
 PKG_SOURCE:=qBittorrent-release-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/qbittorrent/qBittorrent/tar.gz/release-$(PKG_VERSION)?
-PKG_HASH:=70c2128b44fe4df4dfc8afc765a304d70cf1b042b5214bcc855d8b3bbc9ccf36
+PKG_HASH:=226a6ad1aa7810fcbfa58b0d28b14feb8e207726cbe774d4d267ce769c19dd6c
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/qBittorrent-release-$(PKG_VERSION)
 
@@ -20,7 +20,7 @@ PKG_LICENSE:=GPL-2.0+
 PKG_LICENSE_FILES:=COPYING
 PKG_CPE_ID:=cpe:/a:qbittorrent:qbittorrent
 
-PKG_BUILD_DEPENDS:=qttools
+PKG_BUILD_DEPENDS:=qt6tools/host
 
 PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
@@ -36,10 +36,12 @@ define Package/qbittorrent
 	DEPENDS:=+libgcc +libstdcpp \
 		+rblibtorrent \
 		+libopenssl \
-		+qt5-core \
-		+qt5-network \
-		+qt5-sql \
-		+qt5-xml \
+		+libQt6Core \
+		+libQt6Network \
+		+libQt6Sql \
+		+libQt6Xml \
+		+qt6-plugin-libqopensslbackend \
+		+qt6-plugin-libqsqlite \
 		+zlib
 	TITLE:=bittorrent client programmed in C++ / Qt
 	URL:=https://www.qbittorrent.org/
@@ -56,7 +58,8 @@ endef
 
 CMAKE_OPTIONS += \
 	-DCMAKE_BUILD_TYPE=Release \
-	-DQT6=OFF \
+	-DQT_HOST_PATH=$(STAGING_DIR_HOSTPKG) \
+	-DQT_ADDITIONAL_PACKAGES_PREFIX_PATH=$(STAGING_DIR_HOSTPKG) \
 	-DSTACKTRACE=OFF \
 	-DWEBUI=ON \
 	-DGUI=OFF \
@@ -72,7 +75,7 @@ ifdef CONFIG_USE_GLIBC
   TARGET_LDFLAGS += -ldl -lrt -lpthread
 endif
 
-TARGET_CFLAGS += -std=c++17 -ffunction-sections -fdata-sections -flto
+TARGET_CFLAGS += -ffunction-sections -fdata-sections -flto
 TARGET_LDFLAGS += -Wl,--gc-sections,--as-needed -flto
 
 # The pentium-mmx with lto will build failed on qt6
