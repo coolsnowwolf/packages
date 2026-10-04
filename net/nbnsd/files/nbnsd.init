@@ -1,0 +1,34 @@
+#!/bin/sh /etc/rc.common
+# SPDX-License-Identifier: GPL-2.0-only
+
+START=61
+STOP=10
+USE_PROCD=1
+
+start_service() {
+	local enabled interface device name workgroup
+	. /lib/functions/network.sh
+	config_load nbnsd
+	config_get_bool enabled main enabled 1
+	[ "$enabled" -eq 1 ] || return 0
+	config_get interface main interface lan
+	config_get name main name
+	config_get workgroup main workgroup WORKGROUP
+	[ -n "$name" ] || name="$(uci -q get system.@system[0].hostname)"
+	network_get_device device "$interface" || return 0
+
+	procd_open_instance
+	procd_set_param command /usr/sbin/nbnsd -i "$device" -n "$name" -w "$workgroup"
+	procd_set_param netdev "$device"
+	procd_set_param respawn
+	procd_set_param stderr 1
+	procd_close_instance
+}
+
+service_triggers() {
+	local interface
+	config_load nbnsd
+	config_get interface main interface lan
+	procd_add_reload_trigger nbnsd system
+	procd_add_interface_trigger "interface.*" "$interface" /etc/init.d/nbnsd restart
+}
