@@ -1,5 +1,5 @@
 #!/bin/sh
-# Runtime-only shares; explicit names and paths take precedence.
+# Home shares remain private runtime entries; mount shares are stored in UCI.
 ksmbd_share_exists()
 {
  KSMBD_SHARE_NAME="$1" KSMBD_SHARE_PATH="$2" awk '
@@ -28,26 +28,86 @@ ksmbd_add_homes()
  done < /etc/passwd
 }
 
-ksmbd_add_mounts()
+# Use a private delta directory so commits do not include pending LuCI edits.
+ksmbd_mount_uci()
 {
- local device target fstype options rest name readonly
+ uci ${UCI_CONFIG_DIR:+-c "$UCI_CONFIG_DIR"} -t "$ksmbd_delta" -q "$@"
+}
+
+ksmbd_prune_mount()
+{
+ local section="$1" path auto_path
+ config_get path "$section" path
+ config_get auto_path "$section" auto_path
+ [ -n "$auto_path" ] || return 0
+ if [ "$path" != "$auto_path" ]; then
+  # Editing the path converts an automatic share into a manual share.
+  ksmbd_mount_uci delete "ksmbd.$section.auto_path"
+ elif [ "$KSMBD_AUTOSHARE" -ne 1 ] || ! grep -Fxq "$path" "$ksmbd_mounts"; then
+  ksmbd_mount_uci delete "ksmbd.$section"
+ fi
+ return 0
+}
+
+ksmbd_find_mount()
+{
+ local section="$1" share_name share_path
+ config_get share_name "$section" name
+ config_get share_path "$section" path
+ if [ "$share_path" = "$target" ] ||
+    [ "$(printf '%s' "$share_name" | tr '[:upper:]' '[:lower:]')" = "$(printf '%s' "$name" | tr '[:upper:]' '[:lower:]')" ]; then
+  ksmbd_found=1
+ fi
+}
+
+ksmbd_scan_mounts()
+{
+ local device target fstype options rest name
  while read -r device target fstype options rest; do
   case "$device" in /dev/sd*|/dev/hd*|/dev/mmcblk*|/dev/nvme*|/dev/md*) ;; *) continue;; esac
+  # Firmware images and other read-only mounts are not automatic shares.
+  case "$fstype" in squashfs|erofs|cramfs|romfs|iso9660) continue;; esac
+  case ",$options," in *,ro,*) continue;; esac
   target="$(printf '%b' "$target")"
   case "$target" in /|/rom|/overlay|/boot|/boot/*|/tmp|/tmp/*|/dev|/dev/*|/proc|/proc/*|/sys|/sys/*) continue;; esac
   case "$target" in *'
-'*) continue;; esac
+'*|*'	'*) continue;; esac
   [ -d "$target" ] || continue
   name="${target##*/}"
   case "$name" in ''|*'['*|*']'*|*';'*|*'%'*) name="${device##*/}";; esac
-  ksmbd_share_exists "$name" "$target" && continue
-  readonly=no
-  case ",$options," in *,ro,*) readonly=yes;; esac
-  {
-   printf '\n[%s]\n\tpath = %s\n' "$name" "$target"
-   printf '\tbrowseable = yes\n\tguest ok = yes\n\tread only = %s\n' "$readonly"
-   printf '\tforce user = root\n\tforce group = root\n'
-   printf '\tcreate mask = 0666\n\tdirectory mask = 0777\n'
-  } >> /var/etc/ksmbd/ksmbd.conf
+  printf '%s\t%s\tno\n' "$target" "$name"
  done < /proc/mounts
 }
+
+ksmbd_sync_mounts()
+(
+ local ksmbd_delta ksmbd_mounts target name readonly section ksmbd_found
+ ksmbd_delta="$(mktemp -d /tmp/ksmbd-uci.XXXXXX)" || return 1
+ trap 'rm -rf "$ksmbd_delta"' EXIT
+ ksmbd_mounts="$ksmbd_delta/paths"
+ ksmbd_scan_mounts > "$ksmbd_delta/mounts"
+ cut -f1 "$ksmbd_delta/mounts" > "$ksmbd_mounts"
+ config_foreach ksmbd_prune_mount share
+ if [ -n "$(ksmbd_mount_uci changes ksmbd)" ]; then
+  ksmbd_mount_uci commit ksmbd || return 1
+ fi
+ [ "$KSMBD_AUTOSHARE" -eq 1 ] || return 0
+ config_load ksmbd
+ while IFS="$(printf '\t')" read -r target name readonly; do
+  ksmbd_found=0
+  config_foreach ksmbd_find_mount share
+  [ "$ksmbd_found" -eq 0 ] || continue
+  section="$(ksmbd_mount_uci add ksmbd share)" || return 1
+  ksmbd_mount_uci set "ksmbd.$section.name=$name"
+  ksmbd_mount_uci set "ksmbd.$section.path=$target"
+  ksmbd_mount_uci set "ksmbd.$section.auto_path=$target"
+  ksmbd_mount_uci set "ksmbd.$section.browseable=yes"
+  ksmbd_mount_uci set "ksmbd.$section.guest_ok=yes"
+  ksmbd_mount_uci set "ksmbd.$section.read_only=$readonly"
+  ksmbd_mount_uci set "ksmbd.$section.force_root=1"
+  ksmbd_mount_uci set "ksmbd.$section.create_mask=0666"
+  ksmbd_mount_uci set "ksmbd.$section.dir_mask=0777"
+  ksmbd_mount_uci commit ksmbd || return 1
+  config_load ksmbd
+ done < "$ksmbd_delta/mounts"
+)

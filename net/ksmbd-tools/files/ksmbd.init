@@ -128,10 +128,11 @@ init_config()
 
 	config_load ksmbd
 	config_foreach smb_header globals
-	config_foreach smb_add_share share
 	. /etc/ksmbd/shares.sh
+	ksmbd_sync_mounts || return 1
+	config_load ksmbd
+	config_foreach smb_add_share share
 	[ "$KSMBD_HOMES" -eq 1 ] && ksmbd_add_homes
-	[ "$KSMBD_AUTOSHARE" -eq 1 ] && ksmbd_add_mounts
 	return 0
 }
 
@@ -158,7 +159,7 @@ kill_server()
 
 start_service()
 {
-	init_config
+	init_config || return 1
 	if [ "$KSMBD_ENABLED" -ne 1 ]; then
 		stop_service
 		return 0

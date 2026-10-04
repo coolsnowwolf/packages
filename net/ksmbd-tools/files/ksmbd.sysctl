@@ -1,0 +1,5 @@
+# Bound buffered-write backlog to smooth sustained uploads on flash storage.
+# These VM limits apply system-wide, including writers other than ksmbd.
+# /etc/sysctl.conf is loaded afterwards and can override these values.
+vm.dirty_background_bytes=4194304
+vm.dirty_bytes=16777216

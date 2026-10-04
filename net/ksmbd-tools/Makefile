@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ksmbd-tools
 PKG_VERSION:=3.5.7
-PKG_RELEASE:=5
+PKG_RELEASE:=9
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://github.com/cifsd-team/ksmbd-tools/releases/download/$(PKG_VERSION)
@@ -11,7 +11,7 @@ PKG_HASH:=d8e532b2d032e3f447f3fd19e0f9ea0abeb355285f8d6871ce9036bc6393a5b2
 PKG_LICENSE:=GPL-2.0-or-later
 PKG_LICENSE_FILES:=COPYING
 
-PKG_BUILD_DEPENDS:=glib2
+PKG_BUILD_DEPENDS:=glib2 meson/host ninja/host
 PKG_BUILD_FLAGS:=gc-sections
 
 include $(INCLUDE_DIR)/package.mk
@@ -35,7 +35,7 @@ endef
 define Package/ksmbd-server
   $(call Package/ksmbd-tools/Default)
   TITLE+= server
-  DEPENDS+= +(LINUX_5_4||LINUX_5_10):kmod-fs-cifsd +!(LINUX_5_4||LINUX_5_10):kmod-fs-ksmbd +libnl-core +libnl-genl
+  DEPENDS+= +(LINUX_5_4||LINUX_5_10):kmod-fs-cifsd +!(LINUX_5_4||LINUX_5_10):kmod-fs-ksmbd +libnl-core +libnl-genl +umdns
 endef
 
 define Package/ksmbd-server/description
@@ -85,6 +85,8 @@ define Package/ksmbd-server/install
 	$(INSTALL_CONF) ./files/ksmbd.config $(1)/etc/config/ksmbd
 	$(INSTALL_DATA) ./files/ksmbd.conf.template $(1)/etc/ksmbd/
 	$(INSTALL_BIN) ./files/ksmbd.init $(1)/etc/init.d/ksmbd
+	$(INSTALL_DIR) $(1)/etc/sysctl.d
+	$(INSTALL_CONF) ./files/ksmbd.sysctl $(1)/etc/sysctl.d/90-ksmbd.conf
 	$(INSTALL_DATA) ./files/shares.sh $(1)/etc/ksmbd/
 	# copy examples until we have a wiki page
 	$(INSTALL_DATA) ./files/ksmbd.config.example $(1)/etc/ksmbd/
@@ -105,6 +107,7 @@ define Package/ksmbd-server/conffiles
 /etc/ksmbd/ksmbd.conf.template
 /etc/ksmbd/ksmbd.conf
 /etc/ksmbd/ksmbdpwd.db
+/etc/sysctl.d/90-ksmbd.conf
 endef
 
 define Package/ksmbd-avahi-service/conffiles
