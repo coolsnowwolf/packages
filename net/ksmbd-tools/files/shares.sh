@@ -36,7 +36,7 @@ ksmbd_mount_uci()
 
 ksmbd_prune_mount()
 {
- local section="$1" path auto_path
+ local section="$1" path auto_path fingerprint
  config_get path "$section" path
  config_get auto_path "$section" auto_path
  [ -n "$auto_path" ] || return 0
@@ -45,6 +45,16 @@ ksmbd_prune_mount()
   ksmbd_mount_uci delete "ksmbd.$section.auto_path"
  elif [ "$KSMBD_AUTOSHARE" -ne 1 ] || ! grep -Fxq "$path" "$ksmbd_mounts"; then
   ksmbd_mount_uci delete "ksmbd.$section"
+ else
+  # Only remove identical generated entries; differing permissions are
+  # intentional configuration and must not be silently discarded.
+  fingerprint="$(ksmbd_mount_uci show "ksmbd.$section" |
+   sed '1d; s/^ksmbd\.[^.]*\.//' | LC_ALL=C sort | md5sum | cut -d ' ' -f 1)"
+  if grep -Fxq "$fingerprint" "$ksmbd_delta/seen"; then
+   ksmbd_mount_uci delete "ksmbd.$section"
+  else
+   printf '%s\n' "$fingerprint" >> "$ksmbd_delta/seen"
+  fi
  fi
  return 0
 }
@@ -55,7 +65,7 @@ ksmbd_find_mount()
  config_get share_name "$section" name
  config_get share_path "$section" path
  if [ "$share_path" = "$target" ] ||
-    [ "$(printf '%s' "$share_name" | tr '[:upper:]' '[:lower:]')" = "$(printf '%s' "$name" | tr '[:upper:]' '[:lower:]')" ]; then
+    [ "$(printf '%s' "$share_name" | tr 'A-Z' 'a-z')" = "$(printf '%s' "$name" | tr 'A-Z' 'a-z')" ]; then
   ksmbd_found=1
  fi
 }
@@ -82,8 +92,12 @@ ksmbd_scan_mounts()
 ksmbd_sync_mounts()
 (
  local ksmbd_delta ksmbd_mounts target name readonly section ksmbd_found
+ flock -x 8 || return 1
+ # The caller's snapshot can predate another hotplug worker's commit.
+ config_load ksmbd
  ksmbd_delta="$(mktemp -d /tmp/ksmbd-uci.XXXXXX)" || return 1
  trap 'rm -rf "$ksmbd_delta"' EXIT
+ : > "$ksmbd_delta/seen"
  ksmbd_mounts="$ksmbd_delta/paths"
  ksmbd_scan_mounts > "$ksmbd_delta/mounts"
  cut -f1 "$ksmbd_delta/mounts" > "$ksmbd_mounts"
@@ -110,4 +124,4 @@ ksmbd_sync_mounts()
   ksmbd_mount_uci commit ksmbd || return 1
   config_load ksmbd
  done < "$ksmbd_delta/mounts"
-)
+) 8>/var/lock/ksmbd-autoshare.lock

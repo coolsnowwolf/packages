@@ -124,6 +124,7 @@ smb_add_share()
 
 init_config()
 {
+	flock -x 9 || return 1
 	mkdir -p /var/etc/ksmbd
 
 	config_load ksmbd
@@ -134,7 +135,7 @@ init_config()
 	config_foreach smb_add_share share
 	[ "$KSMBD_HOMES" -eq 1 ] && ksmbd_add_homes
 	return 0
-}
+} 9>/var/lock/ksmbd-config.lock
 
 service_triggers()
 {

@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ksmbd-tools
 PKG_VERSION:=3.5.7
-PKG_RELEASE:=9
+PKG_RELEASE:=10
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://github.com/cifsd-team/ksmbd-tools/releases/download/$(PKG_VERSION)
@@ -35,7 +35,7 @@ endef
 define Package/ksmbd-server
   $(call Package/ksmbd-tools/Default)
   TITLE+= server
-  DEPENDS+= +(LINUX_5_4||LINUX_5_10):kmod-fs-cifsd +!(LINUX_5_4||LINUX_5_10):kmod-fs-ksmbd +libnl-core +libnl-genl +umdns
+  DEPENDS+= +(LINUX_5_4||LINUX_5_10):kmod-fs-cifsd +!(LINUX_5_4||LINUX_5_10):kmod-fs-ksmbd +libnl-core +libnl-genl +umdns +flock
 endef
 
 define Package/ksmbd-server/description
