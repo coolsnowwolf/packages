@@ -7,8 +7,9 @@
 	ipc timeout = 20
 	deadtime = 15
 	map to guest = Bad User
-	smb2 max read = 64K
-	smb2 max write = 64K
-	smb2 max trans = 64K
+	server max protocol = SMB3_11
+	smb2 max read = 1MB
+	smb2 max write = 1MB
+	smb2 max trans = 1MB
 	cache read buffers = no
 	cache trans buffers = no

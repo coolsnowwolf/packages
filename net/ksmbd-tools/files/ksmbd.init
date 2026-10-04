@@ -5,6 +5,9 @@ STOP=05
 USE_PROCD=1
 
 SMBD_IFACE=""
+KSMBD_ENABLED=1
+KSMBD_HOMES=0
+KSMBD_AUTOSHARE=1
 
 config_get_sane()
 {
@@ -14,6 +17,9 @@ config_get_sane()
 
 smb_header()
 {
+	config_get_bool KSMBD_ENABLED "$1" enabled 1
+	config_get_bool KSMBD_HOMES "$1" homes 0
+	config_get_bool KSMBD_AUTOSHARE "$1" autoshare 1
 	config_get_sane SMBD_IFACE "$1" interface "lan"
 
 	# resolve interfaces
@@ -27,19 +33,24 @@ smb_header()
 		done
 	)
 
-	# we dont use netbios anymore as default and wsd/avahi is dns based
-	hostname="$(sed 's/\..*//' /proc/sys/kernel/hostname | tr -d '{};%?=#\n')"
+	config_get hostname "$1" name
+	case "$hostname" in
+		''|*[!a-zA-Z0-9_.-]*)
+			hostname="$(sed 's/\..*//' /proc/sys/kernel/hostname | tr -cd 'a-zA-Z0-9_-')"
+			;;
+	esac
 
 	config_get_sane workgroup "$1" workgroup "WORKGROUP"
 	config_get_sane description "$1" description "Ksmbd on OpenWrt"
-	config_get_bool ALLOW_LEGACY_PROTOCOLS "$1" allow_legacy_protocols 0
+	config_get_bool ALLOW_LEGACY_PROTOCOLS "$1" allow_legacy_protocols 1
+	config_get_bool ALLOW_GUEST_IPC "$1" allow_guest_ipc 1
 
 	sed -e "s#|NAME|#$hostname#g" \
 	    -e "s#|WORKGROUP|#$workgroup#g" \
 	    -e "s#|DESCRIPTION|#$description#g" \
 	    -e "s#|INTERFACES|#$interfaces#g" \
 	    /etc/ksmbd/ksmbd.conf.template > /var/etc/ksmbd/ksmbd.conf
-		
+
 	{
 		printf "\n######### Dynamic written config options #########\n"
 
@@ -48,6 +59,7 @@ smb_header()
 			printf "\tserver min protocol = NT1\n"
 			printf "\tserver signing = disabled\n"
 		fi
+		printf "\n[IPC$]\n\tguest ok = %s\n" "$( [ "$ALLOW_GUEST_IPC" -eq 1 ] && echo yes || echo no )"
 	} >> /var/etc/ksmbd/ksmbd.conf
 
 	[ -e /etc/ksmbd/ksmbd.conf ] || ln -nsf /var/etc/ksmbd/ksmbd.conf /etc/ksmbd/ksmbd.conf
@@ -63,16 +75,16 @@ smb_add_share()
 	config_get_sane path "$1" path
 	config_get_sane comment "$1" comment
 	config_get_sane users "$1" users
-	config_get_sane create_mask "$1" create_mask
-	config_get_sane dir_mask "$1" dir_mask
-	config_get_sane browseable "$1" browseable
-	config_get_sane read_only "$1" read_only
+	config_get_sane create_mask "$1" create_mask 0666
+	config_get_sane dir_mask "$1" dir_mask 0777
+	config_get_sane browseable "$1" browseable yes
+	config_get_sane read_only "$1" read_only no
 	config_get_sane writeable "$1" writeable
-	config_get_sane guest_ok "$1" guest_ok
-	config_get_bool force_root "$1" force_root 0
+	config_get_sane guest_ok "$1" guest_ok yes
+	config_get_bool force_root "$1" force_root 1
 	config_get_sane write_list "$1" write_list
 	config_get_sane read_list "$1" read_list
-	config_get_sane hide_dot_files "$1" hide_dot_files
+	config_get_sane hide_dot_files "$1" hide_dot_files yes
 	config_get_sane veto_files "$1" veto_files
 	config_get_sane inherit_owner "$1" inherit_owner
 	config_get_sane force_create_mode "$1" force_create_mode
@@ -87,9 +99,8 @@ smb_add_share()
 		if [ "$force_root" -eq 1 ]; then
 			printf "\tforce user = %s\n" "root"
 			printf "\tforce group = %s\n" "root"
-		else
-			[ -n "$users" ] && printf "\tvalid users = %s\n" "$users"
 		fi
+		[ -n "$users" ] && printf "\tvalid users = %s\n" "$users"
 
 		[ -n "$create_mask" ] && printf "\tcreate mask = %s\n" "$create_mask"
 		[ -n "$dir_mask" ] && printf "\tdirectory mask = %s\n" "$dir_mask"
@@ -116,9 +127,12 @@ init_config()
 	mkdir -p /var/etc/ksmbd
 
 	config_load ksmbd
-	CONFIG_APPEND=1 UCI_CONFIG_DIR=/var/run/config config_load ksmbd
 	config_foreach smb_header globals
 	config_foreach smb_add_share share
+	. /etc/ksmbd/shares.sh
+	[ "$KSMBD_HOMES" -eq 1 ] && ksmbd_add_homes
+	[ "$KSMBD_AUTOSHARE" -eq 1 ] && ksmbd_add_mounts
+	return 0
 }
 
 service_triggers()
@@ -145,15 +159,19 @@ kill_server()
 start_service()
 {
 	init_config
+	if [ "$KSMBD_ENABLED" -ne 1 ]; then
+		stop_service
+		return 0
+	fi
 
 	if [ ! -e /etc/ksmbd/ksmbd.conf ]; then
 		logger -p daemon.error -t 'ksmbd' "missing config /etc/ksmbd/ksmbd.conf!"
 		exit 1
 	fi
-	
+
 	# NOTE: We don't do a soft-reload via signal, since [global] ksmbd.conf setting changes will be ignored, so always reset hard.
 	[ -e /sys/module/ksmbd ] && stop_service
-	
+
 	[ ! -e /sys/module/ksmbd ] && modprobe ksmbd 2> /dev/null
 	if [ ! -e /sys/module/ksmbd ]; then
 		logger -p daemon.error -t 'ksmbd' "modprobe of ksmbd module failed, can\'t start ksmbd!"
@@ -173,13 +191,13 @@ stop_service()
 {
 	logger -p daemon.notice -t 'ksmbd' "Stopping Ksmbd userspace service."
 	killall ksmbd.mountd > /dev/null 2>&1
-	
+
 	[ -e /sys/module/ksmbd ] && rmmod ksmbd > /dev/null 2>&1
 	# kill server if we cant rmmod
 	[ -e /sys/module/ksmbd ] && kill_server
 	# next try
 	[ -e /sys/module/ksmbd ] && rmmod ksmbd > /dev/null 2>&1
-	
+
 	if [ -e /sys/module/ksmbd ]; then
 		logger -p daemon.error -t 'ksmbd' "module still loaded after kill_server?"
 	fi
