@@ -9,6 +9,18 @@ PROG="/usr/bin/uugamebooster"
 
 UU_CONF="/usr/share/uugamebooster/uu.conf"
 
+firewall_rule() {
+	json_add_object ""
+	json_add_string type rule
+	json_add_string src '*'
+	[ "$1" = forward ] && json_add_string dest '*'
+	json_add_string device tun163
+	json_add_string direction "$2"
+	json_add_string proto all
+	json_add_string target ACCEPT
+	json_close_object
+}
+
 start_service() {
 	config_load "$CONF"
 	local enabled
@@ -24,7 +36,27 @@ start_service() {
 	procd_set_param stdout 1
 	procd_set_param stderr 1
 
+	# UU's own nftables ACCEPT rules cannot bypass fw4's later base chains.
+	# Publish tunnel rules through procd so fw4 owns their full lifecycle.
+	if [ -x /sbin/fw4 ]; then
+		procd_open_data
+		json_add_array firewall
+		firewall_rule input in
+		firewall_rule forward in
+		firewall_rule forward out
+		json_close_array
+		procd_close_data
+	fi
+
 	procd_close_instance
+}
+
+service_started() {
+	[ ! -x /sbin/fw4 ] || procd_set_config_changed firewall
+}
+
+service_stopped() {
+	[ ! -x /sbin/fw4 ] || procd_set_config_changed firewall
 }
 
 reload_service() {
