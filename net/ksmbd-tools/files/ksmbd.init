@@ -5,7 +5,7 @@ STOP=05
 USE_PROCD=1
 
 SMBD_IFACE=""
-KSMBD_ENABLED=1
+KSMBD_ENABLED=0
 KSMBD_HOMES=0
 KSMBD_AUTOSHARE=1
 
@@ -17,7 +17,7 @@ config_get_sane()
 
 smb_header()
 {
-	config_get_bool KSMBD_ENABLED "$1" enabled 1
+	config_get_bool KSMBD_ENABLED "$1" enabled 0
 	config_get_bool KSMBD_HOMES "$1" homes 0
 	config_get_bool KSMBD_AUTOSHARE "$1" autoshare 1
 	config_get_sane SMBD_IFACE "$1" interface "lan"
