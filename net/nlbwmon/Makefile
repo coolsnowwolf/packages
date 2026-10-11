@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=nlbwmon
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/jow-/nlbwmon.git
@@ -42,6 +42,8 @@ define Package/nlbwmon/install
 	$(INSTALL_BIN) ./files/nlbwmon.hotplug $(1)/etc/hotplug.d/iface/30-nlbwmon
 	$(INSTALL_DIR) $(1)/etc/sysctl.d
 	$(INSTALL_CONF) ./files/sysctl-net-core-mem.conf $(1)/etc/sysctl.d/sysctl-net-core-mem.conf
+	$(INSTALL_DIR) $(1)/lib/upgrade/keep.d
+	$(INSTALL_DATA) ./files/nlbwmon.upgrade $(1)/lib/upgrade/keep.d/nlbwmon
 endef
 
 define Package/nlbwmon/conffiles
