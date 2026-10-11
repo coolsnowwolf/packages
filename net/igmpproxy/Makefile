@@ -9,16 +9,16 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=igmpproxy
 PKG_VERSION:=0.4
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://github.com/pali/igmpproxy/releases/download/${PKG_VERSION}/
 PKG_HASH:=afa4b75a823b82f71ce99f33eae4e8136b906ae8a5ede5caaad93bac38cdae24
 PKG_MAINTAINER:=Felix Fietkau <nbd@nbd.name>
+PKG_FIXUP:=autoreconf
 
 include $(INCLUDE_DIR)/package.mk
 
-PKG_FIXUP:=autoreconf
 PKG_LICENSE:=GPL-2.0+
 
 define Package/igmpproxy
@@ -59,13 +59,6 @@ ifneq ($(CONFIG_PACKAGE_IGMPROXY_QCA_MCS_SUPPORT),)
   CONFIG_SUFFIX=.qca-mcs
   TARGET_CFLAGS += -DIGMPPROXY_QCA_MCS_SUPPORT
 endif
-
-define Build/Compile
-	cd $(PKG_BUILD_DIR) && aclocal
-	$(MAKE) -C $(PKG_BUILD_DIR)/src \
-		CC="$(TARGET_CC)" \
-		CFLAGS="$(TARGET_CFLAGS) -std=gnu99"
-endef
 
 define Package/igmpproxy/install
 	$(INSTALL_DIR) $(1)/etc/config
