@@ -58,6 +58,8 @@ jobs:
             "mosdns" "net/mosdns"
           sync_package "immortalwrt/packages" "master" \
             "net/daed" "net/daed"
+          sync_package "nikkinikki-org/OpenWrt-nikki" "main" \
+            "nikki" "net/nikki"
           sync_package "QiuSimons/vmlinux-btf" "master" \
             "." "kernel/vmlinux-btf"
 
@@ -134,6 +136,7 @@ jobs:
             net/geo2txt
             net/mosdns
             net/daed
+            net/nikki
             kernel/vmlinux-btf
             net/sing-box/Makefile
           )
