@@ -1,0 +1,218 @@
+From: coolsnowwolf <coolsnowwolf@gmail.com>
+Subject: [PATCH] airoha-pon-frontends: support the Linux 5.4 BSP
+
+Preserve the complete local 5.4 adaptation against upstream e5194d2,
+including the frontend compatibility fixes present in the working tree.
+
+Signed-off-by: coolsnowwolf <coolsnowwolf@gmail.com>
+---
+--- a/Makefile
++++ b/Makefile
+@@ -8,3 +8,8 @@
+ airoha-paged-bosa-y := airoha-paged-bosa-main.o \
+ 	airoha-paged-bosa-gn28l95.o \
+ 	airoha-paged-bosa-ux3363.o
++
++obj-m += airoha-ubi-nvmem.o
++
++# Catch newer-kernel API signature changes during the 5.4 port.
++ccflags-y += -Werror=incompatible-pointer-types -Werror=int-conversion
+--- a/airoha-en7572.c
++++ b/airoha-en7572.c
+@@ -12,7 +12,12 @@
+ #include <linux/of.h>
+ #include <linux/sizes.h>
+ #include <linux/slab.h>
++#include <linux/version.h>
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 12, 0)
+ #include <linux/unaligned.h>
++#else
++#include <asm/unaligned.h>
++#endif
+ 
+ #define EN7572_RUNTIME_ADDR 0x51
+ 
+@@ -1005,7 +1010,11 @@
+ 	return 0;
+ }
+ 
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
+ static void en7572_remove(struct i2c_client *client)
++#else
++static int en7572_remove(struct i2c_client *client)
++#endif
+ {
+ 	struct airoha_pon_frontend *frontend = i2c_get_clientdata(client);
+ 	struct en7572 *en = airoha_pon_frontend_priv(frontend);
+@@ -1020,6 +1029,9 @@
+ 	en->tx_gate_enabled = false;
+ 	mutex_unlock(&en->lock);
+ 	i2c_set_clientdata(client, NULL);
++#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
++	return 0;
++#endif
+ }
+ 
+ static const struct of_device_id en7572_of_match[] = {
+@@ -1032,7 +1044,11 @@
+ MODULE_DEVICE_TABLE(i2c, en7572_ids);
+ 
+ static struct i2c_driver en7572_driver = {
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 3, 0)
+ 	.probe = en7572_probe,
++#else
++	.probe_new = en7572_probe,
++#endif
+ 	.remove = en7572_remove,
+ 	.id_table = en7572_ids,
+ 	.driver = {
+--- a/airoha-paged-bosa-main.c
++++ b/airoha-paged-bosa-main.c
+@@ -8,7 +8,12 @@
+ #include <linux/of_device.h>
+ #include <linux/property.h>
+ #include <linux/slab.h>
++#include <linux/version.h>
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 12, 0)
+ #include <linux/unaligned.h>
++#else
++#include <asm/unaligned.h>
++#endif
+ 
+ #define AIROHA_BOSA_CAL_MAGIC       "APONCAL\0"
+ #define AIROHA_BOSA_CAL_VERSION     1
+@@ -408,12 +413,19 @@
+ 	return 0;
+ }
+ 
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
+ static void bosa_remove(struct i2c_client *client)
++#else
++static int bosa_remove(struct i2c_client *client)
++#endif
+ {
+ 	struct airoha_paged_bosa *bosa = i2c_get_clientdata(client);
+ 
+ 	airoha_pon_frontend_unregister(&bosa->frontend);
+ 	bosa_unprepare(&bosa->frontend);
++#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
++	return 0;
++#endif
+ }
+ 
+ static void bosa_shutdown(struct i2c_client *client)
+@@ -428,7 +440,11 @@
+ 		.name = "airoha-paged-bosa",
+ 		.of_match_table = bosa_of_match,
+ 	},
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 3, 0)
+ 	.probe = bosa_probe,
++#else
++	.probe_new = bosa_probe,
++#endif
+ 	.remove = bosa_remove,
+ 	.shutdown = bosa_shutdown,
+ };
+--- a/airoha-ubi-nvmem.c
++++ b/airoha-ubi-nvmem.c
+@@ -0,0 +1,100 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/* Read-only UBI NVMEM cells for the Linux 5.4 PON board data. */
++#include <linux/module.h>
++#include <linux/mtd/ubi.h>
++#include <linux/nvmem-provider.h>
++#include <linux/of.h>
++#include <linux/platform_device.h>
++
++struct pon_ubi_nvmem {
++	const char *volume;
++	u32 ubi_num;
++	u32 size;
++};
++
++static int pon_ubi_read(void *data, unsigned int offset, void *buf, size_t bytes)
++{
++	struct pon_ubi_nvmem *priv = data;
++	struct ubi_volume_desc *desc;
++	struct ubi_volume_info info;
++	int ret = 0;
++
++	if (offset > priv->size || bytes > priv->size - offset)
++		return -EINVAL;
++	/* Open only during a read: board identity edits must remain possible. */
++	desc = ubi_open_volume_nm(priv->ubi_num, priv->volume, UBI_READONLY);
++	if (IS_ERR(desc))
++		return PTR_ERR(desc);
++	ubi_get_volume_info(desc, &info);
++	while (bytes) {
++		unsigned int lnum = offset / info.usable_leb_size;
++		unsigned int pos = offset % info.usable_leb_size;
++		size_t len = min_t(size_t, bytes, info.usable_leb_size - pos);
++
++		ret = ubi_read(desc, lnum, buf, pos, len);
++		if (ret)
++			break;
++		offset += len;
++		buf += len;
++		bytes -= len;
++	}
++	ubi_close_volume(desc);
++	return ret;
++}
++
++static int pon_ubi_probe(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct nvmem_config config = {};
++	struct pon_ubi_nvmem *priv;
++	struct ubi_volume_desc *desc;
++	struct ubi_volume_info info;
++	struct nvmem_device *nvmem;
++	int ret;
++
++	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
++	if (!priv)
++		return -ENOMEM;
++	ret = of_property_read_string(dev->of_node, "volname", &priv->volume);
++	if (ret)
++		return ret;
++	ret = of_property_read_u32(dev->of_node, "airoha,ubi-device", &priv->ubi_num);
++	if (ret)
++		return ret;
++	ret = of_property_read_u32(dev->of_node, "airoha,nvmem-size", &priv->size);
++	if (ret || !priv->size)
++		return -EINVAL;
++	desc = ubi_open_volume_nm(priv->ubi_num, priv->volume, UBI_READONLY);
++	if (IS_ERR(desc))
++		return PTR_ERR(desc) == -ENODEV ? -EPROBE_DEFER : PTR_ERR(desc);
++	ubi_get_volume_info(desc, &info);
++	ubi_close_volume(desc);
++	if (priv->size > info.used_bytes)
++		return -EINVAL;
++	config.dev = dev;
++	config.name = dev_name(dev);
++	config.id = -1; /* Use the unique platform device name on Linux 5.4. */
++	config.owner = THIS_MODULE;
++	config.read_only = true;
++	config.root_only = true;
++	config.stride = 1;
++	config.word_size = 1;
++	config.size = priv->size;
++	config.reg_read = pon_ubi_read;
++	config.priv = priv;
++	nvmem = devm_nvmem_register(dev, &config);
++	return PTR_ERR_OR_ZERO(nvmem);
++}
++
++static const struct of_device_id pon_ubi_match[] = {
++	{ .compatible = "airoha,ubi-nvmem" },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, pon_ubi_match);
++static struct platform_driver pon_ubi_driver = {
++	.probe = pon_ubi_probe,
++	.driver = { .name = "airoha-ubi-nvmem", .of_match_table = pon_ubi_match },
++};
++module_platform_driver(pon_ubi_driver);
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("Read-only UBI board data for Airoha PON on Linux 5.4");
