@@ -227,6 +227,18 @@ msgstr "尚未认证"
 msgid "Not reported"
 msgstr "OLT 尚未上报"
 
+msgid "LOID is not configured"
+msgstr "未配置 LOID"
+
+msgid "Last OMCI parse error"
+msgstr "最近一次 OMCI 解析错误"
+
+msgid "Error details unavailable"
+msgstr "未保留错误详情"
+
+msgid "No LOID authentication result received from OLT"
+msgstr "未收到 OLT 的 LOID 认证结果"
+
 msgid "OMCI VLAN IDs"
 msgstr "OMCI VLAN ID"
 

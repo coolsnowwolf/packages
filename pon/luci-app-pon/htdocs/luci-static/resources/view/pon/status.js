@@ -103,11 +103,14 @@ function displaySync(value) {
 	}
 }
 
-function displayAuthentication(value) {
+function displayAuthentication(value, loidConfigured) {
+	if (value === 'not-reported' && loidConfigured === false)
+		return _('LOID is not configured');
+
 	switch (value) {
 	case 'not-requested': return _('OLT did not request authentication');
 	case 'pending': return _('Pending');
-	case 'not-reported': return _('Not reported');
+	case 'not-reported': return _('No LOID authentication result received from OLT');
 	case 'not-authenticated': return _('Not authenticated');
 	case 'accepted': return _('Accepted');
 	case 'loid-not-found': return _('LOID does not exist');
@@ -402,7 +405,7 @@ function renderOmci(item) {
 	return statusTable(title, [
 		row(_('OMCI channel online'), displayBoolean(values.channel_available)),
 		row(_('LOID configured locally'), displayBoolean(values.loid_configured)),
-		row(_('LOID authentication'), displayAuthentication(values.authentication_meaning)),
+		row(_('LOID authentication'), displayAuthentication(values.authentication_meaning, values.loid_configured)),
 		row(_('OLT vendor ID'), values.olt_vendor_id),
 		row(_('OLT equipment ID'), values.olt_equipment_id),
 		row(_('OLT version'), values.olt_version),
@@ -415,7 +418,10 @@ function renderOmci(item) {
 		row(_('IGMP upstream VLAN IDs'), displayIgmpUpstreamVlanIds(values)),
 		row(_('OLT broadcast keys'), displayBroadcastKeys(values)),
 		row(_('Received OMCI messages'), values.rx_messages),
-		row(_('OMCI parse errors'), values.parse_errors)
+		row(_('OMCI parse errors'), values.parse_errors),
+		...(values.parse_errors > 0 ? [
+			row(_('Last OMCI parse error'), values.last_parse_error || _('Error details unavailable'))
+		] : [])
 	]);
 }
 

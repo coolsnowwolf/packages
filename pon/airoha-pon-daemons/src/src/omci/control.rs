@@ -40,6 +40,7 @@ struct Inner {
     rx_messages: u64,
     tx_messages: u64,
     parse_errors: u64,
+    last_parse_error: Option<String>,
     authentication_status: Option<u8>,
     authentication_meaning: &'static str,
     provisioning: ProvisioningSnapshot,
@@ -64,6 +65,7 @@ impl StatusHub {
                 rx_messages: 0,
                 tx_messages: 0,
                 parse_errors: 0,
+                last_parse_error: None,
                 authentication_status: None,
                 authentication_meaning: "not-reported",
                 provisioning: ProvisioningSnapshot::default(),
@@ -135,6 +137,7 @@ impl StatusHub {
     pub fn record_parse_error(&self, error: &str) {
         let mut inner = self.shared.lock().expect("status mutex poisoned");
         inner.parse_errors += 1;
+        inner.last_parse_error = Some(error.to_owned());
         drop(inner);
         self.record_event("parse-error", error.to_owned());
     }
@@ -309,6 +312,7 @@ fn status_json(inner: &Inner) -> String {
             "\"authentication_status\":{},\"authentication_meaning\":{},",
             "\"olt_vendor_id\":{},\"olt_equipment_id\":{},\"olt_version\":{},",
             "\"rx_messages\":{},\"tx_messages\":{},\"parse_errors\":{},",
+            "\"last_parse_error\":{},",
             "\"tcont_count\":{},\"gem_port_count\":{},",
             "\"gem_iwtp_count\":{},\"vlan_rule_count\":{},",
             "\"vlan_ids\":[{}],\"multicast_vlan_ids\":[{}],",
@@ -333,6 +337,8 @@ fn status_json(inner: &Inner) -> String {
         inner.rx_messages,
         inner.tx_messages,
         inner.parse_errors,
+        inner.last_parse_error.as_deref().map(json_string)
+            .unwrap_or_else(|| "null".to_owned()),
         inner.provisioning.configured_tconts,
         inner.provisioning.gem_ports,
         inner.provisioning.gem_interworking_tps,
@@ -529,4 +535,34 @@ fn now_ms() -> u128 {
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
         .as_millis()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn last_parse_error_survives_event_rollover() {
+        let status = StatusHub::new("omci-test", false);
+        {
+            let inner = status.shared.lock().unwrap();
+            assert!(status_json(&inner).contains("\"last_parse_error\":null"));
+        }
+        status.record_parse_error("invalid baseline length 43");
+        for _ in 0..EVENT_CAPACITY {
+            status.record_event("rx", "valid request".to_owned());
+        }
+        {
+            let inner = status.shared.lock().unwrap();
+            assert!(!inner.events.iter().any(|event| event.kind == "parse-error"));
+            assert!(status_json(&inner).contains(
+                "\"last_parse_error\":\"invalid baseline length 43\""
+            ));
+            assert_eq!(inner.parse_errors, 1);
+        }
+        status.record_parse_error("unsupported OMCI device id 0x00");
+        let inner = status.shared.lock().unwrap();
+        assert_eq!(inner.parse_errors, 2);
+        assert_eq!(inner.last_parse_error.as_deref(), Some("unsupported OMCI device id 0x00"));
+    }
 }
