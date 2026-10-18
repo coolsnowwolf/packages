@@ -1,0 +1,45 @@
+From: lean <chenlin@fnnas.com>
+Subject: [PATCH] airoha-xpon: remove verified EPON OAM FCS on the 5.4 BSP
+
+The BSP delivers complete Ethernet frames including FCS on oam0. CTC
+Information TLVs ending at the Ethernet payload boundary consequently
+cause the daemon to interpret FCS as another TLV and discard discovery
+responses. Normalize EPON OAM only, preserving raw ITU-T OMCI and frames
+whose FCS has already been removed.
+
+Signed-off-by: lean <chenlin@fnnas.com>
+---
+--- a/airoha-xpon-oam.c
++++ b/airoha-xpon-oam.c
+@@ -4,6 +4,9 @@
+ #include <linux/airoha-eth.h>
+ #include <linux/bitfield.h>
+ #include <linux/device.h>
++#include <linux/crc32.h>
++#include <linux/if_ether.h>
++#include <asm/unaligned.h>
+ #include <linux/if_arp.h>
+ #include <linux/netdevice.h>
+ #include <linux/rtnetlink.h>
+@@ -172,6 +175,21 @@
+ 		return;
+ 	}
+ 
++	/* The 5.4 BSP can deliver Ethernet FCS with EPON control frames.
++	 * Strip only a verified trailer: already stripped frames remain intact.
++	 * Keep this out of the shared control path, which also carries raw OMCI.
++	 */
++	if (skb_linearize(skb)) {
++		oam->netdev->stats.rx_dropped++;
++		dev_kfree_skb_any(skb);
++		return;
++	}
++	if (skb->len >= ETH_ZLEN + ETH_FCS_LEN &&
++	    get_unaligned_be16(skb->data + 12) == ETH_P_SLOW &&
++	    (crc32_le(~0U, skb->data, skb->len - ETH_FCS_LEN) ^ ~0U) ==
++	    get_unaligned_le32(skb->data + skb->len - ETH_FCS_LEN))
++		skb_trim(skb, skb->len - ETH_FCS_LEN);
++
+ 	skb->dev = oam->netdev;
+ 	skb->protocol = 0;
+ 	skb->pkt_type = PACKET_HOST;

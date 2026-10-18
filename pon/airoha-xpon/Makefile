@@ -6,7 +6,7 @@ include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/kernel.mk
 
 PKG_NAME:=airoha-xpon
-PKG_RELEASE:=69
+PKG_RELEASE:=70
 PKG_LICENSE:=GPL-2.0-only
 
 ifneq ($(filter y,$(CONFIG_LINUX_5_4)),)

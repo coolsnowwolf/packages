@@ -126,24 +126,18 @@ impl CtcSession {
             return Err("CTC information TLV has an invalid length");
         }
 
-        let has_version_list = length > 7;
-        if has_version_list {
-            self.state = DiscoveryState::Offered;
-            self.selected_version = None;
-            let mut response = Writer::with_capacity(7 + config.ctc_versions.len() * 4);
-            response.u8(INFO_TYPE_ORGANIZATION_SPECIFIC);
-            response.u8((7 + config.ctc_versions.len() * 4) as u8);
-            response.bytes(&config.ctc_oui);
-            response.u8(1);
-            response.u8(0);
-            for version in &config.ctc_versions {
-                response.bytes(&config.ctc_oui);
-                response.u8(*version);
-            }
-            return Ok(Some(response.into_vec()));
+        // Other vendors can share the Information PDU with CTC.
+        if tlv[2..5] != config.ctc_oui {
+            return Ok(None);
         }
 
-        if self.state == DiscoveryState::Offered
+        // Some OLTs repeat the selected OUI/version as a single list entry.
+        // This is a confirmation only after our offer, and only for a version
+        // we advertised. A multi-version list still starts a new negotiation.
+        let confirmation =
+            length == 7 || (length == 11 && tlv[7..10] == config.ctc_oui && tlv[10] == tlv[6]);
+        if self.state != DiscoveryState::PassiveWait
+            && confirmation
             && tlv[5] == 1
             && config.ctc_versions.contains(&tlv[6])
         {
@@ -160,16 +154,21 @@ impl CtcSession {
             ]));
         }
 
-        if self.state == DiscoveryState::Operational && Some(tlv[6]) == self.selected_version {
-            return Ok(Some(vec![
-                INFO_TYPE_ORGANIZATION_SPECIFIC,
-                7,
-                config.ctc_oui[0],
-                config.ctc_oui[1],
-                config.ctc_oui[2],
-                1,
-                tlv[6],
-            ]));
+        let has_version_list = length > 7;
+        if has_version_list {
+            self.state = DiscoveryState::Offered;
+            self.selected_version = None;
+            let mut response = Writer::with_capacity(7 + config.ctc_versions.len() * 4);
+            response.u8(INFO_TYPE_ORGANIZATION_SPECIFIC);
+            response.u8((7 + config.ctc_versions.len() * 4) as u8);
+            response.bytes(&config.ctc_oui);
+            response.u8(1);
+            response.u8(0);
+            for version in &config.ctc_versions {
+                response.bytes(&config.ctc_oui);
+                response.u8(*version);
+            }
+            return Ok(Some(response.into_vec()));
         }
 
         self.state = DiscoveryState::PassiveWait;
@@ -669,6 +668,67 @@ fn vlan_ids(configuration: &VlanConfiguration) -> Vec<u16> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn offer(session: &mut CtcSession, config: &OamConfig) {
+        // The six-version Information TLV from the reported OLT.
+        let tlv = [
+            0xfe, 31, 0x11, 0x11, 0x11, 1, 1, 0x11, 0x11, 0x11, 0x30, 0x11, 0x11, 0x11, 0x21, 0x11,
+            0x11, 0x11, 0xaa, 0x11, 0x11, 0x11, 0x20, 0x11, 0x11, 0x11, 0x13, 0x11, 0x11, 0x11, 1,
+        ];
+        assert!(session
+            .handle_information_tlv(&tlv, config)
+            .unwrap()
+            .is_some());
+        assert_eq!(session.state, DiscoveryState::Offered);
+    }
+
+    #[test]
+    fn confirmation_with_or_without_version_list_allows_authentication() {
+        for with_list in [false, true] {
+            let config = OamConfig::default();
+            let mut session = CtcSession::new();
+            offer(&mut session, &config);
+            let mut confirmation = vec![0xfe, 7, 0x11, 0x11, 0x11, 1, 0x21];
+            if with_list {
+                confirmation[1] = 11;
+                confirmation.extend_from_slice(&[0x11, 0x11, 0x11, 0x21]);
+            }
+            for _ in 0..2 {
+                let response = session
+                    .handle_information_tlv(&confirmation, &config)
+                    .unwrap()
+                    .unwrap();
+                assert_eq!(response, [0xfe, 7, 0x11, 0x11, 0x11, 1, 0x21]);
+                assert_eq!(session.state, DiscoveryState::Operational);
+            }
+            // Exact authentication request in the capture; use dummy credentials.
+            let response = session
+                .handle_organization_pdu(&[0x11, 0x11, 0x11, 5, 1, 0, 1, 1], &config, [0; 6])
+                .unwrap();
+            assert!(response.response.is_some());
+            assert_eq!(session.snapshot().authentication, "pending");
+        }
+    }
+
+    #[test]
+    fn unsupported_version_and_foreign_oui_cannot_complete_discovery() {
+        let config = OamConfig::default();
+        let mut session = CtcSession::new();
+        offer(&mut session, &config);
+        // The captured fallback selects 1.0, which this configuration did not offer.
+        session
+            .handle_information_tlv(
+                &[0xfe, 11, 0x11, 0x11, 0x11, 1, 1, 0x11, 0x11, 0x11, 1],
+                &config,
+            )
+            .unwrap();
+        assert_eq!(session.state, DiscoveryState::Offered);
+        assert!(session
+            .handle_information_tlv(&[0xfe, 7, 0, 0x0f, 0x3e, 1, 0x21], &config)
+            .unwrap()
+            .is_none());
+        assert_eq!(session.state, DiscoveryState::Offered);
+    }
 
     #[test]
     fn vlan_set_records_object_leaf_result_and_value() {

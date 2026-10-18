@@ -53,7 +53,9 @@ impl IeeeSession {
             match info_type {
                 INFO_LOCAL if length == INFO_LENGTH => remote_information = Some(tlv.to_vec()),
                 INFO_ORGANIZATION_SPECIFIC if config.ctc_enabled() => {
-                    ctc_response = ctc.handle_information_tlv(tlv, config)?;
+                    if let Some(response) = ctc.handle_information_tlv(tlv, config)? {
+                        ctc_response = Some(response);
+                    }
                 }
                 _ => {}
             }
@@ -86,4 +88,25 @@ fn local_information(revision: u16, source_mac: [u8; 6]) -> Vec<u8> {
     information.extend_from_slice(&source_mac[..3]);
     information.extend_from_slice(&[0; 4]);
     information
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn foreign_information_does_not_hide_ctc_response() {
+        let config = OamConfig::default();
+        let mut ieee = IeeeSession::new();
+        let mut ctc = CtcSession::new();
+        let mut payload = local_information(1, [2, 0, 0, 0, 0, 1]);
+        payload.extend_from_slice(&[0xfe, 11, 0x11, 0x11, 0x11, 1, 0x21, 0x11, 0x11, 0x11, 0x21]);
+        payload.extend_from_slice(&[0xfe, 7, 0, 0x0f, 0x3e, 1, 0x21]);
+        payload.push(INFO_END);
+        let response = ieee
+            .handle_information(&payload, [2, 0, 0, 0, 0, 2], &config, &mut ctc)
+            .unwrap();
+        assert_eq!(ctc.snapshot().discovery_state, "version-offered");
+        assert_eq!(&response[32..39], &[0xfe, 15, 0x11, 0x11, 0x11, 1, 0]);
+    }
 }
