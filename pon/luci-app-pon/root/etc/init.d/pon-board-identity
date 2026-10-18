@@ -1,0 +1,14 @@
+#!/bin/sh /etc/rc.common
+# SPDX-License-Identifier: GPL-2.0-only
+
+START=19
+
+start() {
+	local fields
+	fields="$(jsonfilter -i /etc/board.json -e '@.identity.targets.*.fields' 2>/dev/null)"
+	if [ -n "$fields" ]; then
+		touch /tmp/pon-board-identity.available
+	else
+		rm -f /tmp/pon-board-identity.available
+	fi
+}
