@@ -35,7 +35,6 @@
 
 #if __has_include(<net/netdev_rx_queue.h>)
 #include <net/netdev_rx_queue.h>
-BTF_KEEP(netdev_rx_queue, struct netdev_rx_queue);
 #endif
 
 #if __has_include(<linux/bpf_iter.h>)
@@ -61,6 +60,7 @@ BTF_KEEP(module, struct module);
 BTF_KEEP(sk_buff, struct sk_buff);
 BTF_KEEP(net_device, struct net_device);
 BTF_KEEP(netdev_queue, struct netdev_queue);
+BTF_KEEP(netdev_rx_queue, struct netdev_rx_queue);
 BTF_KEEP(sock, struct sock);
 BTF_KEEP(inet_sock, struct inet_sock);
 BTF_KEEP(inet_connection_sock, struct inet_connection_sock);
