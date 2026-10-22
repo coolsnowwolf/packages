@@ -1,0 +1,45 @@
+From: coolsnowwolf <coolsnowwolf@gmail.com>
+Subject: [PATCH] compat: adapt networking APIs on Linux 7.3
+
+The kernel no longer provides ipv6_stub. Use ip6_dst_lookup_flow(),
+which also has a stub when IPv6 is disabled. Keep the existing path
+for older kernels. Pass the underlying sock to setup_udp_tunnel_sock()
+on 7.3 as required by its updated signature.
+
+Signed-off-by: coolsnowwolf <coolsnowwolf@gmail.com>
+
+--- a/compat-include/net/ip6_route.h
++++ b/compat-include/net/ip6_route.h
+@@ -3,6 +3,7 @@
+ 
+ #include <linux/version.h>
+ #include_next <net/ip6_route.h>
++#include <net/ipv6.h>
+ 
+ static inline bool ovpn_rt4_uses_gateway(const struct rtable *rt)
+ {
+@@ -20,7 +21,9 @@
+ 			  struct flowi6 *fl6,
+ 			  const struct in6_addr *final_dst)
+ {
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 19, 119) || RHEL_RELEASE_CODE != 0
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 3, 0)
++	return ip6_dst_lookup_flow(net, sk, fl6, final_dst);
++#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4, 19, 119) || RHEL_RELEASE_CODE != 0
+ 	return ipv6_stub->ipv6_dst_lookup_flow(net, sk, fl6, final_dst);
+ #else
+ 	struct dst_entry *entry;
+--- a/drivers/net/ovpn/udp.c
++++ b/drivers/net/ovpn/udp.c
+@@ -400,7 +400,11 @@
+ 	if (!old_data) {
+ 		/* socket is currently unused - we can take it */
+ 		rcu_read_unlock();
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 3, 0)
++		setup_udp_tunnel_sock(sock_net(ovpn_sock->sk), sock->sk, &cfg);
++#else
+ 		setup_udp_tunnel_sock(sock_net(ovpn_sock->sk), sock, &cfg);
++#endif
+ 		return 0;
+ 	}
+ 
