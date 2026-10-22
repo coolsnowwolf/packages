@@ -10,7 +10,7 @@ include $(INCLUDE_DIR)/kernel.mk
 
 PKG_NAME:=ovpn-backports
 PKG_VERSION:=7.0.0.2026032400
-PKG_RELEASE:=5
+PKG_RELEASE:=6
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL= \
@@ -30,6 +30,7 @@ define KernelPackage/ovpn-backports
   TITLE:=OpenVPN data channel offload
   DEPENDS:= \
 	+kmod-udptunnel4 +IPV6:kmod-udptunnel6 \
+	+kmod-crypto-gcm +TARGET_airoha_an7581:kmod-crypto-hw-airoha-eip93 \
 	+kmod-crypto-chacha20poly1305 +kmod-crypto-lib-chacha20 +kmod-crypto-lib-poly1305
   # Note: TCP requires STREAM_PARSER but it can't be selected by out-of-tree
   # modules, so pull in AF_KCM for now. This needs to be patched on kernel
