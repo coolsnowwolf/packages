@@ -60,6 +60,10 @@ jobs:
             "net/daed" "net/daed"
           sync_package "nikkinikki-org/OpenWrt-nikki" "main" \
             "nikki" "net/nikki"
+          sync_package "fw876/helloworld" "dev" \
+            "mihomo" "net/mihomo"
+          sync_package "fw876/helloworld" "dev" \
+            "xray-core" "net/xray-core"
           sync_package "QiuSimons/vmlinux-btf" "master" \
             "." "kernel/vmlinux-btf"
 
@@ -137,6 +141,8 @@ jobs:
             net/mosdns
             net/daed
             net/nikki
+            net/mihomo
+            net/xray-core
             kernel/vmlinux-btf
             net/sing-box/Makefile
           )
