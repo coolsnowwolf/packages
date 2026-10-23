@@ -32,7 +32,7 @@ Signed-off-by: Josef Schlehofer <pepe.schlehofer@gmail.com>
 ---
 --- a/src/llvm-project/llvm/include/llvm/CodeGen/TargetLowering.h
 +++ b/src/llvm-project/llvm/include/llvm/CodeGen/TargetLowering.h
-@@ -2252,6 +2252,13 @@ public:
+@@ -2305,6 +2305,13 @@ public:
      return false;
    }
  
@@ -48,7 +48,7 @@ Signed-off-by: Josef Schlehofer <pepe.schlehofer@gmail.com>
    /// false.
 --- a/src/llvm-project/llvm/lib/CodeGen/AtomicExpandPass.cpp
 +++ b/src/llvm-project/llvm/lib/CodeGen/AtomicExpandPass.cpp
-@@ -1370,7 +1370,17 @@ bool AtomicExpandImpl::expandAtomicCmpXchg(AtomicCmpXchgInst *CI) {
+@@ -1492,7 +1492,17 @@ bool AtomicExpandImpl::expandAtomicCmpXchg(AtomicCmpXchgInst *CI) {
  
    // There's no overhead for sinking the release barrier in a weak cmpxchg, so
    // do it even on minsize.
