@@ -7,7 +7,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=zerotier
 PKG_VERSION:=1.16.0
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/zerotier/ZeroTierOne/tar.gz/$(PKG_VERSION)?
@@ -62,6 +62,11 @@ endef
 # Make binary smaller
 TARGET_CFLAGS += -Wl,-z,noexecstack
 TARGET_LDFLAGS += -Wl,--as-needed -Wl,-z,noexecstack
+
+# Enable ARMv8 Crypto Extensions on aarch64 (runtime guarded by Utils::ARMCAP.aes)
+ifeq ($(ARCH),aarch64)
+  TARGET_CFLAGS += -march=armv8-a+crypto
+endif
 
 # Prevent `-isystem ext` from causing the wrong miniupnpc header to be used (OpenWrt packages issue - 18019)
 TARGET_CFLAGS += -isystem $(STAGING_DIR)/usr/include

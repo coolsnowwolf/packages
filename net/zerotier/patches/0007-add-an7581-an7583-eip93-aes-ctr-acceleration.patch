@@ -1,0 +1,326 @@
+From: sKyissKy <29267720+sKyissKy@users.noreply.github.com>
+Subject: [PATCH] zerotier: add three-tier cryptographic acceleration hierarchy (CPU AES -> EIP93 -> Salsa20)
+
+Implement an automatic three-tier cryptographic fallback hierarchy for ZeroTier One:
+
+1. Tier 1 (Native CPU AES):
+   - Prioritize hardware AES instructions (x86 AES-NI or ARMv8 Crypto Extensions).
+   - Zero syscall overhead; runs in user-space CPU registers (e.g. Airoha AN7583,
+     MediaTek MT7981 / MT7986, Rockchip RK3588, x86).
+
+2. Tier 2 (EIP-93 Hardware Coprocessor via Dynamic Kernel Probe):
+   - For CPUs lacking hardware AES instructions, dynamically probe whether the Linux
+     kernel has an active SafeXcel EIP-93 skcipher driver ("ctr(aes-eip93)") via AF_ALG.
+   - Eliminates hardcoded device-tree SoC whitelists, auto-detecting any SoC with EIP-93
+     (e.g. Airoha AN7581 / EN7581).
+   - Reuses persistent AF_ALG operational sockets per CTR session; bounds payload
+     threshold (>= 256 bytes) to eliminate syscall overhead on tiny packets.
+   - Allows explicit runtime opt-out via ZEROTIER_EIP93=off environment variable.
+
+3. Tier 3 (Automatic Salsa20 Fallback for Pure Software Devices):
+   - For devices with neither CPU AES nor EIP-93 (e.g. MediaTek MT7621 MIPS,
+     legacy ARMv7, and non-crypto MIPS architectures), advertise protocol version 11
+     in HELLO/OK packets and suppress AES key export.
+   - Peers automatically negotiate Curve25519 + Salsa20/12 + Poly1305, achieving
+     200-300+ Mbps throughput on general-purpose registers without modifying wire protocols.
+
+Based on EIP-93 hardware acceleration work by coolsnowwolf:
+https://github.com/fw876/helloworld/commit/9213963c6a798658c55c7402f3ae7db81d891256
+
+Co-authored-by: coolsnowwolf <coolsnowwolf@gmail.com>
+Signed-off-by: sKyissKy <29267720+sKyissKy@users.noreply.github.com>
+---
+--- a/node/AES.hpp
++++ b/node/AES.hpp
+@@ -72,6 +72,17 @@
+ 	ZT_INLINE ~AES()
+ 	{
+ 		Utils::burn(&p_k, sizeof(p_k));
++		Utils::burn(_rawKey, sizeof(_rawKey));
++	}
++
++	/**
++	 * @return True if hardware acceleration is available (via CPU instructions or EIP93)
++	 */
++	static bool hasHardwareAcceleration() noexcept;
++
++	ZT_INLINE const uint8_t* rawKey() const noexcept
++	{
++		return _rawKey;
+ 	}
+ 
+ 	/**
+@@ -81,6 +92,7 @@
+ 	 */
+ 	ZT_INLINE void init(const void* const key) noexcept
+ 	{
++		Utils::copy<32>(_rawKey, key);
+ #ifdef ZT_AES_AESNI
+ 		if (likely(Utils::CPUID.aes)) {
+ 			p_init_aesni(reinterpret_cast<const uint8_t*>(key));
+@@ -225,6 +237,10 @@
+ 		void finish(uint8_t tag[16]) noexcept;
+ 
+ 	  private:
++#if defined(__linux__)
++		bool p_eip93Crypt(const uint8_t* in, uint8_t* out, unsigned int len) noexcept;
++		int _eip93Fd;
++#endif
+ #ifdef ZT_AES_AESNI
+ 		void p_aesNIUpdate(const uint8_t* in, unsigned int len) noexcept;
+ 		void p_aesNIFinish(uint8_t tag[16]) noexcept;
+@@ -252,8 +268,18 @@
+ 		friend class GMACSIVDecryptor;
+ 
+ 	  public:
+-		ZT_INLINE CTR(const AES& aes) noexcept : _aes(aes)
+-		{
++		ZT_INLINE CTR(const AES& aes) noexcept : _aes(aes), _eip93Fd(-1)
++		{
++		}
++
++		ZT_INLINE ~CTR()
++		{
++#if defined(__linux__)
++			if (_eip93Fd >= 0) {
++				::close(_eip93Fd);
++				_eip93Fd = -1;
++			}
++#endif
+ 		}
+ 
+ 		/**
+@@ -588,6 +614,7 @@
+ 	void p_encrypt_armneon_crypto(const void* in, void* out) const noexcept;
+ 	void p_decrypt_armneon_crypto(const void* in, void* out) const noexcept;
+ #endif
++	uint8_t _rawKey[32];
+ };
+ 
+ }	// namespace ZeroTier
+--- a/node/AES.cpp
++++ b/node/AES.cpp
+@@ -9,6 +9,177 @@
+ #include "AES.hpp"
+ 
+ #include "Constants.hpp"
++
++#if defined(__linux__)
++#include <sys/socket.h>
++#include <linux/if_alg.h>
++#include <unistd.h>
++#include <fcntl.h>
++#include <stdio.h>
++#include <string.h>
++#include <stdlib.h>
++
++#ifndef AF_ALG
++#define AF_ALG 38
++#endif
++#ifndef SOL_ALG
++#define SOL_ALG 279
++#endif
++#ifndef ALG_SET_KEY
++#define ALG_SET_KEY 1
++#endif
++#ifndef ALG_SET_IV
++#define ALG_SET_IV 2
++#endif
++
++namespace ZeroTier {
++namespace {
++
++// Dynamically probe if the Linux kernel has an active EIP-93 crypto driver
++static bool isEIP93Available() noexcept
++{
++	static int status = -1; // -1: unprobed, 0: unavailable, 1: available
++	if (status >= 0) return (status == 1);
++
++	// Explicit opt-out via environment variable
++	const char* env = ::getenv("ZEROTIER_EIP93");
++	if (env && ::strcmp(env, "off") == 0) {
++		status = 0;
++		return false;
++	}
++
++	// Dynamic probe via AF_ALG skcipher bind
++	int tfmFd = ::socket(AF_ALG, SOCK_SEQPACKET | SOCK_CLOEXEC, 0);
++	if (tfmFd < 0) {
++		status = 0;
++		return false;
++	}
++
++	struct sockaddr_alg sa = {};
++	sa.salg_family = AF_ALG;
++	::strncpy((char*)sa.salg_type, "skcipher", sizeof(sa.salg_type) - 1);
++	::strncpy((char*)sa.salg_name, "ctr(aes-eip93)", sizeof(sa.salg_name) - 1);
++
++	if (::bind(tfmFd, (struct sockaddr*)&sa, sizeof(sa)) == 0) {
++		::close(tfmFd);
++		status = 1;
++		fprintf(stderr, "ZeroTier: EIP-93 hardware AES-CTR accelerator detected via AF_ALG\n");
++		return true;
++	}
++
++	::close(tfmFd);
++	status = 0;
++	return false;
++}
++
++} // namespace
++
++bool AES::CTR::p_eip93Crypt(const uint8_t* in, uint8_t* out, unsigned int len) noexcept
++{
++	// 1. Bypass EIP-93 if CPU has native AES or packet is small (< 256 bytes)
++#if defined(ZT_AES_AESNI)
++	if (Utils::CPUID.aes) return false;
++#endif
++#if defined(ZT_ARCH_ARM_HAS_NEON)
++	if (Utils::ARMCAP.aes) return false;
++#endif
++	if (len < 256) return false;
++
++	// 2. Open / reuse persistent AF_ALG operational socket
++	if (_eip93Fd < 0) {
++		if (!isEIP93Available()) {
++			return false;
++		}
++
++		int tfmFd = ::socket(AF_ALG, SOCK_SEQPACKET | SOCK_CLOEXEC, 0);
++		if (tfmFd < 0) return false;
++
++		struct sockaddr_alg sa = {};
++		sa.salg_family = AF_ALG;
++		::strncpy((char*)sa.salg_type, "skcipher", sizeof(sa.salg_type) - 1);
++		::strncpy((char*)sa.salg_name, "ctr(aes-eip93)", sizeof(sa.salg_name) - 1);
++
++		if (::bind(tfmFd, (struct sockaddr*)&sa, sizeof(sa)) != 0 ||
++			::setsockopt(tfmFd, SOL_ALG, ALG_SET_KEY, _aes.rawKey(), 32) != 0) {
++			::close(tfmFd);
++			return false;
++		}
++
++		_eip93Fd = ::accept4(tfmFd, NULL, NULL, SOCK_CLOEXEC);
++		::close(tfmFd);
++		if (_eip93Fd < 0) return false;
++
++		struct timeval tv = { 1, 0 };
++		::setsockopt(_eip93Fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
++		::setsockopt(_eip93Fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
++	}
++
++	const unsigned int alignedLen = len & ~15U;
++	const unsigned int rem = len & 15U;
++
++	char cbuf[CMSG_SPACE(sizeof(struct af_alg_iv) + 16)] = {};
++	struct msghdr msg = {};
++	msg.msg_control = cbuf;
++	msg.msg_controllen = sizeof(cbuf);
++
++	struct cmsghdr* cmsg = CMSG_FIRSTHDR(&msg);
++	cmsg->cmsg_level = SOL_ALG;
++	cmsg->cmsg_type = ALG_SET_IV;
++	cmsg->cmsg_len = CMSG_LEN(sizeof(struct af_alg_iv) + 16);
++
++	struct af_alg_iv* ivMsg = (struct af_alg_iv*)CMSG_DATA(cmsg);
++	ivMsg->ivlen = 16;
++	::memcpy(ivMsg->iv, _ctr, 16);
++
++	struct iovec iov = { (void*)in, alignedLen };
++	msg.msg_iov = &iov;
++	msg.msg_iovlen = 1;
++
++	if (::sendmsg(_eip93Fd, &msg, 0) != (ssize_t)alignedLen ||
++		::read(_eip93Fd, out, alignedLen) != (ssize_t)alignedLen) {
++		::close(_eip93Fd);
++		_eip93Fd = -1;
++		return false;
++	}
++
++	const uint32_t numBlocks = alignedLen / 16;
++	reinterpret_cast<uint32_t*>(_ctr)[3] = Utils::hton(Utils::ntoh(reinterpret_cast<uint32_t*>(_ctr)[3]) + numBlocks);
++
++	if (rem > 0) {
++		::memcpy(out + alignedLen, in + alignedLen, rem);
++	}
++
++	_len += len;
++	return true;
++}
++
++} // namespace ZeroTier
++#endif
++
++namespace ZeroTier {
++
++bool AES::hasHardwareAcceleration() noexcept
++{
++	// Tier 1: CPU native AES hardware instructions (AES-NI / ARMv8 Crypto)
++#ifdef ZT_AES_AESNI
++	if (likely(Utils::CPUID.aes)) return true;
++#endif
++#ifdef ZT_ARCH_ARM_HAS_NEON
++#ifdef ZT_AES_NEON
++	if (Utils::ARMCAP.aes) return true;
++#endif
++#endif
++
++	// Tier 2: Dedicated hardware crypto coprocessor (EIP-93) via dynamic kernel probe
++#if defined(__linux__)
++	if (isEIP93Available()) return true;
++#endif
++
++	// Tier 3: No hardware acceleration available -> will trigger Salsa20/12-Poly1305 fallback
++	return false;
++}
++
++} // namespace ZeroTier
+ 
+ #ifdef __GNUC__
+ #pragma GCC diagnostic ignored "-Wstrict-aliasing"
+@@ -229,6 +400,12 @@
+ 		return;
+ 	}
+ #endif	 // ZT_AES_NEON
++
++#if defined(__linux__)
++	if (p_eip93Crypt(in, out, len)) {
++		return;
++	}
++#endif
+ 
+ 	uint64_t keyStream[2];
+ 	uint32_t ctr = Utils::ntoh(reinterpret_cast<uint32_t*>(_ctr)[3]);
+--- a/node/Peer.hpp
++++ b/node/Peer.hpp
+@@ -656,7 +656,7 @@
+ 
+ 	inline const AES* aesKeysIfSupported() const
+ 	{
+-		return (_vProto >= 12) ? _aesKeys : (const AES*)0;
++		return (_vProto >= 12 && AES::hasHardwareAcceleration()) ? _aesKeys : (const AES*)0;
+ 	}
+ 
+ 	inline const AES* aesKeys() const
+--- a/node/Peer.cpp
++++ b/node/Peer.cpp
+@@ -427,7 +427,7 @@
+ {
+ 	Packet outp(_id.address(), RR->identity.address(), Packet::VERB_HELLO);
+ 
+-	outp.append((unsigned char)ZT_PROTO_VERSION);
++	outp.append((unsigned char)(AES::hasHardwareAcceleration() ? ZT_PROTO_VERSION : 11));
+ 	outp.append((unsigned char)ZEROTIER_ONE_VERSION_MAJOR);
+ 	outp.append((unsigned char)ZEROTIER_ONE_VERSION_MINOR);
+ 	outp.append((uint16_t)ZEROTIER_ONE_VERSION_REVISION);
+--- a/node/IncomingPacket.cpp
++++ b/node/IncomingPacket.cpp
+@@ -509,7 +509,7 @@
+ 	outp.append((unsigned char)Packet::VERB_HELLO);
+ 	outp.append((uint64_t)pid);
+ 	outp.append((uint64_t)timestamp);
+-	outp.append((unsigned char)ZT_PROTO_VERSION);
++	outp.append((unsigned char)(AES::hasHardwareAcceleration() ? ZT_PROTO_VERSION : 11));
+ 	outp.append((unsigned char)ZEROTIER_ONE_VERSION_MAJOR);
+ 	outp.append((unsigned char)ZEROTIER_ONE_VERSION_MINOR);
+ 	outp.append((uint16_t)ZEROTIER_ONE_VERSION_REVISION);
