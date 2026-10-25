@@ -41,7 +41,7 @@ start_service() {
 	[ "$enabled" -ne 0 ] || { echo "disabled in /etc/config/zerotier"; return; }
 	rm -rf "$CONFIG_PATH"
 	if [ -n "$config_path" ]; then
-		[ -d "$config_path" ] || { echo "ZeroTier config_path does not exist: $config_path" >&2; return; }
+		mkdir -p "$config_path" || { echo "Unable to create ZeroTier config_path: $config_path" >&2; return 1; }
 		[ "$copy_config_path" -eq 1 ] && cp -r "$config_path" "$CONFIG_PATH" || ln -s "$config_path" "$CONFIG_PATH"
 	fi
 	mkdir -p "$CONFIG_PATH/networks.d"
