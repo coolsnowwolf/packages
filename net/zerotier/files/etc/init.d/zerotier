@@ -6,15 +6,21 @@ USE_PROCD=1
 
 PROG=/usr/bin/zerotier-one
 CONFIG_PATH=/var/lib/zerotier-one
+RUN_PATH=/var/run/zerotier-one
+
+network_ids=""
 
 join_network() {
-	local section="$1" id allow_managed allow_global allow_default allow_dns
+	local section="$1" enabled id allow_managed allow_global allow_default allow_dns
+	config_get_bool enabled "$section" enabled 1
+	[ "$enabled" -eq 1 ] || return 0
 	config_get id "$section" id
 	config_get_bool allow_managed "$section" allow_managed 1
 	config_get_bool allow_global "$section" allow_global 0
 	config_get_bool allow_default "$section" allow_default 0
 	config_get_bool allow_dns "$section" allow_dns 0
 	[ -n "$id" ] || return
+	network_ids="$network_ids $id"
 	touch "$CONFIG_PATH/networks.d/$id.conf"
 	echo "allowManaged=$allow_managed" > "$CONFIG_PATH/networks.d/$id.local.conf"
 	echo "allowGlobal=$allow_global" >> "$CONFIG_PATH/networks.d/$id.local.conf"
@@ -39,7 +45,18 @@ start_service() {
 		[ "$copy_config_path" -eq 1 ] && cp -r "$config_path" "$CONFIG_PATH" || ln -s "$config_path" "$CONFIG_PATH"
 	fi
 	mkdir -p "$CONFIG_PATH/networks.d"
+	network_ids=""
 	config_foreach join_network network
+	# Persistent configuration may contain disabled or removed networks.
+	local conf id
+	for conf in "$CONFIG_PATH"/networks.d/*.conf; do
+		id="${conf##*/}"
+		id="${id%%.*}"
+		case " $network_ids " in
+			*" $id "*) ;;
+			*) rm -f "$conf" ;;
+		esac
+	done
 	[ -f "$local_conf_path" ] && ln -s "$local_conf_path" "$CONFIG_PATH/local.conf"
 	[ -n "$port" ] && args="$args -p$port"
 	if [ -z "$secret" ]; then
@@ -55,8 +72,13 @@ start_service() {
 	procd_close_instance
 }
 
+service_started() {
+	zerotier-fw4 -s
+}
+
 stop_service() {
-	rm -rf "$CONFIG_PATH"
+	rm -rf "$CONFIG_PATH" "$RUN_PATH"
+	fw4 reload >/dev/null 2>&1
 }
 
 reload_service() {
