@@ -1,0 +1,247 @@
+From: sKyissKy <29267720+sKyissKy@users.noreply.github.com>
+Subject: [PATCH] AES: add EIP-93 CTR offload with safe streaming fallback
+
+Keep CPU AES paths and protocol negotiation unchanged. Probe the EIP-93
+skcipher driver only on the software CTR path; ZEROTIER_EIP93=off opts out.
+Use bounded, block-aligned requests and commit output only on full success.
+Close operation sockets on stream reinitialization, errors and destruction.
+
+Co-authored-by: coolsnowwolf <coolsnowwolf@gmail.com>
+Signed-off-by: coolsnowwolf <coolsnowwolf@gmail.com>
+---
+--- a/node/AES.hpp
++++ b/node/AES.hpp
+@@ -72,6 +72,9 @@
+ 	ZT_INLINE ~AES()
+ 	{
+ 		Utils::burn(&p_k, sizeof(p_k));
++#if defined(__linux__)
++		Utils::burn(_rawKey, sizeof(_rawKey));
++#endif
+ 	}
+ 
+ 	/**
+@@ -81,6 +84,9 @@
+ 	 */
+ 	ZT_INLINE void init(const void* const key) noexcept
+ 	{
++#if defined(__linux__)
++		Utils::copy<32>(_rawKey, key);
++#endif
+ #ifdef ZT_AES_AESNI
+ 		if (likely(Utils::CPUID.aes)) {
+ 			p_init_aesni(reinterpret_cast<const uint8_t*>(key));
+@@ -253,9 +259,22 @@
+ 
+ 	  public:
+ 		ZT_INLINE CTR(const AES& aes) noexcept : _aes(aes)
++#if defined(__linux__)
++			, _eip93Fd(-1), _eip93Failed(false)
++#endif
++		{
++		}
++
++		ZT_INLINE ~CTR()
+ 		{
++#if defined(__linux__)
++			p_resetEIP93();
++#endif
+ 		}
+ 
++		CTR(const CTR&) = delete;
++		CTR& operator=(const CTR&) = delete;
++
+ 		/**
+ 		 * Initialize this CTR instance to encrypt a new stream
+ 		 *
+@@ -264,6 +283,9 @@
+ 		 */
+ 		ZT_INLINE void init(const uint8_t iv[16], void* const output) noexcept
+ 		{
++			#if defined(__linux__)
++			p_resetEIP93();
++#endif
+ 			Utils::copy<16>(_ctr, iv);
+ 			_out = reinterpret_cast<uint8_t*>(output);
+ 			_len = 0;
+@@ -278,6 +300,9 @@
+ 		 */
+ 		ZT_INLINE void init(const uint8_t iv[12], const uint32_t ic, void* const output) noexcept
+ 		{
++			#if defined(__linux__)
++			p_resetEIP93();
++#endif
+ 			Utils::copy<12>(_ctr, iv);
+ 			reinterpret_cast<uint32_t*>(_ctr)[3] = ic;
+ 			_out = reinterpret_cast<uint8_t*>(output);
+@@ -310,6 +335,12 @@
+ 		uint64_t _ctr[2];
+ 		uint8_t* _out;
+ 		unsigned int _len;
++#if defined(__linux__)
++		bool p_eip93Crypt(const uint8_t* in, uint8_t* out, unsigned int len) noexcept;
++		void p_resetEIP93() noexcept;
++		int _eip93Fd;
++		bool _eip93Failed;
++#endif
+ 	};
+ 
+ 	/**
+@@ -588,6 +619,9 @@
+ 	void p_encrypt_armneon_crypto(const void* in, void* out) const noexcept;
+ 	void p_decrypt_armneon_crypto(const void* in, void* out) const noexcept;
+ #endif
++#if defined(__linux__)
++	uint8_t _rawKey[32];
++#endif
+ };
+ 
+ }	// namespace ZeroTier
+--- a/node/AES.cpp
++++ b/node/AES.cpp
+@@ -10,6 +10,123 @@
+ 
+ #include "Constants.hpp"
+ 
++#if defined(__linux__)
++#include <linux/if_alg.h>
++#include <sys/socket.h>
++#include <unistd.h>
++
++namespace ZeroTier {
++namespace {
++
++bool eip93Available() noexcept
++{
++	// C++11 local-static initialization is serialized across worker threads.
++	static const bool available = []() {
++		const char* env = ::getenv("ZEROTIER_EIP93");
++		if (env && ::strcmp(env, "off") == 0) {
++			return false;
++		}
++		const int fd = ::socket(AF_ALG, SOCK_SEQPACKET | SOCK_CLOEXEC, 0);
++		if (fd < 0) {
++			return false;
++		}
++		struct sockaddr_alg sa = {};
++		sa.salg_family = AF_ALG;
++		::strcpy(reinterpret_cast<char*>(sa.salg_type), "skcipher");
++		::strcpy(reinterpret_cast<char*>(sa.salg_name), "ctr(aes-eip93)");
++		const bool found = (::bind(fd, reinterpret_cast<struct sockaddr*>(&sa), sizeof(sa)) == 0);
++		::close(fd);
++		return found;
++	}();
++	return available;
++}
++
++} // namespace
++
++void AES::CTR::p_resetEIP93() noexcept
++{
++	if (_eip93Fd >= 0) {
++		::close(_eip93Fd);
++		_eip93Fd = -1;
++	}
++	_eip93Failed = false;
++}
++
++bool AES::CTR::p_eip93Crypt(const uint8_t* in, uint8_t* out, unsigned int len) noexcept
++{
++	if (_eip93Failed || !eip93Available()) {
++		return false;
++	}
++	if (_eip93Fd < 0) {
++		_eip93Failed = true;
++		const int fd = ::socket(AF_ALG, SOCK_SEQPACKET | SOCK_CLOEXEC, 0);
++		if (fd < 0) {
++			return false;
++		}
++		struct sockaddr_alg sa = {};
++		sa.salg_family = AF_ALG;
++		::strcpy(reinterpret_cast<char*>(sa.salg_type), "skcipher");
++		::strcpy(reinterpret_cast<char*>(sa.salg_name), "ctr(aes-eip93)");
++		if (::bind(fd, reinterpret_cast<struct sockaddr*>(&sa), sizeof(sa)) == 0 &&
++			::setsockopt(fd, SOL_ALG, ALG_SET_KEY, _aes._rawKey, sizeof(_aes._rawKey)) == 0) {
++			_eip93Fd = ::accept4(fd, NULL, NULL, SOCK_CLOEXEC);
++		}
++		::close(fd);
++		if (_eip93Fd < 0) {
++			return false;
++		}
++		struct timeval timeout = {1, 0};
++		if (::setsockopt(_eip93Fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) != 0 ||
++			::setsockopt(_eip93Fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)) != 0) {
++			::close(_eip93Fd);
++			_eip93Fd = -1;
++			return false;
++		}
++		_eip93Failed = false;
++	}
++
++	// Commit output only after a complete request. Short/error reads must not
++	// destroy input when the caller encrypts in place and falls back to software.
++	uint8_t result[4096];
++	alignas(struct cmsghdr) char control[CMSG_SPACE(sizeof(uint32_t)) + CMSG_SPACE(sizeof(struct af_alg_iv) + 16)] = {};
++	struct iovec iov = {const_cast<uint8_t*>(in), len};
++	struct msghdr msg = {};
++	msg.msg_iov = &iov;
++	msg.msg_iovlen = 1;
++	msg.msg_control = control;
++	msg.msg_controllen = sizeof(control);
++	struct cmsghdr* cmsg = CMSG_FIRSTHDR(&msg);
++	cmsg->cmsg_level = SOL_ALG;
++	cmsg->cmsg_type = ALG_SET_OP;
++	cmsg->cmsg_len = CMSG_LEN(sizeof(uint32_t));
++	const uint32_t op = ALG_OP_ENCRYPT;
++	::memcpy(CMSG_DATA(cmsg), &op, sizeof(op));
++	cmsg = CMSG_NXTHDR(&msg, cmsg);
++	cmsg->cmsg_level = SOL_ALG;
++	cmsg->cmsg_type = ALG_SET_IV;
++	cmsg->cmsg_len = CMSG_LEN(sizeof(struct af_alg_iv) + 16);
++	struct af_alg_iv* iv = reinterpret_cast<struct af_alg_iv*>(CMSG_DATA(cmsg));
++	iv->ivlen = 16;
++	::memcpy(iv->iv, _ctr, 16);
++
++	const bool ok = (::sendmsg(_eip93Fd, &msg, MSG_NOSIGNAL) == static_cast<ssize_t>(len) &&
++		::read(_eip93Fd, result, len) == static_cast<ssize_t>(len));
++	if (ok) {
++		::memcpy(out, result, len);
++	}
++	Utils::burn(result, sizeof(result));
++	if (!ok) {
++		p_resetEIP93();
++		_eip93Failed = true;
++	}
++	return ok;
++}
++
++} // namespace ZeroTier
++#endif
++
++
++
+ #ifdef __GNUC__
+ #pragma GCC diagnostic ignored "-Wstrict-aliasing"
+ #endif
+@@ -230,6 +347,21 @@
+ 	}
+ #endif	 // ZT_AES_NEON
+ 
++#if defined(__linux__)
++	// Leave partial blocks to the original streaming implementation. Bound
++	// each kernel request so sendmsg cannot fill the socket before read().
++	while (!(_len & 15U) && len >= 256) {
++		const unsigned int chunk = (len > 4096) ? 4096 : (len & ~15U);
++		if (!p_eip93Crypt(in, out + _len, chunk)) {
++			break;
++		}
++		reinterpret_cast<uint32_t*>(_ctr)[3] = Utils::hton(Utils::ntoh(reinterpret_cast<uint32_t*>(_ctr)[3]) + chunk / 16);
++		_len += chunk;
++		in += chunk;
++		len -= chunk;
++	}
++#endif
++
+ 	uint64_t keyStream[2];
+ 	uint32_t ctr = Utils::ntoh(reinterpret_cast<uint32_t*>(_ctr)[3]);
+ 
