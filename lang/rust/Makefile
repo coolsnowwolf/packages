@@ -10,7 +10,7 @@ PKG_RELEASE:=1
 
 PKG_SOURCE:=rustc-$(PKG_VERSION)-src.tar.xz
 PKG_SOURCE_URL:=https://static.rust-lang.org/dist/
-PKG_HASH:=sha256:6451598a99e77f07571960f6b21d577399d3a30f33e80cbd2e3a4aae6535d265
+PKG_HASH:=6451598a99e77f07571960f6b21d577399d3a30f33e80cbd2e3a4aae6535d265
 HOST_BUILD_DIR:=$(BUILD_DIR)/host/rustc-$(PKG_VERSION)-src
 
 PKG_MAINTAINER:=Luca Barbato <lu_zero@luminem.org>
