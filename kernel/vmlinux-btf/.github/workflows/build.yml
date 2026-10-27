@@ -4,20 +4,23 @@ on:
   workflow_dispatch:
     inputs:
       openwrt_majors:
-        description: 'OpenWrt major versions (space-separated, e.g. 24 25)'
+        description: 'OpenWrt major versions (space-separated, e.g. 25)'
         required: false
-        default: '24 25'
+        default: '25'
         type: string
   push:
     branches:
       - master
+    paths:
+      - 'Makefile'
+      - 'src/**'
 
 permissions:
   contents: write
   actions: write
 
 env:
-  OPENWRT_MAJORS: '24 25'
+  OPENWRT_MAJORS: '25'
 
 jobs:
   prepare:
