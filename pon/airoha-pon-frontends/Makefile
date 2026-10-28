@@ -8,8 +8,8 @@ PKG_NAME:=airoha-pon-frontends
 PKG_RELEASE:=14
 PKG_LICENSE:=GPL-2.0-only
 
-ifneq ($(filter y,$(CONFIG_LINUX_5_4)),)
-PATCH_DIR:=./patches-5.4
+ifneq ($(filter y,$(CONFIG_LINUX_5_4) $(CONFIG_LINUX_7_3)),)
+PATCH_DIR:=./patches-$(KERNEL_PATCHVER)
 endif
 
 include $(INCLUDE_DIR)/package.mk
@@ -20,7 +20,7 @@ define KernelPackage/airoha-pon-frontend
   DEPENDS:=@(TARGET_airoha_an7581||TARGET_airoha_an7583)
   FILES:=$(PKG_BUILD_DIR)/airoha-pon-frontend-core.ko
   AUTOLOAD:=$(call AutoProbe,airoha-pon-frontend-core)
-ifneq ($(filter y,$(CONFIG_LINUX_5_4)),)
+ifneq ($(filter y,$(CONFIG_LINUX_5_4) $(CONFIG_LINUX_7_3)),)
   FILES+=$(PKG_BUILD_DIR)/airoha-ubi-nvmem.ko
   AUTOLOAD:=$(call AutoProbe,airoha-pon-frontend-core airoha-ubi-nvmem)
 endif
