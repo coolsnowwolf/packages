@@ -7,7 +7,7 @@ LUCI_URL:=https://github.com/pbs05/openwrt-pon-userspace/tree/main/luci-app-pon
 LUCI_DEPENDS:=+luci-base +airoha-ponctl +airoha-pond \
 	+mtd +ubi-utils +nand-utils +jshn +jsonfilter +airoha-pon-debug +luci-app-iptv
 PKG_VERSION:=0.1.0
-PKG_RELEASE:=7
+PKG_RELEASE:=8
 
 PKG_LICENSE:=Apache-2.0 GPL-2.0-only
 

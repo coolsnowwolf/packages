@@ -208,12 +208,16 @@ function displayBroadcastKeys(values) {
 
 function loadProtocolStatus(section, unavailable, invalid) {
 	return L.resolveDefault(
-		fs.exec_direct('/usr/bin/pondctl', [ 'status', '--line', section.line ]), null
-	).then(function(output) {
-		if (output == null)
-			return { section: section, values: {}, error: unavailable };
+		fs.exec('/usr/bin/pondctl', [ 'status', '--line', section.line ]), null
+	).then(function(result) {
+		if (result == null || result.code !== 0)
+			return { section: section, values: {}, error: unavailable +
+				(result && result.stderr ? ': ' + result.stderr.trim() : '') };
 		try {
-			return { section: section, values: JSON.parse(output), error: null };
+			var values = JSON.parse(result.stdout);
+			if (!values || typeof values !== 'object' || Array.isArray(values))
+				throw new Error('status schema');
+			return { section: section, values: values, error: null };
 		} catch (exception) {
 			return { section: section, values: {}, error: invalid };
 		}
@@ -233,17 +237,19 @@ function loadStatus() {
 
 		if (!device)
 			return Promise.resolve({ section: section, line: {}, error: _('No device configured') });
-		return L.resolveDefault(fs.exec_direct('/usr/sbin/ponctl',
-			[ '--device', device, 'status', '--json' ]), null).then(function(output) {
+		return L.resolveDefault(fs.exec('/usr/sbin/ponctl',
+			[ '--device', device, 'status', '--json' ]), null).then(function(result) {
+			if (result == null || result.code !== 0)
+				return { section: section, line: {}, error: _('Device unavailable') +
+					(result && result.stderr ? ': ' + result.stderr.trim() : '') };
 			var snapshot;
 			try {
-				snapshot = JSON.parse(output);
+				snapshot = JSON.parse(result.stdout);
 				if (snapshot.schema_version !== 1 || !snapshot.line)
 					throw new Error('status schema');
 			} catch (error) {
 				return { section: section, line: {},
-					error: output == null ? _('Device unavailable') :
-						_('Invalid status response') };
+					error: _('Invalid status response') };
 			}
 			return {
 				section: section,

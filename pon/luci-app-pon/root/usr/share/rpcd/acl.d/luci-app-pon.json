@@ -5,7 +5,7 @@
 			"cgi-io": [ "exec" ],
 			"uci": [ "pon", "airoha-pon-debug" ],
 			"ubus": {
-				"file": [ "read" ]
+				"file": [ "read", "exec" ]
 			},
 			"file": {
 				"/usr/sbin/ponctl --device * status": [ "exec" ],
