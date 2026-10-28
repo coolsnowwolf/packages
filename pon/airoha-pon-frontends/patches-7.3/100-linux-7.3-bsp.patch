@@ -15,7 +15,7 @@ Signed-off-by: coolsnowwolf <coolsnowwolf@gmail.com>
 +ccflags-y += -Werror=incompatible-pointer-types -Werror=int-conversion
 --- a/airoha-ubi-nvmem.c
 +++ b/airoha-ubi-nvmem.c
-@@ -0,0 +1,100 @@
+@@ -0,0 +1,101 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +/* Read-only UBI NVMEM cells for the Linux 5.4 PON board data. */
 +#include <linux/module.h>
@@ -93,6 +93,7 @@ Signed-off-by: coolsnowwolf <coolsnowwolf@gmail.com>
 +	config.name = dev_name(dev);
 +	config.id = -1; /* Use the unique platform device name on Linux 5.4. */
 +	config.owner = THIS_MODULE;
++	config.add_legacy_fixed_of_cells = true;
 +	config.read_only = true;
 +	config.root_only = true;
 +	config.stride = 1;

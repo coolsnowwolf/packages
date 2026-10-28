@@ -5,7 +5,7 @@ include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/kernel.mk
 
 PKG_NAME:=airoha-pon-frontends
-PKG_RELEASE:=14
+PKG_RELEASE:=15
 PKG_LICENSE:=GPL-2.0-only
 
 ifneq ($(filter y,$(CONFIG_LINUX_5_4) $(CONFIG_LINUX_7_3)),)
