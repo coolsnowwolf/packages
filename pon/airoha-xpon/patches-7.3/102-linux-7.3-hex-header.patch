@@ -1,4 +1,4 @@
-Subject: [PATCH] xpon: use Linux 7.3 parser and unaligned headers
+Subject: [PATCH] xpon: use the Linux 7.3 unaligned header
 
 Signed-off-by: coolsnowwolf <coolsnowwolf@gmail.com>
 
@@ -13,10 +13,3 @@ Signed-off-by: coolsnowwolf <coolsnowwolf@gmail.com>
  #include <linux/if_arp.h>
  #include <linux/netdevice.h>
  #include <linux/rtnetlink.h>
---- a/airoha-xpon-private.h
-+++ b/airoha-xpon-private.h
-@@ -1,3 +1,4 @@
-+#include <linux/hex.h>
- /* SPDX-License-Identifier: GPL-2.0-only */
- #ifndef _AIROHA_XPON_PRIVATE_H_
- #define _AIROHA_XPON_PRIVATE_H_

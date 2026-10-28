@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
 #include <linux/ctype.h>
+#include <linux/hex.h>
 #include <linux/module.h>
 #include <linux/nvmem-consumer.h>
 #include <linux/slab.h>
