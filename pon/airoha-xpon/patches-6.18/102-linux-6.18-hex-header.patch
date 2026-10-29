@@ -1,0 +1,15 @@
+Subject: [PATCH] xpon: use the Linux 6.18 unaligned header
+
+Signed-off-by: coolsnowwolf <coolsnowwolf@gmail.com>
+
+--- a/airoha-xpon-oam.c
++++ b/airoha-xpon-oam.c
+@@ -6,7 +6,7 @@
+ #include <linux/device.h>
+ #include <linux/crc32.h>
+ #include <linux/if_ether.h>
+-#include <asm/unaligned.h>
++#include <linux/unaligned.h>
+ #include <linux/if_arp.h>
+ #include <linux/netdevice.h>
+ #include <linux/rtnetlink.h>

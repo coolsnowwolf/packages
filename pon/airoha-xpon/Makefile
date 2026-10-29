@@ -9,7 +9,7 @@ PKG_NAME:=airoha-xpon
 PKG_RELEASE:=71
 PKG_LICENSE:=GPL-2.0-only
 
-ifneq ($(filter y,$(CONFIG_LINUX_5_4) $(CONFIG_LINUX_7_3)),)
+ifneq ($(filter y,$(CONFIG_LINUX_5_4) $(CONFIG_LINUX_6_18) $(CONFIG_LINUX_7_3)),)
 PATCH_DIR:=./patches-$(KERNEL_PATCHVER)
 endif
 

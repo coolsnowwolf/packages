@@ -1,0 +1,119 @@
+Subject: [PATCH] airoha-pon-frontends: connect the Linux 6.18 BSP providers
+
+Signed-off-by: coolsnowwolf <coolsnowwolf@gmail.com>
+
+--- a/Makefile
++++ b/Makefile
+@@ -8,3 +8,8 @@
+ airoha-paged-bosa-y := airoha-paged-bosa-main.o \
+ 	airoha-paged-bosa-gn28l95.o \
+ 	airoha-paged-bosa-ux3363.o
++
++obj-m += airoha-ubi-nvmem.o
++
++# Catch newer-kernel API signature changes during the 5.4 port.
++ccflags-y += -Werror=incompatible-pointer-types -Werror=int-conversion
+--- a/airoha-ubi-nvmem.c
++++ b/airoha-ubi-nvmem.c
+@@ -0,0 +1,101 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/* Read-only UBI NVMEM cells for the Linux 5.4 PON board data. */
++#include <linux/module.h>
++#include <linux/mtd/ubi.h>
++#include <linux/nvmem-provider.h>
++#include <linux/of.h>
++#include <linux/platform_device.h>
++
++struct pon_ubi_nvmem {
++	const char *volume;
++	u32 ubi_num;
++	u32 size;
++};
++
++static int pon_ubi_read(void *data, unsigned int offset, void *buf, size_t bytes)
++{
++	struct pon_ubi_nvmem *priv = data;
++	struct ubi_volume_desc *desc;
++	struct ubi_volume_info info;
++	int ret = 0;
++
++	if (offset > priv->size || bytes > priv->size - offset)
++		return -EINVAL;
++	/* Open only during a read: board identity edits must remain possible. */
++	desc = ubi_open_volume_nm(priv->ubi_num, priv->volume, UBI_READONLY);
++	if (IS_ERR(desc))
++		return PTR_ERR(desc);
++	ubi_get_volume_info(desc, &info);
++	while (bytes) {
++		unsigned int lnum = offset / info.usable_leb_size;
++		unsigned int pos = offset % info.usable_leb_size;
++		size_t len = min_t(size_t, bytes, info.usable_leb_size - pos);
++
++		ret = ubi_read(desc, lnum, buf, pos, len);
++		if (ret)
++			break;
++		offset += len;
++		buf += len;
++		bytes -= len;
++	}
++	ubi_close_volume(desc);
++	return ret;
++}
++
++static int pon_ubi_probe(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct nvmem_config config = {};
++	struct pon_ubi_nvmem *priv;
++	struct ubi_volume_desc *desc;
++	struct ubi_volume_info info;
++	struct nvmem_device *nvmem;
++	int ret;
++
++	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
++	if (!priv)
++		return -ENOMEM;
++	ret = of_property_read_string(dev->of_node, "volname", &priv->volume);
++	if (ret)
++		return ret;
++	ret = of_property_read_u32(dev->of_node, "airoha,ubi-device", &priv->ubi_num);
++	if (ret)
++		return ret;
++	ret = of_property_read_u32(dev->of_node, "airoha,nvmem-size", &priv->size);
++	if (ret || !priv->size)
++		return -EINVAL;
++	desc = ubi_open_volume_nm(priv->ubi_num, priv->volume, UBI_READONLY);
++	if (IS_ERR(desc))
++		return PTR_ERR(desc) == -ENODEV ? -EPROBE_DEFER : PTR_ERR(desc);
++	ubi_get_volume_info(desc, &info);
++	ubi_close_volume(desc);
++	if (priv->size > info.used_bytes)
++		return -EINVAL;
++	config.dev = dev;
++	config.name = dev_name(dev);
++	config.id = -1; /* Use the unique platform device name on Linux 5.4. */
++	config.owner = THIS_MODULE;
++	config.add_legacy_fixed_of_cells = true;
++	config.read_only = true;
++	config.root_only = true;
++	config.stride = 1;
++	config.word_size = 1;
++	config.size = priv->size;
++	config.reg_read = pon_ubi_read;
++	config.priv = priv;
++	nvmem = devm_nvmem_register(dev, &config);
++	return PTR_ERR_OR_ZERO(nvmem);
++}
++
++static const struct of_device_id pon_ubi_match[] = {
++	{ .compatible = "airoha,ubi-nvmem" },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, pon_ubi_match);
++static struct platform_driver pon_ubi_driver = {
++	.probe = pon_ubi_probe,
++	.driver = { .name = "airoha-ubi-nvmem", .of_match_table = pon_ubi_match },
++};
++module_platform_driver(pon_ubi_driver);
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("Read-only UBI board data for Airoha PON on Linux 5.4");
