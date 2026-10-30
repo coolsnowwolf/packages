@@ -1,0 +1,36 @@
+From: lean <chenlin@fnnas.com>
+Subject: [PATCH] v8: preserve Highway compiler compatibility checks
+
+Use the additional disabled target mask instead of overriding the built-in
+broken target mask, which excludes AVX3_SPR on GCC older than 12.
+
+Signed-off-by: lean <chenlin@fnnas.com>
+
+--- a/tools/v8_gypfiles/v8.gyp
++++ b/tools/v8_gypfiles/v8.gyp
+@@ -2382,10 +2382,10 @@
+         ],
+         'conditions': [
+           ['v8_target_arch=="ia32"', {
+-            'defines': ['HWY_BROKEN_TARGETS=(HWY_AVX2|HWY_AVX3)',],
++            'defines': ['HWY_DISABLED_TARGETS=(HWY_AVX2|HWY_AVX3)',],
+           }],
+           ['v8_target_arch=="arm64"', {
+-            'defines': ['HWY_BROKEN_TARGETS=HWY_ALL_SVE',],
++            'defines': ['HWY_DISABLED_TARGETS=HWY_ALL_SVE',],
+           }],
+           ['v8_target_arch=="ppc64" or v8_target_arch=="s390x"', {
+             'defines': ['TOOLCHAIN_MISS_ASM_HWCAP_H',],
+@@ -2406,10 +2406,10 @@
+       ],
+       'conditions': [
+         ['v8_target_arch=="ia32"', {
+-          'defines': ['HWY_BROKEN_TARGETS=(HWY_AVX2|HWY_AVX3)',],
++          'defines': ['HWY_DISABLED_TARGETS=(HWY_AVX2|HWY_AVX3)',],
+         }],
+         ['v8_target_arch=="arm64"', {
+-          'defines': ['HWY_BROKEN_TARGETS=HWY_ALL_SVE',],
++          'defines': ['HWY_DISABLED_TARGETS=HWY_ALL_SVE',],
+         }],
+         ['v8_target_arch=="ppc64" or v8_target_arch=="s390x"', {
+           'defines': ['TOOLCHAIN_MISS_ASM_HWCAP_H',],
