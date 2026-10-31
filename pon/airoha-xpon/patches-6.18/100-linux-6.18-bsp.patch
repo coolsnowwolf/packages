@@ -1,7 +1,11 @@
-Subject: [PATCH] airoha-xpon: connect the Linux 6.18 BSP providers
+Subject: [PATCH] airoha-xpon: support Linux 6.18 mainline and BSP providers
+
+Select the BSP provider API only when its kernel configuration is enabled.
+Keep the standard PCS API available on kernels using the mainline driver.
 
 Signed-off-by: coolsnowwolf <coolsnowwolf@gmail.com>
-
+Signed-off-by: lean <chenlin@fnnas.com>
+---
 --- a/Makefile
 +++ b/Makefile
 @@ -8,3 +8,8 @@
@@ -9,27 +13,31 @@ Signed-off-by: coolsnowwolf <coolsnowwolf@gmail.com>
  	airoha-xpon-omci.o airoha-xpon-oam.o \
  	airoha-xpon-leds.o
 +
-+ccflags-y += -include linux/airoha-compat.h
++ccflags-$(CONFIG_AIROHA_BSP_PON_PCS) += -include linux/airoha-compat.h
 +
 +# Catch newer-kernel API signature changes during the 5.4 port.
 +ccflags-y += -Werror=incompatible-pointer-types -Werror=int-conversion
 --- a/airoha-xpon-main.c
 +++ b/airoha-xpon-main.c
-@@ -10,7 +10,7 @@
+@@ -10,7 +10,9 @@
  #include <linux/of.h>
  #include <linux/of_net.h>
  #include <linux/pcs/pcs-airoha.h>
--#include <linux/pcs/pcs.h>
-+
++#if !IS_ENABLED(CONFIG_AIROHA_BSP_PON_PCS)
+ #include <linux/pcs/pcs.h>
++#endif
  #include <linux/platform_device.h>
  #include <linux/property.h>
  #include <linux/mfd/syscon.h>
-@@ -632,7 +632,7 @@
+@@ -632,7 +634,11 @@
  		                     "failed to obtain the SCU regmap\n");
  
  	/* pcs-handle identifies the provider that owns PCS/PMA registers. */
--	xpon->pcs = fwnode_pcs_get(dev_fwnode(dev), 0);
++#if IS_ENABLED(CONFIG_AIROHA_BSP_PON_PCS)
 +	xpon->pcs = devm_airoha_pon_pcs_get(dev);
++#else
+ 	xpon->pcs = fwnode_pcs_get(dev_fwnode(dev), 0);
++#endif
  	if (IS_ERR(xpon->pcs))
  		return dev_err_probe(dev, PTR_ERR(xpon->pcs),
  		                     "failed to obtain the PON PCS provider\n");
@@ -112,21 +120,23 @@ Signed-off-by: coolsnowwolf <coolsnowwolf@gmail.com>
  		if (!value) {
 --- a/airoha-xpon-private.h
 +++ b/airoha-xpon-private.h
-@@ -19,7 +19,7 @@
+@@ -19,6 +19,7 @@
  struct crypto_sync_skcipher;
  struct device;
  struct net_device;
--struct phylink_pcs;
 +struct airoha_pon_pcs;
+ struct phylink_pcs;
  struct regmap;
  struct airoha_xpon_omci;
- struct airoha_xpon_oam;
-@@ -231,7 +231,7 @@
+@@ -231,7 +232,11 @@
  	struct regmap *scu;
  	struct airoha_pon_frontend *frontend;
  	struct airoha_pon_frontend_link_config frontend_link;
--	struct phylink_pcs *pcs;
++#if IS_ENABLED(CONFIG_AIROHA_BSP_PON_PCS)
 +	struct airoha_pon_pcs *pcs;
++#else
+ 	struct phylink_pcs *pcs;
++#endif
  	struct net_device *pon_netdev;
  	struct airoha_xpon_omci *omci;
  	struct airoha_xpon_oam *oam;
