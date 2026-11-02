@@ -11,7 +11,7 @@ PKG_NAME:=qt6base
 PKG_BASE:=6.9
 PKG_BUGFIX:=3
 PKG_VERSION:=$(PKG_BASE).$(PKG_BUGFIX)
-PKG_RELEASE:=3
+PKG_RELEASE:=4
 
 PKG_SOURCE:=qtbase-everywhere-src-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=https://mirrors.tencent.com/qt/archive/qt/$(PKG_BASE)/$(PKG_VERSION)/submodules/ \
@@ -176,7 +176,7 @@ $(eval $(call DefineQt6Package,DBus,Core,))
 $(eval $(call DefineQt6Package,Gui,DBus,+libdrm +libfreetype))
 $(eval $(call DefineQt6Package,Network,Core,+libopenssl +krb5-libs))
 $(eval $(call DefineQt6Package,PrintSupport,Widgets,))
-$(eval $(call DefineQt6Package,Sql,Core,+libsqlite3))
+$(eval $(call DefineQt6Package,Sql,Core,+libsqlite3 +@SQLITE3_COLUMN_METADATA))
 $(eval $(call DefineQt6Package,Test,Core,))
 $(eval $(call DefineQt6Package,Widgets,Gui,))
 $(eval $(call DefineQt6Package,Xml,Core,))
