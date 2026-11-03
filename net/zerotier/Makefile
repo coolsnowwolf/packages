@@ -7,7 +7,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=zerotier
 PKG_VERSION:=1.16.2
-PKG_RELEASE:=3
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/zerotier/ZeroTierOne/tar.gz/$(PKG_VERSION)?
@@ -17,6 +17,7 @@ PKG_BUILD_DIR:=$(BUILD_DIR)/ZeroTierOne-$(PKG_VERSION)
 PKG_MAINTAINER:=Moritz Warning <moritzwarning@web.de>
 PKG_LICENSE:=MPL-2.0
 PKG_LICENSE_FILES:=LICENSE.txt
+PKG_CPE_ID:=cpe:/a:zerotier:zerotierone
 
 PKG_ASLR_PIE:=0
 PKG_BUILD_PARALLEL:=1
@@ -68,6 +69,8 @@ TARGET_CFLAGS += -isystem $(STAGING_DIR)/usr/include
 
 define Package/zerotier/conffiles
 /etc/config/zerotier
+/etc/zerotier.conf
+/etc/zerotier
 endef
 
 define Package/zerotier/install
@@ -75,11 +78,11 @@ define Package/zerotier/install
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/zerotier-one $(1)/usr/bin/
 	$(LN) zerotier-one $(1)/usr/bin/zerotier-cli
 	$(LN) zerotier-one $(1)/usr/bin/zerotier-idtool
+	$(INSTALL_DIR) $(1)/etc/uci-defaults
 
 ifeq ($(CONFIG_ZEROTIER_ENABLE_SELFTEST),y)
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/zerotier-selftest $(1)/usr/bin/
 endif
-
 	$(CP) ./files/* $(1)/
 endef
 
