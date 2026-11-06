@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=gst1-plugins-base
 PKG_VERSION:=1.26.4
-PKG_RELEASE:=2
+PKG_RELEASE:=3
 
 PKG_SOURCE:=gst-plugins-base-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=https://gstreamer.freedesktop.org/src/gst-plugins-base
@@ -36,6 +36,7 @@ PKG_CONFIG_DEPENDS:= \
 	CONFIG_PACKAGE_gst1-mod-playback \
 	CONFIG_PACKAGE_gst1-mod-gio \
 	CONFIG_PACKAGE_gst1-mod-ogg \
+	CONFIG_PACKAGE_gst1-mod-opengl \
 	CONFIG_PACKAGE_gst1-mod-opus \
 	CONFIG_PACKAGE_gst1-mod-tcp \
 	CONFIG_PACKAGE_gst1-mod-theora \
@@ -45,7 +46,8 @@ PKG_CONFIG_DEPENDS:= \
 	CONFIG_PACKAGE_gst1-mod-videotestsrc \
 	CONFIG_PACKAGE_gst1-mod-volume \
 	CONFIG_PACKAGE_gst1-mod-vorbis \
-	CONFIG_PACKAGE_libgst1app
+	CONFIG_PACKAGE_libgst1app \
+	CONFIG_PACKAGE_libgst1gl
 
 GST_BASE_LIBS:=
 GST_BASE_MODULES:=
@@ -126,7 +128,9 @@ GST_VERSION:=1.0
 
 MESON_ARGS += \
 	-Daudioresample_format=int \
-	-Dgl=disabled \
+	-Dgl=$(if $(CONFIG_PACKAGE_libgst1gl),en,dis)abled \
+	-Dgl_api=gles2 \
+	-Dgl_platform=egl \
 	\
 	$(call GST_COND_SELECT,adder) \
 	$(call GST_COND_SELECT,app) \
@@ -256,6 +260,7 @@ $(eval $(call GstBuildLibrary,allocators,allocators,,+libdrm))
 $(eval $(call GstBuildLibrary,app,app,,))
 $(eval $(call GstBuildLibrary,audio,audio,tag,))
 $(eval $(call GstBuildLibrary,fft,FFT,,))
+$(eval $(call GstBuildLibrary,gl,gl,allocators video,+libmesa +libwayland +libgudev,HAVE_MESA))
 $(eval $(call GstBuildLibrary,pbutils,utils,audio tag video,))
 $(eval $(call GstBuildLibrary,riff,RIFF media,audio tag,,))
 $(eval $(call GstBuildLibrary,rtp,RTP,,))
@@ -309,6 +314,7 @@ $(eval $(call GstBuildPlugin,audiotestsrc,audio test,audio tag controller,,))
 $(eval $(call GstBuildPlugin,compositor,video compositor,video,,))
 $(eval $(call GstBuildPlugin,encoding,encoding plugin,pbutils video,,))
 $(eval $(call GstBuildPlugin,gio,GIO,,,))
+$(eval $(call GstBuildPlugin,opengl,GL,gl controller,,+libgraphene +libjpeg +libpng,HAVE_MESA))
 $(eval $(call GstBuildPlugin,overlaycomposition,overlay composition,video,,))
 $(eval $(call GstBuildPlugin,pbtypes,pbtypes,video,,))
 $(eval $(call GstBuildPlugin,playback,playback,pbutils,,))
