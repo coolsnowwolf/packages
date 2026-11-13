@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=mihomo
 PKG_VERSION:=1.19.33
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/MetaCubeX/mihomo.git
@@ -14,7 +14,9 @@ PKG_MIRROR_HASH:=f29117485648124b819d5f790a27fceef3f8e2a9aceec6b12584bd99c8ab3fd
 PKG_LICENSE:=GPL3.0+
 PKG_MAINTAINER:=Joseph Mory <morytyann@gmail.com>
 
-PKG_BUILD_DEPENDS:=golang/host upx/host
+# UPX has no Linux LoongArch executable packer.
+MIHOMO_USE_UPX:=$(if $(CONFIG_loongarch64),,1)
+PKG_BUILD_DEPENDS:=golang/host $(if $(MIHOMO_USE_UPX),upx/host)
 PKG_BUILD_PARALLEL:=1
 PKG_BUILD_FLAGS:=no-mips16
 
@@ -39,12 +41,12 @@ ifeq ($(GO_ARCH),arm64)
   endef
 endif
 
-# Compress once per build, not once per package/rootfs installation.
-# Keep Go's output intact and let the .built stamp guard the packed copy.
+# Stage once per build, compressing only on supported target architectures.
+# Keep Go's output intact and let the .built stamp guard the private copy.
 define Build/Install
 	$(INSTALL_DIR) $(PKG_BUILD_DIR)/.upx
 	$(INSTALL_BIN) $(GO_PKG_BUILD_BIN_DIR)/mihomo $(PKG_BUILD_DIR)/.upx/mihomo
-	$(STAGING_DIR_HOST)/bin/upx --lzma --best $(PKG_BUILD_DIR)/.upx/mihomo
+	$(if $(MIHOMO_USE_UPX),$(STAGING_DIR_HOST)/bin/upx --lzma --best $(PKG_BUILD_DIR)/.upx/mihomo)
 endef
 
 # Go's -s -w flags strip the binary before UPX; do not strip it again.
