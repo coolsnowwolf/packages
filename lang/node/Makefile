@@ -6,19 +6,23 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=node
 
+NODEJS_HOST_CPU:=$(if $(filter x86_64,$(HOST_ARCH)),x64,$(if $(filter aarch64 arm64,$(HOST_ARCH)),arm64))
+
 ifeq ($(CONFIG_NODEJS_26),y)
 PKG_VERSION:=v26.8.1
 PKG_RELEASE:=2
 PKG_HASH:=d1698832a1a10f050cdda044a3e3d6a748246811e2e7bc89ba9a8bd693dc45f2
 PATCH_DIR:=./patches/v26.x
-NODEJS_BIN_SUM:=b2b76660fa4ded4e0b2a41ee3c0c651cd52ea8170ead91ebac1e147ac3d55643
+NODEJS_BIN_SUM_x64:=b2b76660fa4ded4e0b2a41ee3c0c651cd52ea8170ead91ebac1e147ac3d55643
+NODEJS_BIN_SUM_arm64:=d5f973ce975e4bd03e6c2038260f7e9201615aa8e1ee293c72f8dcc2a6d9fddb
 else
 ifeq ($(CONFIG_NODEJS_24),y)
 PKG_VERSION:=v24.20.0
 PKG_RELEASE:=2
 PKG_HASH:=2732fc3f588dd335cd6779c06864f7cd424bb1b5ff9a1743059a66c54f9ca4a1
 PATCH_DIR:=./patches/v24.x
-NODEJS_BIN_SUM:=855d581f8a4eb1a8117e3426de25fe02770592febcfb31369aee1ffbfee9e8ec
+NODEJS_BIN_SUM_x64:=855d581f8a4eb1a8117e3426de25fe02770592febcfb31369aee1ffbfee9e8ec
+NODEJS_BIN_SUM_arm64:=3515603e2487879a39bc75716f1a2affd027500c64ba50e845cf72cb33219013
 else
 ifeq ($(CONFIG_NODEJS_22),y)
 PKG_VERSION:=v22.23.0
@@ -185,10 +189,11 @@ define Package/node/config
 	config NODEJS_HOST_BIN
 		bool "Use the official Node.js binary for the host build"
 		depends on HOST_OS_LINUX && (NODEJS_24 || NODEJS_26)
+		depends on $(if $(NODEJS_HOST_CPU),y,n)
 		default y
 		help
-		  Reduce build time by installing the matching official linux-x64
-		  Node.js binary as the host package.
+		  Reduce build time by installing the matching official Linux x64 or ARM64
+		  Node.js binary for the build host, independently of the target CPU.
 
 	endmenu
 endef
@@ -273,14 +278,14 @@ define Package/node-npm/install
 	$(LN) ../lib/node_modules/npm/bin/npx-cli.js $(1)/usr/bin/npx
 endef
 
-ifeq ($(CONFIG_NODEJS_HOST_BIN),y)
+ifeq ($(CONFIG_NODEJS_HOST_BIN)-$(HOST_OS)-$(if $(NODEJS_BIN_SUM_$(NODEJS_HOST_CPU)),y),y-Linux-y)
 
-NODEJS_BIN:=node-$(PKG_VERSION)-linux-x64.tar.gz
+NODEJS_BIN:=node-$(PKG_VERSION)-linux-$(NODEJS_HOST_CPU).tar.gz
 
 define Download/nodebin
 	URL:=https://nodejs.org/download/release/$(PKG_VERSION)/
 	FILE:=$(NODEJS_BIN)
-	HASH:=$(NODEJS_BIN_SUM)
+	HASH:=$(NODEJS_BIN_SUM_$(NODEJS_HOST_CPU))
 endef
 
 define Host/Prepare
