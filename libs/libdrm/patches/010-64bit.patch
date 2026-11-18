@@ -1,3 +1,10 @@
+From: Chen Lin <chenlin@fnnas.com>
+Subject: [PATCH] libdrm: use sane userspace integer types
+
+Retain the OpenWrt compatibility adjustment for PPC64.
+
+Signed-off-by: Chen Lin <chenlin@fnnas.com>
+
 --- a/include/drm/drm.h
 +++ b/include/drm/drm.h
 @@ -37,6 +37,9 @@
