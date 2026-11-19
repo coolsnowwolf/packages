@@ -8,6 +8,41 @@
 # CCache
 unexport RUSTC_WRAPPER
 
+comma ?= ,
+
+define rust_arch_to_llvm_target
+$(strip \
+  $(if $(filter x86_64 amd64 i386 i486 i586 i686 x86,$(strip $(1))),X86) \
+  $(if $(filter aarch64 aarch64_be arm64,$(strip $(1))),AArch64) \
+  $(if $(filter arm armeb armv%,$(strip $(1))),ARM) \
+  $(if $(filter mips mipsel mips64 mips64el,$(strip $(1))),Mips) \
+  $(if $(filter powerpc powerpc64 powerpc64le ppc%,$(strip $(1))),PowerPC) \
+  $(if $(filter riscv32 riscv64 riscv%,$(strip $(1))),RISCV) \
+  $(if $(filter loongarch32 loongarch64 loongarch%,$(strip $(1))),LoongArch) \
+  $(if $(filter sparc sparc64 sparcv9,$(strip $(1))),Sparc) \
+  $(if $(filter s390 s390x,$(strip $(1))),SystemZ) \
+  $(if $(filter arc arceb archs%,$(strip $(1))),ARC) \
+  $(if $(filter csky,$(strip $(1))),CSKY) \
+  $(if $(filter m68k,$(strip $(1))),M68k) \
+  $(if $(filter xtensa,$(strip $(1))),Xtensa) \
+  $(if $(filter avr avr32,$(strip $(1))),AVR) \
+  $(if $(filter msp430,$(strip $(1))),MSP430) \
+  $(if $(filter hexagon,$(strip $(1))),Hexagon) \
+  $(if $(filter lanai,$(strip $(1))),Lanai) \
+  $(if $(filter ve,$(strip $(1))),VE) \
+  $(if $(filter xcore,$(strip $(1))),XCore) \
+  $(if $(filter bpf bpfeb bpfel,$(strip $(1))),BPF) \
+  $(if $(filter wasm32 wasm64,$(strip $(1))),WebAssembly))
+endef
+
+RUST_LLVM_HOST_TARGET:=$(call rust_arch_to_llvm_target,$(HOST_ARCH))
+RUST_LLVM_CROSS_TARGET:=$(call rust_arch_to_llvm_target,$(ARCH))
+RUST_LLVM_EXTRA_TARGETS:=$(strip $(subst $(comma), ,$(call qstrip,$(CONFIG_RUST_LLVM_EXTRA_TARGETS))))
+RUST_LLVM_NEEDED_TARGETS:=$(strip \
+	$(RUST_LLVM_HOST_TARGET) \
+	$(filter-out $(RUST_LLVM_HOST_TARGET),$(RUST_LLVM_CROSS_TARGET)) \
+	$(filter-out $(RUST_LLVM_HOST_TARGET) $(RUST_LLVM_CROSS_TARGET),$(RUST_LLVM_EXTRA_TARGETS)))
+
 # Rust Environmental Vars
 RUSTC_HOST_SUFFIX:=$(word 4, $(subst -, ,$(GNU_HOST_NAME)))
 RUSTC_HOST_ARCH:=$(HOST_ARCH)-unknown-linux-$(RUSTC_HOST_SUFFIX)

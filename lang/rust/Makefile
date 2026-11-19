@@ -6,7 +6,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=rust
 PKG_VERSION:=1.99.1
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_SOURCE:=rustc-$(PKG_VERSION)-src.tar.xz
 PKG_SOURCE_URL:=https://static.rust-lang.org/dist/
@@ -24,6 +24,8 @@ PKG_USE_MIPS16:=0
 include $(INCLUDE_DIR)/host-build.mk
 include $(INCLUDE_DIR)/package.mk
 include ./rust-values.mk
+
+RUST_PKG_DIR:=$(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
 
 define Package/rust
   SECTION:=lang
@@ -76,8 +78,30 @@ HOST_CONFIGURE_ARGS = \
 	--release-channel=stable \
 	--enable-cargo-native-static \
 	--bootstrap-cache-path=$(DL_DIR)/rustc \
-	--set=llvm.download-ci-llvm=true \
 	$(TARGET_CONFIGURE_ARGS)
+
+define Host/Configure
+	( \
+		set -e; \
+		ARGS_FILE="$(HOST_BUILD_DIR)/.host-llvm-configure-args"; \
+		$(if $(RUST_HOST_LLVM_CONFIG),RUST_HOST_LLVM_CONFIG="$(RUST_HOST_LLVM_CONFIG)") \
+		$(if $(RUST_LLVM_SYS_ROOT),RUST_LLVM_SYS_ROOT="$(RUST_LLVM_SYS_ROOT)") \
+		sh "$(RUST_PKG_DIR)/select-llvm.sh" \
+			--src-dir "$(HOST_BUILD_DIR)" \
+			--build-dir "$(HOST_BUILD_DIR)" \
+			--host-triple "$(RUSTC_HOST_ARCH)" \
+			--needed-targets "$(RUST_LLVM_NEEDED_TARGETS)" \
+			--use-host-llvm "$(if $(filter y,$(CONFIG_RUST_USE_HOST_LLVM)),y,n)" \
+			--download-ci-llvm "$(if $(filter y,$(CONFIG_RUST_DOWNLOAD_CI_LLVM)),y,n)" \
+			--hostcxx "$(if $(HOSTCXX),$(HOSTCXX),c++)" \
+			--out-args "$$$$ARGS_FILE"; \
+		set -- $(HOST_CONFIGURE_ARGS); \
+		while IFS= read -r arg || [ -n "$$$$arg" ]; do \
+			[ -n "$$$$arg" ] && set -- "$$$$@" "$$$$arg"; \
+		done < "$$$$ARGS_FILE"; \
+		cd "$(HOST_BUILD_DIR)" && $(HOST_CONFIGURE_VARS) ./configure "$$$$@" ; \
+	)
+endef
 
 define Host/Uninstall
 	# Call the Uninstall script
@@ -99,14 +123,24 @@ define Host/Patch
 endef
 
 define Host/Compile
-	$(RUST_SCCACHE_VARS) \
-	CARGO_HOME=$(CARGO_HOME) \
-	TARGET_CFLAGS="$(TARGET_CFLAGS)" \
-	$(if $(RUSTC_TARGET_RUSTFLAGS),$(RUSTC_TARGET_CARGO_RUSTFLAGS)="$(RUSTC_TARGET_RUSTFLAGS)") \
-	$(PYTHON) $(HOST_BUILD_DIR)/x.py \
-		--build-dir $(HOST_BUILD_DIR)/build \
-		--ci false \
-		dist build-manifest rustc rust-std cargo llvm-tools rust-src
+	( \
+		HOST_LLVM_RUSTFLAGS="$$$$(cat $(HOST_BUILD_DIR)/.host-llvm-rustflags 2>/dev/null || true)"; \
+		RUSTFLAGS_BOOTSTRAP_VAL="$(if $(RUSTFLAGS_BOOTSTRAP),$(strip $(RUSTFLAGS_BOOTSTRAP)),$$$${RUSTFLAGS_BOOTSTRAP:-})"; \
+		if [ -n "$$$$HOST_LLVM_RUSTFLAGS" ]; then \
+			RUSTFLAGS_BOOTSTRAP_VAL="$$$${RUSTFLAGS_BOOTSTRAP_VAL:+$$$$RUSTFLAGS_BOOTSTRAP_VAL }$$$$HOST_LLVM_RUSTFLAGS"; \
+		fi; \
+		if [ -n "$$$$RUSTFLAGS_BOOTSTRAP_VAL" ]; then \
+			export RUSTFLAGS_BOOTSTRAP="$$$$RUSTFLAGS_BOOTSTRAP_VAL"; \
+		fi; \
+		$(RUST_SCCACHE_VARS) \
+		CARGO_HOME=$(CARGO_HOME) \
+		TARGET_CFLAGS="$(TARGET_CFLAGS)" \
+		$(if $(RUSTC_TARGET_RUSTFLAGS),$(RUSTC_TARGET_CARGO_RUSTFLAGS)="$(RUSTC_TARGET_RUSTFLAGS)") \
+		$(PYTHON) $(HOST_BUILD_DIR)/x.py \
+			--build-dir $(HOST_BUILD_DIR)/build \
+			--ci false \
+			dist build-manifest rustc rust-std cargo llvm-tools rust-src ; \
+	)
 endef
 
 define Host/Install
