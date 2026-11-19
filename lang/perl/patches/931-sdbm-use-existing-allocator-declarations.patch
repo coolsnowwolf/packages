@@ -1,0 +1,21 @@
+From: Chen Lin <chenlin@fnnas.com>
+Subject: [PATCH] SDBM_File: use existing allocator declarations
+
+sdbm.h already includes stdlib.h and declares the Perl allocators when
+MYMALLOC is enabled. Redeclaring malloc/free with configured Malloc_t
+can conflict with the system void pointer prototypes when Malloc_t is
+char *. Remove the redundant declarations for both allocator modes.
+
+Signed-off-by: Chen Lin <chenlin@fnnas.com>
+
+--- a/ext/SDBM_File/sdbm.c
++++ b/ext/SDBM_File/sdbm.c
+@@ -35,8 +35,6 @@
+ extern "C" {
+ #endif
+ 
+-extern Malloc_t malloc(MEM_SIZE);
+-extern Free_t free(Malloc_t);
+ 
+ #ifdef __cplusplus
+ }
