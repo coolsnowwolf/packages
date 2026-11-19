@@ -12,4 +12,31 @@ config RUST_SCCACHE_DIR
 	  Store sccache in this directory.
 	  If not set, uses './.sccache'
 
+config RUST_USE_HOST_LLVM
+	bool "Use compatible host system LLVM when available"
+	default y
+	help
+	  Auto-detect and reuse a compatible host LLVM toolchain (matching the
+	  supported major version window, headers, core components, required
+	  target backends, and a real compile/link/run probe) instead of
+	  building LLVM from source.
+
+config RUST_DOWNLOAD_CI_LLVM
+	bool "Try downloading prebuilt CI LLVM before building from source"
+	default n
+	help
+	  When no compatible host system LLVM is available and no experimental
+	  LLVM targets are requested, check connectivity to static.rust-lang.org
+	  with a short timeout and try downloading Rust's prebuilt CI LLVM
+	  instead of building bundled LLVM from source. Note that prebuilt CI
+	  LLVM does not include OpenWrt local LLVM patches.
+
+config RUST_LLVM_EXTRA_TARGETS
+	string "Additional LLVM targets to enable (space-separated, or 'all')"
+	default ""
+	help
+	  Space-separated list of additional LLVM target backends to require
+	  from host LLVM or include when building bundled LLVM (for example
+	  'BPF WebAssembly' or 'all' for all core LLVM targets).
+
 endmenu
