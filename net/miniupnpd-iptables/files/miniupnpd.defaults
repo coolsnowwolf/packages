@@ -1,5 +1,12 @@
 #!/bin/sh
 
+if legacy="$(uci -q get upnpd.config.force_forwarding)"; then
+	if ! uci -q get upnpd.config.ext_allow_private_ipv4 >/dev/null; then
+		uci set upnpd.config.ext_allow_private_ipv4="$legacy" || exit 1
+	fi
+	uci delete upnpd.config.force_forwarding && uci commit upnpd || exit 1
+fi
+
 uci -q batch <<-EOT
 	delete firewall.miniupnpd
 	set firewall.miniupnpd=include

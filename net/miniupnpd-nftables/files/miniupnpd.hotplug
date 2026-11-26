@@ -1,19 +1,16 @@
 /etc/init.d/miniupnpd enabled || exit 0
 
-# If miniupnpd is not running:
-# - check on _any_ event (event updates may contribute to network_find_wan*)
+case "$ACTION" in
+	ifup) ;;
+	ifupdate)
+		[ -n "$IFUPDATE_ADDRESSES$IFUPDATE_DATA" ] || exit 0
+		;;
+	*) exit 0 ;;
+esac
 
-# If miniupnpd _is_ running:
-# - check only on ifup (otherwise lease updates etc would cause
-#   miniupnpd state loss)
-
-[ "$ACTION" != "ifup" ] && /etc/init.d/miniupnpd running && exit 0
-
-tmpconf="/var/etc/miniupnpd.conf"
 external_iface=$(uci -q get upnpd.config.external_iface)
 external_iface6=$(uci -q get upnpd.config.external_iface6)
 external_zone=$(uci -q get upnpd.config.external_zone)
-[ -x "$(command -v nft)" ] && FW="fw4" || FW="fw3"
 
 . /lib/functions/network.sh
 
@@ -21,7 +18,7 @@ if [ -n "$external_iface" ] ; then
 	network_get_device ifname "$external_iface"
 else
 	if [ -n "$external_zone" ] ; then
-		ifname=$($FW -q zone "$external_zone" 2>/dev/null | head -1)
+		ifname=$(fw4 -q zone "$external_zone" 2>/dev/null | head -1)
 	else
 		network_find_wan external_iface && \
 			network_get_device ifname "$external_iface"
@@ -31,15 +28,17 @@ if [ -n "$external_iface6" ] ; then
 	network_get_device ifname6 "$external_iface6"
 else
 	if [ -n "$external_zone" ] ; then
-		ifname6=$($FW -q zone "$external_zone" 2>/dev/null | head -1)
+		ifname6="$ifname"
+		[ -n "$external_iface" ] && ifname6=$(fw4 -q zone "$external_zone" 2>/dev/null | head -1)
 	else
 		network_find_wan6 external_iface6 && \
 			network_get_device ifname6 "$external_iface6"
 	fi
 fi
 
-[ "$DEVICE" != "$ifname" ] && [ "$DEVICE" != "$ifname6" ] && exit 0
+if [ -z "$DEVICE" ] || { [ "$DEVICE" != "$ifname" ] && [ "$DEVICE" != "$ifname6" ]; }; then
+	[ -n "$INTERFACE" ] || exit 0
+	[ "$INTERFACE" = "$external_iface" ] || [ "$INTERFACE" = "$external_iface6" ] || exit 0
+fi
 
-grep -qs "^ext_ifname=$ifname" "$tmpconf" && grep -qs "^ext_ifname6=$ifname6" "$tmpconf" && exit 0
-
-/etc/init.d/miniupnpd restart
+/usr/share/miniupnpd/firewall4.include --force

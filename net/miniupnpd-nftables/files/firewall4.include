@@ -1,0 +1,22 @@
+#!/bin/sh
+
+/etc/init.d/miniupnpd enabled || exit 0
+case "$(uci -q get upnpd.config.enabled)" in
+	0|off|false|no|disabled) exit 0 ;;
+esac
+[ "$1" = "--force" ] || /etc/init.d/miniupnpd running || exit 0
+
+(
+	# fw4 runs script includes while holding its lock on fd 1000.
+	exec 1000>&-
+	exec 9>/var/lock/miniupnpd-reload.lock
+	flock -n 9 || exit 0
+	sleep 2
+
+	/etc/init.d/miniupnpd enabled || exit 0
+	[ "$1" = "--force" ] || /etc/init.d/miniupnpd running || exit 0
+	logger -t miniupnpd "Restoring mappings after firewall or WAN update"
+	/etc/init.d/miniupnpd restart 9>&-
+) </dev/null >/dev/null 2>&1 &
+
+exit 0

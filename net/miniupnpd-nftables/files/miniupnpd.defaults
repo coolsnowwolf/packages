@@ -1,0 +1,24 @@
+#!/bin/sh
+
+if legacy="$(uci -q get upnpd.config.force_forwarding)"; then
+	if ! uci -q get upnpd.config.ext_allow_private_ipv4 >/dev/null; then
+		uci set upnpd.config.ext_allow_private_ipv4="$legacy" || exit 1
+	fi
+	uci delete upnpd.config.force_forwarding && uci commit upnpd || exit 1
+fi
+
+# Drop the old fw3 include when switching firewall backends.
+if [ "$(uci -q get firewall.miniupnpd.path)" = /usr/share/miniupnpd/firewall.include ]; then
+	uci delete firewall.miniupnpd || exit 1
+fi
+uci -q delete firewall.miniupnpd_reload
+uci batch <<-EOF
+	set firewall.miniupnpd_reload=include
+	set firewall.miniupnpd_reload.type=script
+	set firewall.miniupnpd_reload.path=/usr/share/miniupnpd/firewall4.include
+	set firewall.miniupnpd_reload.fw4_compatible=1
+EOF
+[ "$(uci -q get firewall.miniupnpd_reload.fw4_compatible)" = 1 ] || exit 1
+uci commit firewall || exit 1
+
+exit 0
