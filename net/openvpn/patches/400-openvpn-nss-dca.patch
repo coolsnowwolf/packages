@@ -1,0 +1,795 @@
+Subject: [PATCH] openvpn: support the QSDK12 NSS OpenVPN Manager
+
+Signed-off-by: coolsnowwolf <coolsnowwolf@gmail.com>
+
+--- a/configure.ac
++++ b/configure.ac
+@@ -150,6 +150,17 @@
+ 	[enable_small="no"]
+ )
+ 
++AC_ARG_ENABLE([nss-dca],
++    [AS_HELP_STRING([--enable-nss-dca], [enable Qualcomm NSS OpenVPN data channel acceleration])],
++    [enable_nss_dca="$enableval"], [enable_nss_dca=no])
++AS_IF([test "$enable_nss_dca" = yes], [
++    AC_CHECK_HEADER([nss_ovpn_sk.h], [], [AC_MSG_ERROR([NSS OpenVPN Manager headers required])], [[#include <stdint.h>
++#include <sys/types.h>
++#include <net/if.h>
++#include <linux/sockios.h>]])
++    AC_DEFINE([ENABLE_NSS_DCA], [1], [Enable Qualcomm NSS data channel acceleration])
++])
++
+ AC_ARG_ENABLE(
+ 	[dco],
+ 	[AS_HELP_STRING([--disable-dco], [disable data channel offload support using the ovpn-dco kernel module @<:@default=yes@:>@ on Linux/FreeBSD, can't disable on Windows])],
+--- a/src/openvpn/Makefile.am
++++ b/src/openvpn/Makefile.am
+@@ -103,6 +103,7 @@
+ 	networking.h \
+ 	ntlm.c ntlm.h \
+ 	occ.c occ.h \
++	nss_dca.c nss_dca.h \
+ 	openssl_compat.h \
+ 	pkcs11.c pkcs11.h pkcs11_backend.h \
+ 	pkcs11_openssl.c \
+--- a/src/openvpn/event.h
++++ b/src/openvpn/event.h
+@@ -71,6 +71,10 @@
+ #define DCO_SHIFT        10
+ #define DCO_READ         (1 << (DCO_SHIFT + READ_SHIFT))
+ #define DCO_WRITE        (1 << (DCO_SHIFT + WRITE_SHIFT))
++#ifdef ENABLE_NSS_DCA
++#define NSS_DCA_SHIFT    12
++#define NSS_DCA_READ     (1 << (NSS_DCA_SHIFT + READ_SHIFT))
++#endif
+ 
+ /*
+  * Initialization flags passed to event_set_init
+--- a/src/openvpn/forward.c
++++ b/src/openvpn/forward.c
+@@ -26,6 +26,10 @@
+ 
+ #include "syshead.h"
+ 
++#ifdef ENABLE_NSS_DCA
++#include "nss_dca.h"
++#endif
++
+ #include "forward.h"
+ #include "init.h"
+ #include "push.h"
+@@ -641,6 +645,14 @@
+         c->c2.buf.len = 0;
+     }
+ 
++#ifdef ENABLE_NSS_DCA
++    if (nss_dca_packet(c, false))
++    {
++        c->c2.buf.len = 0;
++        return;
++    }
++#endif
++
+     if (comp_frag)
+     {
+ #ifdef USE_COMP
+@@ -780,6 +792,9 @@
+     }
+ 
+     /* restart if ping not received */
++#ifdef ENABLE_NSS_DCA
++    nss_dca_stats(c);
++#endif
+     check_ping_restart(c);
+     if (c->sig->signal_received)
+     {
+@@ -989,6 +1004,15 @@
+     struct gc_arena gc = gc_new();
+     bool decrypt_status = false;
+ 
++#ifdef ENABLE_NSS_DCA
++    if (nss_dca_packet(c, true))
++    {
++        c->c2.buf.len = 0;
++        gc_free(&gc);
++        return false;
++    }
++#endif
++
+     if (c->c2.buf.len > 0)
+     {
+         c->c2.link_read_bytes += c->c2.buf.len;
+@@ -2182,6 +2206,9 @@
+      * Decide what kind of events we want to wait for.
+      */
+     event_reset(c->c2.event_set);
++#ifdef ENABLE_NSS_DCA
++    nss_dca_event_set(c->c2.event_set, (void *)NSS_DCA_SHIFT);
++#endif
+ 
+     multi_io_process_flags(c, c->c2.event_set, flags, &out_socket, &out_tuntap);
+ 
+@@ -2286,6 +2313,13 @@
+ void
+ process_io(struct context *c, struct link_socket *sock)
+ {
++#ifdef ENABLE_NSS_DCA
++    if (c->c2.event_set_status & NSS_DCA_READ)
++    {
++        nss_dca_recv();
++    }
++#endif
++
+     const unsigned int status = c->c2.event_set_status;
+ 
+ #ifdef ENABLE_MANAGEMENT
+--- a/src/openvpn/init.c
++++ b/src/openvpn/init.c
+@@ -26,6 +26,10 @@
+ 
+ #include "syshead.h"
+ 
++#ifdef ENABLE_NSS_DCA
++#include "nss_dca.h"
++#endif
++
+ #ifdef ENABLE_SYSTEMD
+ #include <systemd/sd-daemon.h>
+ #endif
+@@ -3462,6 +3466,9 @@
+     if (flags & CF_INIT_TLS_MULTI)
+     {
+         c->c2.tls_multi = tls_multi_init(&to);
++#ifdef ENABLE_NSS_DCA
++        c->c2.tls_multi->nss_dca = c->options.nss_dca;
++#endif
+         /* inherit the dco context from the tuntap object */
+         if (c->c1.tuntap)
+         {
+@@ -4744,6 +4751,9 @@
+ void
+ close_instance(struct context *c)
+ {
++#ifdef ENABLE_NSS_DCA
++    nss_dca_close(c);
++#endif
+     /* close event objects */
+     do_close_event_set(c);
+ 
+--- a/src/openvpn/multi_io.c
++++ b/src/openvpn/multi_io.c
+@@ -26,6 +26,10 @@
+ 
+ #include "syshead.h"
+ 
++#ifdef ENABLE_NSS_DCA
++#include "nss_dca.h"
++#endif
++
+ #include "memdbg.h"
+ 
+ #include "multi.h"
+@@ -45,6 +49,7 @@
+ #define MULTI_IO_MANAGEMENT       ((void *)4)
+ #define MULTI_IO_FILE_CLOSE_WRITE ((void *)5)
+ #define MULTI_IO_DCO              ((void *)6)
++#define MULTI_IO_NSS_DCA          ((void *)7)
+ 
+ struct ta_iow_flags
+ {
+@@ -200,6 +205,9 @@
+     event_ctl(m->multi_io->es, m->top.c2.inotify_fd, EVENT_READ, MULTI_IO_FILE_CLOSE_WRITE);
+ #endif
+ 
++#ifdef ENABLE_NSS_DCA
++    nss_dca_event_set(m->multi_io->es, MULTI_IO_NSS_DCA);
++#endif
+     status =
+         event_wait(m->multi_io->es, &m->top.c2.timeval, m->multi_io->esr, m->multi_io->maxevents);
+     update_time();
+@@ -508,6 +516,12 @@
+                     dco_read_and_process(&m->top.c1.tuntap->dco);
+                 }
+ #endif
++#ifdef ENABLE_NSS_DCA
++                else if (e->arg == MULTI_IO_NSS_DCA)
++                {
++                    nss_dca_recv();
++                }
++#endif
+                 /* signal received? */
+                 else if (e->arg == MULTI_IO_SIG)
+                 {
+--- a/src/openvpn/nss_dca.c
++++ b/src/openvpn/nss_dca.c
+@@ -0,0 +1,451 @@
++/*
++ * OpenVPN NSS data channel interface.
++ * The socket protocol follows Qualcomm QSDK12 NSS OpenVPN Manager.
++ * SPDX-License-Identifier: GPL-2.0-only
++ */
++
++#ifdef HAVE_CONFIG_H
++#include "config.h"
++#endif
++#include "syshead.h"
++
++#ifdef ENABLE_NSS_DCA
++
++#include <linux/sockios.h>
++#include "openvpn.h"
++#include "nss_ovpn_sk.h"
++#include "nss_dca.h"
++#include "ping.h"
++#include "ssl_pkt.h"
++
++struct nss_dca_tunnel {
++    struct nss_dca_tunnel *next;
++    struct context *context;
++    uint32_t id;
++    int key_id;
++    int old_key_id;
++};
++
++static struct nss_dca_tunnel *tunnels;
++static int nss_fd = -1;
++static unsigned int nss_users;
++
++void
++nss_dca_export_key(struct tls_multi *multi, struct key_state *ks,
++                   const struct key_type *type, const struct key2 *keys, bool server)
++{
++    if (!multi->nss_dca || !type->cipher || !type->digest
++        || (strcasecmp(type->cipher, "AES-128-CBC")
++            && strcasecmp(type->cipher, "AES-192-CBC")
++            && strcasecmp(type->cipher, "AES-256-CBC")))
++    {
++        return;
++    }
++
++    enum nss_ovpn_sk_algo algo;
++    if (!strcasecmp(type->digest, "SHA256"))
++    {
++        algo = NSS_OVPN_SK_ALGO_AES_CBC_SHA256_HMAC;
++    }
++    else if (!strcasecmp(type->digest, "SHA1"))
++    {
++        algo = NSS_OVPN_SK_ALGO_AES_CBC_SHA1_HMAC;
++    }
++    else
++    {
++        return;
++    }
++
++    struct nss_ovpn_sk_crypto_session *crypto;
++    ALLOC_OBJ_CLEAR(crypto, struct nss_ovpn_sk_crypto_session);
++    struct key_direction_state direction;
++    key_direction_state_init(&direction, server ? KEY_DIRECTION_INVERSE : KEY_DIRECTION_NORMAL);
++    crypto->key_id = (uint8_t)ks->key_id;
++    crypto->config.algo = algo;
++    crypto->config.cipher_key_size = (uint16_t)cipher_kt_key_size(type->cipher);
++    crypto->config.hmac_key_size = md_kt_size(type->digest);
++    memcpy(crypto->encrypt.cipher_key, keys->keys[direction.out_key].cipher,
++           crypto->config.cipher_key_size);
++    memcpy(crypto->decrypt.cipher_key, keys->keys[direction.in_key].cipher,
++           crypto->config.cipher_key_size);
++    memcpy(crypto->encrypt.hmac_key, keys->keys[direction.out_key].hmac,
++           crypto->config.hmac_key_size);
++    memcpy(crypto->decrypt.hmac_key, keys->keys[direction.in_key].hmac,
++           crypto->config.hmac_key_size);
++    ks->nss_key = crypto;
++}
++
++void
++nss_dca_free_key(struct key_state *ks)
++{
++    if (ks->nss_key)
++    {
++        secure_memzero(ks->nss_key, sizeof(*ks->nss_key));
++        free(ks->nss_key);
++        ks->nss_key = NULL;
++    }
++}
++
++static void
++nss_dca_release(void)
++{
++    if (!--nss_users)
++    {
++        close(nss_fd);
++        nss_fd = -1;
++    }
++}
++
++static bool
++nss_dca_register(const struct context *c, const struct link_socket *link)
++{
++    if (nss_fd >= 0)
++    {
++        ++nss_users;
++        return true;
++    }
++
++    int fd = socket(NSS_OVPN_SK_FAMILY, SOCK_DGRAM | SOCK_CLOEXEC, 0);
++    if (fd < 0)
++    {
++        msg(M_WARN | M_ERRNO, "NSS OpenVPN socket unavailable");
++        return false;
++    }
++
++    struct nss_ovpn_sk_app_inst app = {
++        .pid = getpid(),
++        .tun_fd = c->c1.tuntap->fd,
++        .udp_fd = link->sd,
++        .app_mode = c->mode == CM_CHILD_UDP ? NSS_OVPN_SK_APP_MODE_SERVER
++                                          : NSS_OVPN_SK_APP_MODE_CLIENT,
++    };
++    snprintf(app.tun_dev, sizeof(app.tun_dev), "%s", c->c1.tuntap->actual_name);
++
++    if (ioctl(fd, NSS_OVPN_SK_SIOC_APP_REG, &app) < 0)
++    {
++        msg(M_WARN | M_ERRNO, "NSS OpenVPN application registration failed");
++        close(fd);
++        return false;
++    }
++
++    nss_fd = fd;
++    nss_users = 1;
++    return true;
++}
++
++static void
++nss_dca_start(struct context *c, const struct key_state *ks)
++{
++    const struct link_socket *link = c->c2.link_sockets[0];
++    const struct link_socket_actual *remote = &ks->remote_addr;
++    const struct openvpn_sockaddr *peer = &remote->dest;
++    struct sockaddr_storage local = { 0 };
++    socklen_t len = sizeof(local);
++    struct nss_ovpn_sk_tunnel config = { .crypto = *ks->nss_key };
++
++    if (getsockname(link->sd, (struct sockaddr *)&local, &len) < 0
++        || local.ss_family != peer->addr.sa.sa_family)
++    {
++        return;
++    }
++
++    if (local.ss_family == AF_INET)
++    {
++        const struct sockaddr_in *in = (const struct sockaddr_in *)&local;
++
++        config.tun_hdr.src_ip[0] = in->sin_addr.s_addr;
++#ifdef IP_PKTINFO
++        if (remote->pi.in4.ipi_spec_dst.s_addr)
++        {
++            config.tun_hdr.src_ip[0] = remote->pi.in4.ipi_spec_dst.s_addr;
++        }
++#endif
++        config.tun_hdr.dst_ip[0] = peer->addr.in4.sin_addr.s_addr;
++        config.tun_hdr.src_port = in->sin_port;
++        config.tun_hdr.dst_port = peer->addr.in4.sin_port;
++    }
++    else if (local.ss_family == AF_INET6)
++    {
++        const struct sockaddr_in6 *in6 = (const struct sockaddr_in6 *)&local;
++        if (IN6_IS_ADDR_V4MAPPED(&peer->addr.in6.sin6_addr) || peer->addr.in6.sin6_scope_id)
++        {
++            return;
++        }
++
++        config.ovpn.flags = NSS_OVPN_SK_OVPN_HDR_FLAG_IPv6;
++        memcpy(config.tun_hdr.src_ip, &in6->sin6_addr, sizeof(in6->sin6_addr));
++        memcpy(config.tun_hdr.dst_ip, &peer->addr.in6.sin6_addr, sizeof(in6->sin6_addr));
++        config.tun_hdr.src_port = in6->sin6_port;
++        config.tun_hdr.dst_port = peer->addr.in6.sin6_port;
++    }
++    else
++    {
++        return;
++    }
++
++    if (c->c2.tls_multi->use_peer_id)
++    {
++        config.ovpn.flags |= NSS_OVPN_SK_OVPN_HDR_FLAG_DATA_V2
++                             | NSS_OVPN_SK_OVPN_HDR_FLAG_PEER_DATA_V2;
++        config.ovpn.peer_id = c->c2.tls_multi->peer_id;
++    }
++    if (!nss_dca_register(c, link))
++    {
++        return;
++    }
++
++    int ret = ioctl(nss_fd, NSS_OVPN_SK_SIOC_TUN_ADD, &config);
++    secure_memzero(&config.crypto, sizeof(config.crypto));
++    if (ret < 0)
++    {
++        msg(M_WARN | M_ERRNO, "NSS OpenVPN tunnel setup failed");
++        nss_dca_release();
++        return;
++    }
++
++    struct nss_dca_tunnel *tun;
++    ALLOC_OBJ_CLEAR(tun, struct nss_dca_tunnel);
++    tun->context = c;
++    tun->id = config.ovpn.tunnel_id;
++    tun->key_id = ks->key_id;
++    tun->old_key_id = -1;
++    tun->next = tunnels;
++    tunnels = tun;
++    c->c2.nss_tunnel = tun;
++    msg(M_INFO, "NSS OpenVPN data channel active on tunnel %u", tun->id);
++}
++
++static bool
++nss_dca_eligible(const struct context *c, const struct key_state *ks)
++{
++    return ks->nss_key && c->c1.tuntap && c->c1.tuntap->actual_name
++           && c->c1.tuntap->type == DEV_TYPE_TUN
++           && (c->mode == CM_P2P || c->mode == CM_CHILD_UDP)
++           && proto_is_udp(c->c2.link_sockets[0]->info.proto)
++           && !c->options.ce.socks_proxy_server && !c->options.ce.fragment
++           && !c->options.passtos
++#ifdef USE_COMP
++           && !c->c2.comp_context
++#endif
++           && !(ks->crypto_options.flags & (CO_PACKET_ID_LONG_FORM | CO_EPOCH_DATA_KEY_FORMAT));
++}
++
++static bool
++nss_dca_rekey(struct nss_dca_tunnel *tun, const struct key_state *ks)
++{
++    if (tun->key_id == ks->key_id)
++    {
++        return true;
++    }
++
++    struct nss_ovpn_sk_crypto_session key = { .tunnel_id = tun->id };
++    if (tun->old_key_id >= 0)
++    {
++        key.key_id = (uint8_t)tun->old_key_id;
++        if (ioctl(nss_fd, NSS_OVPN_SK_SIOC_CRYPTO_KEY_DEL, &key) < 0)
++        {
++            return false;
++        }
++    }
++
++    if (!ks->nss_key)
++    {
++        return false;
++    }
++    key = *ks->nss_key;
++    key.tunnel_id = tun->id;
++    int ret = ioctl(nss_fd, NSS_OVPN_SK_SIOC_CRYPTO_KEY_ADD, &key);
++    secure_memzero(&key, sizeof(key));
++    if (ret < 0)
++    {
++        return false;
++    }
++
++    tun->old_key_id = tun->key_id;
++    tun->key_id = ks->key_id;
++    return true;
++}
++
++bool
++nss_dca_packet(struct context *c, bool decrypt)
++{
++    struct tls_multi *multi = c->c2.tls_multi;
++    if (!multi || !multi->nss_dca || multi->multi_state < CAS_CONNECT_DONE || c->c2.buf.len <= 0)
++    {
++        return false;
++    }
++
++    if (decrypt)
++    {
++        const uint8_t opcode = *BPTR(&c->c2.buf) >> P_OPCODE_SHIFT;
++        if (opcode != P_DATA_V1 && opcode != P_DATA_V2)
++        {
++            return false;
++        }
++    }
++
++    const struct key_state *ks = get_primary_key(multi);
++    if (!c->c2.nss_attempted)
++    {
++        c->c2.nss_attempted = true;
++        if (ks->state == S_GENERATED_KEYS && ks->authenticated == KS_AUTH_TRUE
++            && nss_dca_eligible(c, ks))
++        {
++            nss_dca_start(c, ks);
++        }
++    }
++
++    struct nss_dca_tunnel *tun = c->c2.nss_tunnel;
++    if (!tun)
++    {
++        return false;
++    }
++
++    /*
++     * A tunnel that has sent or received data through NSS must stay on NSS
++     * until reconnect, because software does not share its replay window or
++     * transmit packet-ID state.
++     */
++    if (ks->state == S_GENERATED_KEYS && ks->authenticated == KS_AUTH_TRUE
++        && !nss_dca_rekey(tun, ks))
++    {
++        register_signal(c->sig, SIGUSR1, "nss-dca-rekey-failed");
++        return true;
++    }
++
++    if (decrypt && !addr_match_proto(&c->c2.from.dest, &ks->remote_addr.dest,
++                                     c->c2.link_sockets[0]->info.proto))
++    {
++        return true;
++    }
++
++    union {
++        struct cmsghdr align;
++        unsigned char data[CMSG_SPACE(sizeof(struct nss_ovpn_sk_pkt_info))];
++    } control = { 0 };
++    struct iovec iov = { .iov_base = BPTR(&c->c2.buf), .iov_len = BLEN(&c->c2.buf) };
++    struct msghdr msg_hdr = {
++        .msg_iov = &iov,
++        .msg_iovlen = 1,
++        .msg_control = control.data,
++        .msg_controllen = sizeof(control.data),
++    };
++    struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg_hdr);
++    cmsg->cmsg_level = SOL_IP;
++    cmsg->cmsg_type = IP_PKTINFO;
++    cmsg->cmsg_len = CMSG_LEN(sizeof(struct nss_ovpn_sk_pkt_info));
++
++    struct nss_ovpn_sk_pkt_info pkt = { .tunnel_id = tun->id };
++    if (decrypt)
++    {
++        pkt.flags = NSS_OVPN_SK_PKT_INFO_FLAG_DIR_DECAP;
++        if (ks->remote_addr.dest.addr.sa.sa_family == AF_INET6)
++        {
++            pkt.flags |= NSS_OVPN_SK_PKT_INFO_FLAG_PKT_TYPE_IPV6;
++        }
++    }
++    memcpy(CMSG_DATA(cmsg), &pkt, sizeof(pkt));
++
++    if (sendmsg(nss_fd, &msg_hdr, MSG_DONTWAIT) < 0)
++    {
++        dmsg(D_LINK_ERRORS, "NSS OpenVPN data submission failed");
++    }
++
++    return true;
++}
++
++void
++nss_dca_close(struct context *c)
++{
++    struct nss_dca_tunnel *tun = c->c2.nss_tunnel;
++    if (!tun)
++    {
++        return;
++    }
++
++    struct nss_dca_tunnel **entry = &tunnels;
++    while (*entry != tun)
++    {
++        entry = &(*entry)->next;
++    }
++    *entry = tun->next;
++
++    ioctl(nss_fd, NSS_OVPN_SK_SIOC_TUN_DEL, &tun->id);
++    c->c2.nss_tunnel = NULL;
++    free(tun);
++    nss_dca_release();
++}
++
++void
++nss_dca_event_set(struct event_set *es, void *arg)
++{
++    if (nss_fd >= 0)
++    {
++        event_ctl(es, nss_fd, EVENT_READ, arg);
++    }
++}
++
++void
++nss_dca_recv(void)
++{
++    union {
++        struct cmsghdr align;
++        unsigned char data[CMSG_SPACE(sizeof(struct nss_ovpn_sk_pkt_info))];
++    } control;
++    uint8_t data[512];
++    struct iovec iov = { .iov_base = data, .iov_len = sizeof(data) };
++    struct msghdr hdr = {
++        .msg_iov = &iov,
++        .msg_iovlen = 1,
++        .msg_control = control.data,
++        .msg_controllen = sizeof(control.data),
++    };
++
++    if (nss_fd < 0 || recvmsg(nss_fd, &hdr, MSG_DONTWAIT) <= 0
++        || (hdr.msg_flags & (MSG_TRUNC | MSG_CTRUNC)))
++    {
++        return;
++    }
++
++    const struct cmsghdr *cmsg = CMSG_FIRSTHDR(&hdr);
++    if (!cmsg || cmsg->cmsg_level != SOL_IP || cmsg->cmsg_type != IP_PKTINFO
++        || cmsg->cmsg_len < CMSG_LEN(sizeof(struct nss_ovpn_sk_pkt_info)))
++    {
++        return;
++    }
++
++    struct nss_ovpn_sk_pkt_info pkt;
++    memcpy(&pkt, CMSG_DATA(cmsg), sizeof(pkt));
++    for (struct nss_dca_tunnel *tun = tunnels; tun; tun = tun->next)
++    {
++        if (tun->id == pkt.tunnel_id)
++        {
++            event_timeout_reset(&tun->context->c2.ping_rec_interval);
++            return;
++        }
++    }
++}
++
++void
++nss_dca_stats(struct context *c)
++{
++    const struct nss_dca_tunnel *tun = c->c2.nss_tunnel;
++    if (!tun)
++    {
++        return;
++    }
++
++    struct nss_ovpn_sk_tun_stats stats = { .tunnel_id = tun->id };
++    if (ioctl(nss_fd, NSS_OVPN_SK_SIOC_STATS_GET, &stats) == 0)
++    {
++        c->c2.tun_write_bytes += stats.tun_write_bytes;
++        c->c2.link_read_bytes_auth += stats.link_read_bytes_auth;
++        c->c2.link_write_bytes += stats.link_write_bytes;
++        if (stats.link_read_bytes_auth)
++        {
++            event_timeout_reset(&c->c2.ping_rec_interval);
++        }
++    }
++}
++
++#endif /* ENABLE_NSS_DCA */
+--- a/src/openvpn/nss_dca.h
++++ b/src/openvpn/nss_dca.h
+@@ -0,0 +1,25 @@
++/*
++ * OpenVPN NSS data channel interface.
++ * SPDX-License-Identifier: GPL-2.0-only
++ */
++
++#ifndef OPENVPN_NSS_DCA_H
++#define OPENVPN_NSS_DCA_H
++
++struct context;
++struct event_set;
++struct key_state;
++struct key_type;
++struct key2;
++struct tls_multi;
++
++void nss_dca_export_key(struct tls_multi *multi, struct key_state *ks,
++                        const struct key_type *type, const struct key2 *keys, bool server);
++void nss_dca_free_key(struct key_state *ks);
++bool nss_dca_packet(struct context *c, bool decrypt);
++void nss_dca_close(struct context *c);
++void nss_dca_event_set(struct event_set *es, void *arg);
++void nss_dca_recv(void);
++void nss_dca_stats(struct context *c);
++
++#endif
+--- a/src/openvpn/openvpn.h
++++ b/src/openvpn/openvpn.h
+@@ -222,6 +222,10 @@
+  */
+ struct context_2
+ {
++#ifdef ENABLE_NSS_DCA
++    struct nss_dca_tunnel *nss_tunnel;
++    bool nss_attempted;
++#endif
+     struct gc_arena gc; /**< Garbage collection arena for
+                          *   allocations done in the level 2 scope
+                          *   of this context_2 structure. */
+--- a/src/openvpn/options.c
++++ b/src/openvpn/options.c
+@@ -195,7 +195,7 @@
+     "                  does not begin with \"tun\" or \"tap\".\n"
+     "--dev-node node : Explicitly set the device node rather than using\n"
+     "                  /dev/net/tun, /dev/tun, /dev/tap, etc.\n"
+-#if defined(ENABLE_DCO)
++#if defined(ENABLE_DCO) || defined(ENABLE_NSS_DCA)
+     "--disable-dco   : Do not attempt using Data Channel Offload.\n"
+ #endif
+     "--lladdr hw     : Set the link layer address of the tap device.\n"
+@@ -908,6 +908,9 @@
+     }
+ #endif /* _WIN32 */
+     o->allow_recursive_routing = false;
++#ifdef ENABLE_NSS_DCA
++    o->nss_dca = true;
++#endif
+ 
+ #ifndef ENABLE_DCO
+     o->disable_dco = true;
+@@ -5890,6 +5893,9 @@
+     else if (streq(p[0], "disable-dco"))
+     {
+         options->disable_dco = true;
++#ifdef ENABLE_NSS_DCA
++        options->nss_dca = false;
++#endif
+     }
+     else if (streq(p[0], "dev-node") && p[1] && !p[2])
+     {
+--- a/src/openvpn/options.h
++++ b/src/openvpn/options.h
+@@ -370,6 +370,9 @@
+     /* DCO is disabled and should not be used as backend driver for the
+      * tun/tap device */
+     bool disable_dco;
++#ifdef ENABLE_NSS_DCA
++    bool nss_dca;
++#endif
+ 
+     /* Misc parms */
+     const char *username;
+--- a/src/openvpn/ssl.c
++++ b/src/openvpn/ssl.c
+@@ -39,6 +39,10 @@
+ #endif
+ 
+ #include "syshead.h"
++
++#ifdef ENABLE_NSS_DCA
++#include "nss_dca.h"
++#endif
+ #include "win32.h"
+ 
+ #include "error.h"
+@@ -906,6 +910,9 @@
+ static void
+ key_state_free(struct key_state *ks, bool clear)
+ {
++#ifdef ENABLE_NSS_DCA
++    nss_dca_free_key(ks);
++#endif
+     ks->state = S_UNDEF;
+ 
+     key_state_ssl_free(&ks->ks_ssl);
+@@ -1524,6 +1531,9 @@
+         }
+     }
+ 
++#ifdef ENABLE_NSS_DCA
++    nss_dca_export_key(multi, ks, &session->opt->key_type, &key2, server);
++#endif
+     init_key_contexts(ks, multi, &session->opt->key_type, server, &key2, session->opt->dco_enabled);
+     ret = true;
+ 
+--- a/src/openvpn/ssl_common.h
++++ b/src/openvpn/ssl_common.h
+@@ -206,6 +206,9 @@
+  */
+ struct key_state
+ {
++#ifdef ENABLE_NSS_DCA
++    struct nss_ovpn_sk_crypto_session *nss_key;
++#endif
+     int state;
+     /** The state of the auth-token sent from the client */
+     unsigned int auth_token_state_flags;
+@@ -610,6 +613,9 @@
+  */
+ struct tls_multi
+ {
++#ifdef ENABLE_NSS_DCA
++    bool nss_dca;
++#endif
+     /* used to coordinate access between main thread and TLS thread */
+     /*MUTEX_PTR_DEFINE (mutex);*/
+ 

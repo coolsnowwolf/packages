@@ -10,7 +10,7 @@ include $(TOPDIR)/rules.mk
 PKG_NAME:=openvpn
 
 PKG_VERSION:=2.7.4
-PKG_RELEASE:=3
+PKG_RELEASE:=4
 
 PKG_SOURCE_URL:=\
 	https://build.openvpn.net/downloads/releases/ \
@@ -26,6 +26,18 @@ PKG_BUILD_PARALLEL:=1
 PKG_BUILD_FLAGS:=gc-sections
 PKG_LICENSE:=GPL-2.0
 PKG_CPE_ID:=cpe:/a:openvpn:openvpn
+
+OPENVPN_VARIANTS:=openssl mbedtls wolfssl
+PKG_CONFIG_DEPENDS:=$(foreach variant,$(OPENVPN_VARIANTS),CONFIG_OPENVPN_$(variant)_ENABLE_DCO)
+
+# NSS is available when the main tree supplies the manager and its options.
+SCAN_DEPS = $(TOPDIR)/package/qca/qca-nss-ovpn-12/openvpn-config.in
+OPENVPN_NSS_CONFIG:=package/qca/qca-nss-ovpn-12/openvpn-config.in
+ifneq ($(wildcard $(TOPDIR)/$(OPENVPN_NSS_CONFIG)),)
+OPENVPN_NSS_ENABLED=$(CONFIG_OPENVPN_$(1)_ENABLE_NSS_DCA)
+PKG_BUILD_DEPENDS:=$(foreach variant,$(OPENVPN_VARIANTS),OPENVPN_$(variant)_ENABLE_NSS_DCA:qca-nss-ovpn-12)
+PKG_CONFIG_DEPENDS+=$(foreach variant,$(OPENVPN_VARIANTS),CONFIG_OPENVPN_$(variant)_ENABLE_NSS_DCA)
+endif
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -44,6 +56,7 @@ define Package/openvpn/Default
 	   +OPENVPN_$(1)_ENABLE_DCO:libnl-genl \
 	   +OPENVPN_$(1)_ENABLE_DCO:kmod-ovpn-backports \
 	   $(3)
+  EXTRA_DEPENDS:=$(if $(call OPENVPN_NSS_ENABLED,$(1)),kmod-qca-nss-ovpn-12)
   VARIANT:=$(1)
   PROVIDES:=openvpn openvpn-crypto
 endef
@@ -54,6 +67,7 @@ Package/openvpn-wolfssl=$(call Package/openvpn/Default,wolfssl,WolfSSL,+PACKAGE_
 
 define Package/openvpn/config/Default
 	source "$(SOURCE)/Config-$(1).in"
+$(if $(and $(filter openssl,$(1)),$(wildcard $(TOPDIR)/$(OPENVPN_NSS_CONFIG))),	source "$(OPENVPN_NSS_CONFIG)")
 endef
 
 Package/openvpn-openssl/config=$(call Package/openvpn/config/Default,openssl)
@@ -74,6 +88,10 @@ CONFIGURE_VARS += \
 	IPROUTE=/sbin/ip \
 	NETSTAT=/sbin/netstat
 
+ifneq ($(call OPENVPN_NSS_ENABLED,$(BUILD_VARIANT)),)
+TARGET_CPPFLAGS += -I$(STAGING_DIR)/usr/include/qca-nss-ovpn-12
+endif
+
 define Build/Configure
 	$(call Build/Configure/Default, \
 		$(if $(CONFIG_OPENVPN_$(BUILD_VARIANT)_ENABLE_SMALL),--enable-small) \
@@ -90,6 +108,7 @@ define Build/Configure
 		$(if $(CONFIG_OPENVPN_$(BUILD_VARIANT)_ENABLE_IPROUTE2),--enable,--disable)-iproute2 \
 		$(if $(CONFIG_OPENVPN_$(BUILD_VARIANT)_ENABLE_PORT_SHARE),--enable,--disable)-port-share \
 		$(if $(CONFIG_OPENVPN_$(BUILD_VARIANT)_ENABLE_DCO),--enable,--disable)-dco \
+		$(if $(call OPENVPN_NSS_ENABLED,$(BUILD_VARIANT)),--enable,--disable)-nss-dca \
 		$(if $(CONFIG_OPENVPN_OPENSSL),--with-crypto-library=openssl --with-openssl-engine=no) \
 		$(if $(CONFIG_OPENVPN_MBEDTLS),--with-crypto-library=mbedtls) \
 		$(if $(CONFIG_OPENVPN_WOLFSSL),--with-crypto-library=wolfssl) \
