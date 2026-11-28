@@ -3847,3 +3847,33 @@ msgstr ""
 
 msgid "速度：%s Mbit/s，双工：%s"
 msgstr ""
+
+msgid "WAN flowtable hooks"
+msgstr ""
+
+msgid "BSP PPE admission"
+msgstr ""
+
+msgid "BSP bridge offload"
+msgstr ""
+
+msgid "Native L2B"
+msgstr ""
+
+msgid "Bound hardware entries"
+msgstr ""
+
+msgid "BSP bridge flows"
+msgstr ""
+
+msgid "Native L2B hit updates"
+msgstr ""
+
+msgid "BSP tracked flows"
+msgstr ""
+
+msgid "The BSP reports driver-tracked flows and bound hardware entries. Packet and byte totals require counters for every bound entry."
+msgstr ""
+
+msgid "The running BSP PPE driver does not provide a readable bound table."
+msgstr ""

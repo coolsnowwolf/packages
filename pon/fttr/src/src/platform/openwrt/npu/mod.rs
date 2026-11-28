@@ -25,7 +25,8 @@ pub use service::{
 
 fn check_hooks(status: &NpuStatus, model: NpuAdmissionModel) -> io::Result<bool> {
     let routed = status.wan_upstream || status.wan_downstream;
-    let bridge = status.onu_bridge;
+    // The BSP registers its bridge forward hook in the driver.
+    let bridge = status.onu_bridge && status.bsp_ppe.is_none();
     let mut all_ready = true;
     if routed {
         match model {
@@ -127,10 +128,15 @@ pub(crate) fn status_for_platform(id: PlatformId) -> NpuStatus {
 fn status_for_model(model: NpuAdmissionModel) -> NpuStatus {
     let mut status = match model {
         NpuAdmissionModel::PortMask => {
-            let mut status = status_from(
+            let bsp_driver = Path::new("/sys/bus/platform/drivers/an7581-bsp-ppe");
+            let mut status = ppe::status_from_h3c(
                 Path::new("/etc/config/fttr"),
                 Path::new("/sys/kernel/debug/ppe"),
                 Path::new("/sys/module/h3c_fmcs/parameters"),
+                bsp_driver.is_dir().then_some((
+                    bsp_driver,
+                    Path::new("/sys/module/an7581_bsp_ppe/parameters"),
+                )),
             );
             ppe::populate_optional_direction_mask(
                 &mut status,

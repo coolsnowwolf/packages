@@ -1,6 +1,6 @@
 //! Airoha PPE observations shared across HM2004-DU (PortMask) and AN4475-G2 (DirectionOnly).
 use crate::model::{NpuStatus, PpeFlowEntry};
-use fttr_api::NpuAdmissionModel;
+use fttr_api::{BspPpeStatus, NpuAdmissionModel};
 use std::{fs, path::Path};
 
 /// Parse single line from `/sys/kernel/debug/ppe/bind` or `/sys/kernel/debug/ppe/entries`.
@@ -142,46 +142,36 @@ fn populate_ppe_config(status: &mut NpuStatus, ppe_debug_path: &Path) {
     }
 }
 
-fn populate_ppe_flows(status: &mut NpuStatus, ppe_debug_path: &Path) {
-    if let Ok(bind_content) = fs::read_to_string(ppe_debug_path.join("bind")) {
-        status.flows_valid = true;
-        status.counters_valid = true;
-        for line in bind_content.lines() {
-            let line = line.trim();
-            if line.is_empty() {
+fn populate_bound_flows(status: &mut NpuStatus, bind_content: &str, counters_supported: bool) {
+    status.flows_valid = true;
+    status.counters_valid = counters_supported;
+    for line in bind_content.lines() {
+        let line = line.trim();
+        if line.is_empty() {
+            continue;
+        }
+        if let Some(entry) = parse_ppe_entry(line) {
+            if entry.state != "BND" {
+                status.flows_valid = false;
                 continue;
             }
-            if let Some(entry) = parse_ppe_entry(line) {
-                if entry.state != "BND" {
-                    status.flows_valid = false;
-                    continue;
+            status.counters_valid &= entry.counters_valid;
+            match (
+                status.total_packets.checked_add(entry.packets),
+                status.total_bytes.checked_add(entry.bytes),
+            ) {
+                (Some(packets), Some(bytes)) => {
+                    status.total_packets = packets;
+                    status.total_bytes = bytes;
                 }
-                status.counters_valid &= entry.counters_valid;
-                match (
-                    status.total_packets.checked_add(entry.packets),
-                    status.total_bytes.checked_add(entry.bytes),
-                ) {
-                    (Some(packets), Some(bytes)) => {
-                        status.total_packets = packets;
-                        status.total_bytes = bytes;
-                    }
-                    _ => status.counters_valid = false,
-                }
-                status.bound_flows.push(entry);
-            } else {
-                status.flows_valid = false;
+                _ => status.counters_valid = false,
             }
+            status.bound_flows.push(entry);
+        } else {
+            status.flows_valid = false;
         }
     }
     status.counters_valid &= status.flows_valid && status.engine_valid && status.engine_attached;
-    if !status.flows_valid {
-        status.errors.push("PPE bind: read or parse failed".into());
-    }
-    if !status.counters_valid {
-        status
-            .errors
-            .push("PPE counters: unavailable, invalid or overflowing".into());
-    }
     status.total_packets_exact = status.total_packets.to_string();
     status.total_bytes_exact = status.total_bytes.to_string();
     status.bound_entries = status.bound_flows.len() as u32;
@@ -192,7 +182,20 @@ fn populate_ppe_flows(status: &mut NpuStatus, ppe_debug_path: &Path) {
             status.bound_ipv6_entries += 1;
         }
     }
+}
 
+fn populate_ppe_flows(status: &mut NpuStatus, ppe_debug_path: &Path) {
+    if let Ok(bind) = fs::read_to_string(ppe_debug_path.join("bind")) {
+        populate_bound_flows(status, &bind, true);
+    }
+    if !status.flows_valid {
+        status.errors.push("PPE bind: read or parse failed".into());
+    }
+    if !status.counters_valid {
+        status
+            .errors
+            .push("PPE counters: unavailable, invalid or overflowing".into());
+    }
     if let Ok(entries_content) = fs::read_to_string(ppe_debug_path.join("entries")) {
         status.entries_valid = true;
         for line in entries_content.lines().filter(|l| !l.trim().is_empty()) {
@@ -243,16 +246,87 @@ fn discover_live_bridge_ports(net_path: &Path, bridge: &str) -> Vec<String> {
     ports
 }
 
+fn populate_bsp_ppe(
+    status: &mut NpuStatus,
+    driver: &Path,
+    params: &Path,
+    ppe_debug_path: &Path,
+) -> std::io::Result<()> {
+    let device = fs::read_dir(driver)?
+        .filter_map(Result::ok)
+        .map(|entry| entry.path())
+        .find(|path| path.join("status").is_file())
+        .ok_or_else(|| std::io::Error::other("PPE device status unavailable"))?;
+    let snapshot = fs::read_to_string(device.join("status"))?;
+    let field = |key| {
+        snapshot
+            .split_whitespace()
+            .filter_map(|word| word.split_once('='))
+            .find_map(|(name, value)| (name == key).then_some(value))
+            .ok_or_else(|| std::io::Error::other(format!("missing {key}")))
+    };
+    let bit = |key| match field(key)? {
+        "0" => Ok(false),
+        "1" => Ok(true),
+        _ => Err(std::io::Error::other(format!("invalid {key}"))),
+    };
+    let count = |key| field(key)?.parse::<u32>().map_err(std::io::Error::other);
+
+    let initialized = bit("initialized")?;
+    let npu_ready = bit("npu_ready")?;
+    let failed = bit("failed")?;
+    let ready = initialized && npu_ready && !failed;
+    status.engine_valid = true;
+    status.engine_attached = ready;
+
+    let bridge_offload = match fs::read_to_string(params.join("bridge_offload"))?.trim() {
+        "Y" => true,
+        "N" => false,
+        _ => return Err(std::io::Error::other("invalid bridge_offload")),
+    };
+    status.bsp_ppe = Some(BspPpeStatus {
+        admission: bit("admission")?,
+        bridge_offload,
+        native_l2b: bit("native_l2b")?,
+        bound_entries: count("bound")?,
+        bridge_flows: count("bridge_flows")?,
+        tracked_flows: Some(count("flows")?),
+        native_hit_updates_exact: field("native_hit_updates")?
+            .parse::<u64>()
+            .map_err(std::io::Error::other)?
+            .to_string(),
+    });
+    match fs::read_to_string(ppe_debug_path.join("bsp_bind")) {
+        Ok(bind) => {
+            populate_bound_flows(status, &bind, bit("flow_stats")?);
+            if !status.flows_valid {
+                return Err(std::io::Error::other("invalid BSP bound entries"));
+            }
+        }
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(error) => return Err(error),
+    }
+    Ok(())
+}
+
 /// Collect hardware NPU and offload status for `PortMask` platforms (H3C HM2004-DU).
 pub fn status_from(
     config_path: &Path,
     ppe_debug_path: &Path,
     module_params_path: &Path,
 ) -> NpuStatus {
+    status_from_h3c(config_path, ppe_debug_path, module_params_path, None)
+}
+
+pub(super) fn status_from_h3c(
+    config_path: &Path,
+    ppe_debug_path: &Path,
+    module_params_path: &Path,
+    bsp_paths: Option<(&Path, &Path)>,
+) -> NpuStatus {
     let mut status = new_status(NpuAdmissionModel::PortMask);
 
     populate_uci_config(&mut status, config_path);
-    populate_ppe_config(&mut status, ppe_debug_path);
 
     if let Ok(val) = fs::read_to_string(module_params_path.join("bridge_offload_mask")) {
         if let Ok(mask) = val.trim().parse::<u16>() {
@@ -290,6 +364,14 @@ pub fn status_from(
         }
     }
 
+    if let Some((driver, params)) = bsp_paths {
+        if let Err(error) = populate_bsp_ppe(&mut status, driver, params, ppe_debug_path) {
+            status.errors.push(format!("BSP PPE status: {error}"));
+        }
+        return status;
+    }
+
+    populate_ppe_config(&mut status, ppe_debug_path);
     if let Ok(val) = fs::read_to_string(module_params_path.join("bridge_offload_debug")) {
         status.bridge_offload_debug = val.trim().eq_ignore_ascii_case("y") || val.trim() == "1";
         status.debug_valid = matches!(val.trim(), "Y" | "y" | "N" | "n" | "0" | "1");
@@ -408,6 +490,48 @@ mod tests {
         assert!(!status.flows_valid && !status.entries_valid && !status.counters_valid);
         assert!(!status.hooks_valid && !status.fw4_hooks_ready);
         assert!(!status.errors.is_empty());
+    }
+
+    #[test]
+    fn bsp_status_reports_native_bridge_without_debugfs() {
+        let dir = std::env::temp_dir().join(format!("fttr-npu-bsp-{}", std::process::id()));
+        let driver = dir.join("driver");
+        let device = driver.join("an7581-bsp-ppe.0.auto");
+        let params = dir.join("params");
+        fs::create_dir_all(&device).unwrap();
+        fs::create_dir_all(&params).unwrap();
+        fs::write(params.join("bridge_offload"), "Y\n").unwrap();
+        fs::write(
+            device.join("status"),
+            "initialized=1 npu_ready=1 engines=0x3 admission=1 failed=0\n\
+             flow_stats=0 num_ppe=2\n\
+             flows=10 bound=8 packets=0 bytes=0\n\
+             bridge_flows=4 native_l2b=1 native_hit_updates=9007199254740993\n",
+        )
+        .unwrap();
+        let mut status = new_status(NpuAdmissionModel::PortMask);
+        fs::write(
+            dir.join("bsp_bind"),
+            "000ab BND L2B eth=00:11:22:33:44:55->66:77:88:99:aa:bb vlan=47\n",
+        )
+        .unwrap();
+        populate_bsp_ppe(&mut status, &driver, &params, &dir).unwrap();
+        assert!(status.engine_valid && status.engine_attached);
+        assert!(status.flows_valid && !status.entries_valid && !status.counters_valid);
+        assert_eq!(status.bound_flows[0].pkt_type, "L2B");
+        assert_eq!(
+            status.bsp_ppe.unwrap(),
+            BspPpeStatus {
+                admission: true,
+                bridge_offload: true,
+                native_l2b: true,
+                bound_entries: 8,
+                bridge_flows: 4,
+                tracked_flows: Some(10),
+                native_hit_updates_exact: "9007199254740993".into(),
+            }
+        );
+        fs::remove_dir_all(dir).unwrap();
     }
 
     #[test]

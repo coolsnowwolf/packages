@@ -210,6 +210,20 @@ pub enum NpuAdmissionModel {
     DirectionOnly,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[cfg_attr(feature = "codegen", derive(ts_rs::TS))]
+pub struct BspPpeStatus {
+    pub admission: bool,
+    pub bridge_offload: bool,
+    pub native_l2b: bool,
+    pub bound_entries: u32,
+    pub bridge_flows: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "codegen", ts(optional))]
+    pub tracked_flows: Option<u32>,
+    pub native_hit_updates_exact: String,
+}
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
 #[cfg_attr(feature = "codegen", derive(ts_rs::TS))]
 pub struct NpuStatus {
@@ -257,4 +271,7 @@ pub struct NpuStatus {
     pub direction_mask: u8,
     #[serde(default)]
     pub direction_mask_valid: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "codegen", ts(optional))]
+    pub bsp_ppe: Option<BspPpeStatus>,
 }

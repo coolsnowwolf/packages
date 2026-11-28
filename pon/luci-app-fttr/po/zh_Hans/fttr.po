@@ -3871,3 +3871,33 @@ msgstr "缩小"
 
 msgid "速度：%s Mbit/s，双工：%s"
 msgstr "速度：%s Mbit/s，双工：%s"
+
+msgid "WAN flowtable hooks"
+msgstr "WAN 流表钩子"
+
+msgid "BSP PPE admission"
+msgstr "BSP PPE 准入"
+
+msgid "BSP bridge offload"
+msgstr "BSP 桥接卸载"
+
+msgid "Native L2B"
+msgstr "原生 L2B"
+
+msgid "Bound hardware entries"
+msgstr "硬件绑定表项数"
+
+msgid "BSP bridge flows"
+msgstr "BSP 桥接流数"
+
+msgid "Native L2B hit updates"
+msgstr "原生 L2B 命中更新次数"
+
+msgid "BSP tracked flows"
+msgstr "BSP 跟踪流数"
+
+msgid "The BSP reports driver-tracked flows and bound hardware entries. Packet and byte totals require counters for every bound entry."
+msgstr "BSP 提供驱动跟踪流数和硬件绑定表项数。包数和字节数合计要求所有绑定表项都提供计数。"
+
+msgid "The running BSP PPE driver does not provide a readable bound table."
+msgstr "当前 BSP PPE 驱动的绑定流表不可读。"
