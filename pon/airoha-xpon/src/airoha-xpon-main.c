@@ -38,7 +38,7 @@ void airoha_xpon_set_data_path_link(struct airoha_xpon *xpon, bool ready)
 		netif_tx_wake_all_queues(xpon->pon_netdev);
 	} else {
 		netif_carrier_off(xpon->pon_netdev);
-		netif_tx_disable(xpon->pon_netdev);
+		netif_tx_stop_all_queues(xpon->pon_netdev);
 	}
 }
 
