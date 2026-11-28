@@ -20,6 +20,7 @@ void airoha_xpon_epon_debug_pcs(struct airoha_xpon *xpon, struct seq_file *m);
 void airoha_xpon_epon_debug_mac(struct airoha_xpon *xpon, struct seq_file *m);
 int airoha_xpon_epon_advance(struct airoha_xpon *xpon, u32 phy_events,
                              unsigned long *delay);
+int airoha_xpon_epon_recover_tx(struct airoha_xpon *xpon);
 irqreturn_t airoha_xpon_epon_irq_fast(struct airoha_xpon *xpon);
 irqreturn_t airoha_xpon_epon_irq(struct airoha_xpon *xpon);
 irqreturn_t airoha_xpon_epon_phy_irq(struct airoha_xpon *xpon);

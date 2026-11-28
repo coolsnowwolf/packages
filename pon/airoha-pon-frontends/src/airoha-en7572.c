@@ -12,7 +12,9 @@
 #include <linux/of.h>
 #include <linux/sizes.h>
 #include <linux/slab.h>
+#include <linux/jiffies.h>
 #include <linux/unaligned.h>
+#include <linux/workqueue.h>
 
 #define EN7572_RUNTIME_ADDR 0x51
 
@@ -66,6 +68,14 @@
 #define EN7572_LOS_STATUS_REG        0x00fa
 #define EN7572_TX_DISABLE_STATUS_REG 0x03e0
 #define EN7572_SYSTEM_STATUS_REG     0x0488
+
+/*
+ * SYSTEM_STATUS bit 0 follows the transmitter, not the host gate: it stays
+ * clear while the analog TX path emits nothing even though bias current is
+ * already commanded, whereas every DDMI channel keeps its last value. It is
+ * therefore the only reliable "is the laser actually on" signal on this part.
+ */
+#define EN7572_SYS_TX_READY          BIT(0)
 
 /*
  * The stock runtime restores these 40 bytes when the threshold table is
@@ -123,6 +133,19 @@ struct en7572 {
 	bool prepared;
 	enum airoha_pon_frontend_mode prepared_mode;
 	bool tx_gate_enabled;
+	/* Post-enable captures that show how the TX path evolves after a burst. */
+	struct delayed_work sample_work;
+	unsigned int sample_shot;
+	/*
+	 * Readiness poll. The MAC may answer a Discovery Gate as soon as the
+	 * burst gate opens, but the analog path needs time to report TX ready.
+	 * A Register Request sent into that window is lost and latches the MAC
+	 * discovery state machine, so the readout is published here for the MAC
+	 * hard IRQ, which cannot touch the bus.
+	 */
+	struct delayed_work ready_work;
+	unsigned long gate_opened;
+	bool tx_ready_state;
 };
 
 static u8 en7572_bob_u8(struct en7572 *en, unsigned int base,
@@ -582,6 +605,258 @@ static int en7572_initialize_md32(struct en7572 *en)
 	                          EN7572_BEN_MODE_OFF);
 }
 
+/*
+ * A wedged module stays reachable over I2C while its TX path goes dark, so the
+ * cause only shows up in these runtime registers. Captures are tagged and the
+ * boot sequence takes a reference the wedged state can be read against.
+ */
+static void en7572_log_state(struct en7572 *en, const char *tag)
+{
+	u8 fw = 0, mcu_idle = 0, los = 0;
+	u16 alarm = 0, warning = 0, rssi = 0;
+	u16 temp = 0, vcc = 0, bias = 0, tx_power = 0, rx_power = 0;
+	u32 txdis = 0, sys = 0;
+	int ret;
+
+	mutex_lock(&en->lock);
+	ret = en7572_read(en->runtime, EN7572_FW_VERSION_REG, &fw, sizeof(fw));
+	if (!ret)
+		ret = en7572_read(en->runtime, EN7572_MCU_IDLE_REG, &mcu_idle,
+		                  sizeof(mcu_idle));
+	if (!ret)
+		ret = en7572_read(en->runtime, EN7572_LOS_STATUS_REG, &los,
+		                  sizeof(los));
+	if (!ret)
+		ret = en7572_read_u32(en->runtime, EN7572_TX_DISABLE_STATUS_REG,
+		                      &txdis);
+	if (!ret)
+		ret = en7572_read_u32(en->runtime, EN7572_SYSTEM_STATUS_REG, &sys);
+	if (!ret)
+		ret = en7572_read_u16(en->runtime, EN7572_ALARM_REG, &alarm);
+	if (!ret)
+		ret = en7572_read_u16(en->runtime, EN7572_WARNING_REG, &warning);
+	if (!ret)
+		ret = en7572_read_u16(en->runtime, EN7572_RSSI_ADC_REG, &rssi);
+	if (!ret)
+		ret = en7572_read_be16(en->runtime, EN7572_TEMPERATURE_REG, &temp);
+	if (!ret)
+		ret = en7572_read_be16(en->runtime, EN7572_VOLTAGE_REG, &vcc);
+	if (!ret)
+		ret = en7572_read_be16(en->runtime, EN7572_TX_BIAS_REG, &bias);
+	if (!ret)
+		ret = en7572_read_be16(en->runtime, EN7572_TX_POWER_REG, &tx_power);
+	if (!ret)
+		ret = en7572_read_be16(en->runtime, EN7572_RX_POWER_REG, &rx_power);
+	mutex_unlock(&en->lock);
+
+	if (ret) {
+		dev_warn(&en->program->dev, "state[%s]: capture failed: %d\n",
+		         tag, ret);
+		return;
+	}
+
+	dev_info(&en->program->dev,
+	         "state[%s] fw=0x%02x mcu_idle=0x%02x los=0x%02x txdis=0x%08x sys=0x%08x alarm=0x%04x warn=0x%04x rssi=0x%04x temp=0x%04x vcc=0x%04x bias=0x%04x txp=0x%04x rxp=0x%04x prepared=%u gate=%u\n",
+	         tag, fw, mcu_idle, los, txdis, sys, alarm, warning, rssi, temp,
+	         vcc, bias, tx_power, rx_power, en->prepared,
+	         en->tx_gate_enabled);
+}
+
+/*
+ * The first capture waits for the APC loop: a healthy line reports TX ready
+ * within a second of the gate opening, and DDMI only refreshes once a second.
+ */
+static const unsigned int en7572_sample_ms[] = { 2000, 2000, 4000 };
+static const char *const en7572_sample_tag[] = { "tx+2.0s", "tx+4.0s",
+                                                 "tx+8.0s" };
+
+static bool en7572_tx_ready(struct en7572 *en)
+{
+	u32 sys = 0;
+
+	if (en7572_read_u32(en->runtime, EN7572_SYSTEM_STATUS_REG, &sys))
+		return true;	/* never flap the line over a single read error */
+
+	return !!(sys & EN7572_SYS_TX_READY);
+}
+
+#define EN7572_READY_POLL_MS        20
+#define EN7572_READY_POLL_WINDOW_MS 8000
+#define EN7572_READY_POLL_IDLE_MS   1000
+
+static bool en7572_tx_ready_cached(struct airoha_pon_frontend *frontend)
+{
+	struct en7572 *en = airoha_pon_frontend_priv(frontend);
+
+	return READ_ONCE(en->tx_ready_state);
+}
+
+/*
+ * Warm lines report ready within a few hundred milliseconds of the gate
+ * opening, cold ones need more than a second. Poll fast while the answer is
+ * still no so the MAC can answer the first capable Discovery Gate, then fall
+ * back to a slow poll that keeps the cached flag honest.
+ */
+static void en7572_ready_work(struct work_struct *work)
+{
+	struct en7572 *en = container_of(to_delayed_work(work), struct en7572,
+	                                 ready_work);
+	bool ready;
+	unsigned int delay;
+	u32 sys = 0;
+
+	if (!READ_ONCE(en->tx_gate_enabled))
+		return;
+
+	if (en7572_read_u32(en->runtime, EN7572_SYSTEM_STATUS_REG, &sys)) {
+		/* An unreadable bus proves nothing; keep the last answer. */
+		schedule_delayed_work(&en->ready_work,
+		                      msecs_to_jiffies(EN7572_READY_POLL_MS));
+		return;
+	}
+
+	ready = !!(sys & EN7572_SYS_TX_READY);
+	if (ready != READ_ONCE(en->tx_ready_state)) {
+		WRITE_ONCE(en->tx_ready_state, ready);
+		if (ready)
+			dev_info(&en->program->dev,
+			         "TX path ready %u ms after the gate opened\n",
+			         jiffies_to_msecs(jiffies - en->gate_opened));
+	}
+
+	if (ready)
+		delay = EN7572_READY_POLL_IDLE_MS;
+	else if (time_after(jiffies, en->gate_opened +
+	                                 msecs_to_jiffies(
+	                                         EN7572_READY_POLL_WINDOW_MS)))
+		delay = EN7572_READY_POLL_IDLE_MS;
+	else
+		delay = EN7572_READY_POLL_MS;
+
+	schedule_delayed_work(&en->ready_work, msecs_to_jiffies(delay));
+}
+
+/* Dump the registers prepare() commits, to see them change behind our back. */
+static void en7572_log_analog(struct en7572 *en, const char *why)
+{
+	u32 dcl = 0, loop = 0, vmon = 0;
+
+	if (en7572_read_u32(en->runtime, EN7572_DCL_CTRL_2, &dcl) ||
+	    en7572_read_u32(en->runtime, EN7572_LOOP_CTRL, &loop) ||
+	    en7572_read_u32(en->runtime, EN7572_APC_ANA_VMON_SEL, &vmon))
+		return;
+
+	dev_warn(&en->program->dev,
+	         "state[%s] dcl_ctrl_2=0x%08x loop_ctrl=0x%08x vmon_sel=0x%08x\n",
+	         why, dcl, loop, vmon);
+}
+
+static void en7572_sample_work(struct work_struct *work)
+{
+	struct en7572 *en = container_of(to_delayed_work(work), struct en7572,
+	                                 sample_work);
+	unsigned int shot = en->sample_shot;
+
+	if (shot >= ARRAY_SIZE(en7572_sample_ms))
+		return;
+
+	en7572_log_state(en, en7572_sample_tag[shot]);
+
+	/*
+	 * The captures only report. An earlier version re-committed the
+	 * calibration here whenever the first capture was dark, but two boots
+	 * showed the analog path needs about two to four seconds after the gate
+	 * opens, so a two second verdict lands inside the warm-up and the
+	 * re-commit restarts it. Measured cost of that misfire: 3.8 s of cold
+	 * start on both boots. The Register Request deferral keeps the line
+	 * quiet while it warms up, so there is nothing left for a re-commit to
+	 * fix: the ladder owns recovery now.
+	 */
+	if (en->tx_gate_enabled && !en7572_tx_ready(en)) {
+		if (!shot) {
+			en7572_log_analog(en, "tx-dark");
+			dev_warn(&en->program->dev,
+			         "TX path not ready %u ms after the gate opened, waiting for the analog warm-up\n",
+			         en7572_sample_ms[0]);
+		}
+		if (shot == ARRAY_SIZE(en7572_sample_ms) - 1)
+			dev_err(&en->program->dev,
+			        "TX path still dark %u ms after the gate opened, leaving it to the xpon recovery ladder\n",
+			        en7572_sample_ms[0] + en7572_sample_ms[1] +
+			                en7572_sample_ms[2]);
+	}
+
+	en->sample_shot = shot + 1;
+	if (en->sample_shot < ARRAY_SIZE(en7572_sample_ms))
+		schedule_delayed_work(
+			&en->sample_work,
+			msecs_to_jiffies(en7572_sample_ms[en->sample_shot]));
+}
+
+/*
+ * The firmware version register says nothing about whether the core runs: it
+ * is a chip constant that reads 0x2a even with MD32 halted. The DDMI block is
+ * the only state the firmware itself publishes, and it sits at its reset
+ * defaults until the core starts refreshing it. Waiting for the first change
+ * also means the core has finished writing the analog registers prepare()
+ * owns, which is exactly the race that leaves a recovered line dark.
+ */
+static int en7572_wait_md32(struct en7572 *en)
+{
+	u16 temp, vcc, rssi;
+	u16 ref_temp = 0, ref_vcc = 0, ref_rssi = 0;
+	int waited;
+
+	en7572_read_be16(en->runtime, EN7572_TEMPERATURE_REG, &ref_temp);
+	en7572_read_be16(en->runtime, EN7572_VOLTAGE_REG, &ref_vcc);
+	en7572_read_u16(en->runtime, EN7572_RSSI_ADC_REG, &ref_rssi);
+
+	for (waited = 100; waited <= 5000; waited += 100) {
+		msleep(100);
+		temp = ref_temp;
+		vcc = ref_vcc;
+		rssi = ref_rssi;
+		en7572_read_be16(en->runtime, EN7572_TEMPERATURE_REG, &temp);
+		en7572_read_be16(en->runtime, EN7572_VOLTAGE_REG, &vcc);
+		en7572_read_u16(en->runtime, EN7572_RSSI_ADC_REG, &rssi);
+		if (temp != ref_temp || vcc != ref_vcc || rssi != ref_rssi)
+			return waited;
+	}
+
+	return -ETIMEDOUT;
+}
+
+static int en7572_start_md32(struct en7572 *en, const char *why)
+{
+	int attempt, ret, waited;
+
+	for (attempt = 1; attempt <= 2; attempt++) {
+		ret = en7572_initialize_md32(en);
+		if (ret)
+			return ret;
+
+		waited = en7572_wait_md32(en);
+		if (waited >= 0) {
+			dev_info(&en->program->dev,
+			         "MD32 started %d ms after the image load on %s\n",
+			         waited, why);
+			return 0;
+		}
+
+		dev_warn(&en->program->dev,
+		         "MD32 never refreshed DDMI on %s (attempt %d of 2), reloading the images\n",
+		         why, attempt);
+	}
+
+	/*
+	 * Keep the device bound: the recovery ladder retries, and the frontend
+	 * readiness check catches a dark path as soon as the gate is opened.
+	 */
+	dev_err(&en->program->dev,
+	        "MD32 did not start on %s, continuing\n", why);
+	return 0;
+}
+
 static int en7572_bob_base(enum airoha_pon_frontend_mode mode)
 {
 	switch (mode) {
@@ -651,6 +926,8 @@ static int en7572_prepare(struct airoha_pon_frontend *frontend,
 	mutex_lock(&en->lock);
 	en->prepared = false;
 	en->tx_gate_enabled = false;
+	WRITE_ONCE(en->tx_ready_state, false);
+	cancel_delayed_work(&en->ready_work);
 
 	ret = en7572_update_bits(en, EN7572_BEN_CTRL, EN7572_BEN_MODE_MASK,
 	                         EN7572_BEN_MODE_OFF);
@@ -735,6 +1012,10 @@ static int en7572_prepare(struct airoha_pon_frontend *frontend,
 
 out_unlock:
 	mutex_unlock(&en->lock);
+
+	if (!ret)
+		en7572_log_state(en, "prepared");
+
 	return ret;
 }
 
@@ -837,6 +1118,14 @@ static int en7572_set_tx_enable(struct airoha_pon_frontend *frontend,
 	if (enable && !en->prepared)
 		return -EAGAIN;
 
+	/*
+	 * Capture the burst path while it still looks like the last burst left
+	 * it. Once TX_DISABLE is asserted every register reads like a cleanly
+	 * stopped module, which is why a wedged line stayed invisible.
+	 */
+	if (!enable && en->tx_gate_enabled)
+		en7572_log_state(en, "gate-off");
+
 	mutex_lock(&en->lock);
 	if (enable) {
 		/* Enter burst mode before releasing the board TX_DISABLE gate. */
@@ -847,12 +1136,23 @@ static int en7572_set_tx_enable(struct airoha_pon_frontend *frontend,
 			if (en->tx_disable)
 				gpiod_set_value_cansleep(en->tx_disable, 0);
 			en->tx_gate_enabled = true;
+			/* A fresh gate starts dark until the analog path reports in. */
+			en->gate_opened = jiffies;
+			WRITE_ONCE(en->tx_ready_state, false);
+			mod_delayed_work(system_wq, &en->ready_work, 0);
+			/* Sample the burst path while it is supposed to be alive. */
+			en->sample_shot = 0;
+			mod_delayed_work(
+				system_wq, &en->sample_work,
+				msecs_to_jiffies(en7572_sample_ms[0]));
 		}
 	} else {
 		/* Assert board TX_DISABLE before closing the internal BEN gate. */
 		if (en->tx_disable)
 			gpiod_set_value_cansleep(en->tx_disable, 1);
 		en->tx_gate_enabled = false;
+		WRITE_ONCE(en->tx_ready_state, false);
+		cancel_delayed_work(&en->ready_work);
 		ret = en7572_update_bits(en, EN7572_BEN_CTRL,
 		                         EN7572_BEN_MODE_MASK,
 		                         EN7572_BEN_MODE_OFF);
@@ -873,6 +1173,8 @@ static int en7572_unprepare(struct airoha_pon_frontend *frontend)
 		gpiod_set_value_cansleep(en->tx_disable, 1);
 	en->tx_gate_enabled = false;
 	en->prepared = false;
+	WRITE_ONCE(en->tx_ready_state, false);
+	cancel_delayed_work(&en->ready_work);
 	ret = en7572_update_bits(en, EN7572_BEN_CTRL, EN7572_BEN_MODE_MASK,
 	                         EN7572_BEN_MODE_OFF);
 	mutex_unlock(&en->lock);
@@ -880,13 +1182,54 @@ static int en7572_unprepare(struct airoha_pon_frontend *frontend)
 	return ret;
 }
 
+static int en7572_reset(struct airoha_pon_frontend *frontend)
+{
+	struct en7572 *en = airoha_pon_frontend_priv(frontend);
+	u8 fw_version = 0;
+	int ret;
+
+	/*
+	 * Last resort for a burst path that will not come back. Note that this
+	 * reloads the MD32 images but does not by itself restore the analog TX
+	 * path: on this hardware the driver has to rewrite the calibration and
+	 * re-pulse rg_loop_en afterwards, which prepare() does. The caller does
+	 * that, and the frontend readiness check verifies the result.
+	 */
+	en7572_log_state(en, "reload-start");
+
+	mutex_lock(&en->lock);
+	en->prepared = false;
+	en->tx_gate_enabled = false;
+	WRITE_ONCE(en->tx_ready_state, false);
+	cancel_delayed_work(&en->ready_work);
+	if (en->tx_disable)
+		gpiod_set_value_cansleep(en->tx_disable, 1);
+	ret = en7572_start_md32(en, "recovery");
+	if (!ret)
+		ret = en7572_read(en->runtime, EN7572_FW_VERSION_REG,
+		                  &fw_version, sizeof(fw_version));
+	mutex_unlock(&en->lock);
+
+	if (ret)
+		return ret;
+
+	en7572_log_state(en, "reloaded");
+
+	dev_info(&en->program->dev,
+	         "MD32 firmware reloaded from stored images, fw=0x%02x\n",
+	         fw_version);
+	return 0;
+}
+
 static const struct airoha_pon_frontend_ops en7572_frontend_ops = {
 	.prepare = en7572_prepare,
 	.unprepare = en7572_unprepare,
+	.reset = en7572_reset,
 	.get_signal_status = en7572_get_signal_status,
 	.get_diagnostics = en7572_get_diagnostics,
 	.get_link_config = en7572_get_link_config,
 	.set_tx_enable = en7572_set_tx_enable,
+	.tx_ready = en7572_tx_ready_cached,
 };
 
 static int en7572_probe(struct i2c_client *client)
@@ -916,6 +1259,8 @@ static int en7572_probe(struct i2c_client *client)
 
 	en->program = client;
 	mutex_init(&en->lock);
+	INIT_DELAYED_WORK(&en->sample_work, en7572_sample_work);
+	INIT_DELAYED_WORK(&en->ready_work, en7572_ready_work);
 	/* GPIO descriptors translate logical assertion to board-level polarity. */
 	en->tx_disable =
 		devm_gpiod_get_optional(dev, "tx-disable", GPIOD_OUT_HIGH);
@@ -967,7 +1312,7 @@ static int en7572_probe(struct i2c_client *client)
 	if (ret)
 		return ret;
 
-	ret = en7572_initialize_md32(en);
+	ret = en7572_start_md32(en, "probe");
 	if (ret)
 		return dev_err_probe(dev, ret,
 		                     "EN7572 MD32 initialization failed\n");
@@ -1002,6 +1347,8 @@ static int en7572_probe(struct i2c_client *client)
 		en->chip_id, en->chip_rev, fw_version, los_status,
 		en->tx_disable ? ", board TX_DISABLE asserted" : "");
 
+	en7572_log_state(en, "probe");
+
 	return 0;
 }
 
@@ -1011,6 +1358,8 @@ static void en7572_remove(struct i2c_client *client)
 	struct en7572 *en = airoha_pon_frontend_priv(frontend);
 
 	airoha_pon_frontend_unregister(frontend);
+	cancel_delayed_work_sync(&en->sample_work);
+	cancel_delayed_work_sync(&en->ready_work);
 	/* Close the external TX path before the internal BEN gate. */
 	mutex_lock(&en->lock);
 	if (en->tx_disable)

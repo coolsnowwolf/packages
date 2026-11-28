@@ -19,19 +19,19 @@ Signed-off-by: coolsnowwolf <coolsnowwolf@gmail.com>
 +ccflags-y += -Werror=incompatible-pointer-types -Werror=int-conversion
 --- a/airoha-en7572.c
 +++ b/airoha-en7572.c
-@@ -12,7 +12,12 @@
- #include <linux/of.h>
+@@ -13,7 +13,12 @@
  #include <linux/sizes.h>
  #include <linux/slab.h>
+ #include <linux/jiffies.h>
 +#include <linux/version.h>
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 12, 0)
  #include <linux/unaligned.h>
 +#else
 +#include <asm/unaligned.h>
 +#endif
+ #include <linux/workqueue.h>
  
  #define EN7572_RUNTIME_ADDR 0x51
- 
 @@ -1005,7 +1010,11 @@
  	return 0;
  }

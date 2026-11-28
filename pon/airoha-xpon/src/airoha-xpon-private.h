@@ -73,10 +73,26 @@ struct airoha_xpon_epon {
 	bool llid_valid;
 	bool pcs_synced;
 	bool discovery_seen;
+	/*
+	 * The burst path has carried a Register Request to the OLT at least once
+	 * in this session. Only then does the TX-ready flag predict anything.
+	 */
+	bool ever_registered;
 	unsigned long denied_until;
 	/* Hard IRQ updates these values; readers use atomic_read(). */
 	atomic_t discovery_gate_count;
 	atomic_t register_request_count;
+	/*
+	 * Discovery Gates skipped because the optical TX path had not reported
+	 * ready yet. A Register Request sent into that window is lost and latches
+	 * the MAC discovery state machine, so the gate is deferred instead.
+	 */
+	unsigned int tx_deferrals;
+	/*
+	 * Register Requests sent since the OLT last answered with any MPCP
+	 * message. Silence across several requests is the cold-start wedge.
+	 */
+	unsigned int requests_since_message;
 	unsigned int register_message_count;
 	unsigned int register_ack_count;
 	unsigned int nack_count;
@@ -87,6 +103,22 @@ struct airoha_xpon_epon {
 	unsigned int sync_loss_count;
 	unsigned int recovery_count;
 	unsigned int full_reinit_count;
+	/*
+	 * Set by the MPCP timeout path when a registered MAC stops reaching the
+	 * OLT. link_work consumes it and reloads the optical frontend.
+	 */
+	bool frontend_reset_pending;
+	bool frontend_reset_forced;
+	bool frontend_reload_forced;
+	unsigned int registered_timeout_streak;
+	/*
+	 * Gate re-arms already spent on this wedge. Re-arming is repeated before
+	 * the firmware reload because the reload is the step that can come back
+	 * dark on this hardware.
+	 */
+	unsigned int tx_rearm_count;
+	unsigned int frontend_reset_count;
+	unsigned long frontend_reset_after;
 	unsigned long registered_since;
 	unsigned long last_registration_lifetime;
 	unsigned int mac_error_count;

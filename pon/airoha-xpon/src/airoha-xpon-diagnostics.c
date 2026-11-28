@@ -9,6 +9,7 @@
 #include <linux/minmax.h>
 #include <linux/netdevice.h>
 #include <linux/seq_file.h>
+#include <linux/uaccess.h>
 #include <net/netlink.h>
 
 #include "airoha-xpon-private.h"
@@ -384,6 +385,8 @@ static int pon_frontend_debug_show(struct seq_file *m, void *unused)
 	if (!ret) {
 		seq_printf(m, "tx_gate_enabled: %d\n",
 		           diagnostics.tx_gate_enabled);
+		seq_printf(m, "tx_path_ready: %d\n",
+		           airoha_pon_frontend_tx_ready(xpon->frontend));
 		if (diagnostics.valid & AIROHA_PON_FRONTEND_DIAG_TEMPERATURE)
 			seq_printf(m, "temperature_8472: 0x%04x\n",
 			           (u16)diagnostics.temperature);
@@ -604,6 +607,7 @@ static int pon_registration_debug_show(struct seq_file *m, void *unused)
 			"sync_losses: %u\n"
 			"recoveries: %u\n"
 			"full_reinitializations: %u\n"
+			"frontend_reloads: %u\n"
 			"registered_lifetime_ms: %u\n"
 			"last_registration_lifetime_ms: %u\n"
 			"last_register_status: 0x%08x\n",
@@ -617,6 +621,7 @@ static int pon_registration_debug_show(struct seq_file *m, void *unused)
 			xpon->epon.mpcp_timeout_count,
 			xpon->epon.sync_loss_count, xpon->epon.recovery_count,
 			xpon->epon.full_reinit_count,
+			xpon->epon.frontend_reset_count,
 			xpon->epon.registered_since ?
 				jiffies_to_msecs(jiffies -
 		                                 xpon->epon.registered_since) :
@@ -644,6 +649,44 @@ static int pon_registration_debug_show(struct seq_file *m, void *unused)
 }
 DEFINE_SHOW_ATTRIBUTE(pon_registration_debug);
 
+/*
+ * One forced TX-lane recovery, used to exercise the path on a healthy line
+ * instead of waiting for a wedge:
+ *
+ *   echo 1 > .../recover_tx   re-arm the burst path (stage 1)
+ *   echo 2 > .../recover_tx   reload the frontend firmware (stage 2)
+ */
+static ssize_t pon_recover_tx_write(struct file *file,
+                                    const char __user *user_buf, size_t count,
+                                    loff_t *offset)
+{
+	struct airoha_xpon *xpon = file->private_data;
+	char input[8];
+
+	if (!count || count >= sizeof(input))
+		return -EINVAL;
+	if (copy_from_user(input, user_buf, count))
+		return -EFAULT;
+	input[count] = '\0';
+
+	if (input[0] == '2')
+		WRITE_ONCE(xpon->epon.frontend_reload_forced, true);
+	else if (input[0] == '1' || input[0] == 'y' || input[0] == 'Y')
+		WRITE_ONCE(xpon->epon.frontend_reset_forced, true);
+	else
+		return -EINVAL;
+
+	mod_delayed_work(system_wq, &xpon->link_work, 0);
+	return count;
+}
+
+static const struct file_operations pon_recover_tx_fops = {
+	.owner = THIS_MODULE,
+	.open = simple_open,
+	.write = pon_recover_tx_write,
+	.llseek = noop_llseek,
+};
+
 void airoha_xpon_debugfs_init(struct airoha_xpon *xpon)
 {
 	char name[64];
@@ -665,6 +708,8 @@ void airoha_xpon_debugfs_init(struct airoha_xpon *xpon)
 	                    &pon_registration_debug_fops);
 	debugfs_create_file("datapath", 0400, xpon->debug_dir, xpon,
 	                    &pon_datapath_debug_fops);
+	debugfs_create_file("recover_tx", 0200, xpon->debug_dir, xpon,
+	                    &pon_recover_tx_fops);
 }
 
 void airoha_xpon_debugfs_remove(struct airoha_xpon *xpon)
