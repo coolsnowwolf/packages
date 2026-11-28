@@ -1,0 +1,64 @@
+#!/bin/sh /etc/rc.common
+START=80
+STOP=20
+
+USE_PROCD=1
+PROG=/usr/sbin/fttrd
+
+start_service() {
+	# Let fttrd's exact platform registry fail closed before touching hardware.
+	if ! "$PROG" --platform-check >/dev/null 2>&1; then
+		return 0
+	fi
+
+	echo "[*] Initializing FTTR Micro-OLT Subsystem..."
+
+	# Start the controller daemon.
+	procd_open_instance
+	procd_set_param command "$PROG"
+	# Set before exec: mimalloc may allocate before Rust main. Keep the native
+	# allocator's thread heaps, but avoid eager commit and long-lived spare pages.
+	# A nonzero purge delay batches reclamation instead of purging every free.
+	# Visit thread heaps every 1000 slow-path allocations; reclaiming a page
+	# still follows mimalloc's deferred-free and non-forced collection rules.
+	procd_set_param env MIMALLOC_ARENA_EAGER_COMMIT=0 MIMALLOC_PAGE_COMMIT_ON_DEMAND=1 MIMALLOC_PAGE_FULL_RETAIN=0 MIMALLOC_PURGE_DELAY=100 MIMALLOC_ARENA_PURGE_MULT=1 MIMALLOC_PURGE_DECOMMITS=1 MIMALLOC_ALLOW_THP=0 MIMALLOC_GENERIC_COLLECT=1000
+	procd_set_param respawn
+	procd_set_param stdout 1
+	procd_set_param stderr 1
+	procd_set_param term_timeout 5
+	procd_close_instance
+}
+
+stop_service() {
+	echo "[*] Stopping FTTR Subsystem..."
+	nft delete table bridge fttr_mqtt_redirect 2>/dev/null || true
+	nft delete table ip fttr_mqtt_redirect 2>/dev/null || true
+	nft delete table bridge fttr_acs_redirect 2>/dev/null || true
+	nft delete table ip fttr_acs_redirect 2>/dev/null || true
+	if "$PROG" --platform-check >/dev/null 2>&1; then
+		/usr/sbin/fttrctl optical shutdown --json || logger -t fttr "Owner shutdown failed; checking reset after termination"
+	fi
+}
+
+service_stopped() {
+	# procd deletion is asynchronous. The CLI waits boundedly for ownership;
+	# it never writes hardware while a daemon still owns it.
+	nft delete table bridge fttr_mqtt_redirect 2>/dev/null || true
+	nft delete table ip fttr_mqtt_redirect 2>/dev/null || true
+	nft delete table bridge fttr_acs_redirect 2>/dev/null || true
+	nft delete table ip fttr_acs_redirect 2>/dev/null || true
+	if "$PROG" --platform-check >/dev/null 2>&1; then
+		/usr/sbin/fttrctl optical shutdown-offline --json || logger -t fttr "Optical reset not confirmed after stop"
+	fi
+}
+
+service_triggers() {
+	procd_add_reload_trigger fttr
+	# Run restart outside fttrd's cgroup so stopping fttrd cannot kill it.
+	procd_add_raw_trigger "fttr.restart" 1000 /etc/init.d/fttr restart
+}
+
+reload_service() {
+	/usr/sbin/fttrctl optical reload --json || return $?
+	/usr/sbin/fttrctl config reload
+}

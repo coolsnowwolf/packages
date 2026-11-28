@@ -1,0 +1,55 @@
+{
+	"luci-app-fttr": {
+		"description": "Read and manage FTTR devices through the native controller",
+		"read": {
+			"ubus": {
+				"fttr": [
+					"get_capabilities",
+					"get_platform_info",
+					"fpga_diagnostic",
+					"optical_status",
+					"get_status",
+					"get_topology",
+					"get_topology_node",
+					"get_topology_clients",
+					"get_sync",
+					"config_check",
+					"npu_status",
+					"mib_start",
+					"mib_result",
+					"job_release",
+					"hl202_list",
+					"hl202_report",
+					"hl202_accounts_start",
+					"job_result",
+					"get_calibration"
+				],
+				"luci-rpc": [
+					"getNetworkDevices"
+				]
+			},
+			"uci": [
+				"fttr"
+			]
+		},
+		"write": {
+			"ubus": {
+				"fttr": [
+					"optical_set",
+					"config_reload",
+					"restart_service",
+					"sync",
+					"npu_set",
+					"hl202_account_update",
+					"hl202_exec_start",
+					"select_calibration",
+					"save_calibration",
+					"apply_calibration"
+				]
+			},
+			"uci": [
+				"fttr"
+			]
+		}
+	}
+}

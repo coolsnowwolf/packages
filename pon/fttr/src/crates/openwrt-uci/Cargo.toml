@@ -1,0 +1,14 @@
+[package]
+name = "openwrt-uci"
+version = "0.1.0"
+edition = "2021"
+description = "Pure Rust safe binding and dynamic loader for OpenWrt libuci"
+authors = ["Lazuli Kao"]
+license = "Apache-2.0"
+
+[dependencies]
+libc = "0.2.191"
+thiserror = "2.0.12"
+
+[dev-dependencies]
+tempfile = "3.17.1"

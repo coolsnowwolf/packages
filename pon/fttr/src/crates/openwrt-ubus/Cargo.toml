@@ -1,0 +1,13 @@
+[package]
+name = "openwrt-ubus"
+version = "0.1.0"
+edition = "2021"
+description = "Pure Rust safe binding and dynamic loader for OpenWrt libubus and libubox"
+authors = ["Lazuli Kao"]
+license = "Apache-2.0"
+
+[dependencies]
+libc = "0.2.191"
+serde = { version = "1.0.229", default-features = false, features = ["derive", "alloc"] }
+serde_json = { version = "1.0.154", default-features = false, features = ["std"] }
+thiserror = "2.0.12"

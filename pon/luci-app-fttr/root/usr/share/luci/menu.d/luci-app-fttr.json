@@ -1,0 +1,78 @@
+{
+	"admin/network/fttr": {
+		"title": "FTTR",
+		"order": 80,
+		"action": {
+			"type": "firstchild"
+		},
+		"depends": {
+			"acl": [ "luci-app-fttr" ]
+		}
+	},
+	"admin/network/fttr/status": {
+		"title": "Status",
+		"order": 10,
+		"action": {
+			"type": "view",
+			"path": "fttr/index"
+		}
+	},
+	"admin/network/fttr/topology": {
+		"title": "Topology",
+		"order": 15,
+		"action": {
+			"type": "view",
+			"path": "fttr/topology"
+		}
+	},
+	"admin/network/fttr/config": {
+		"depends": { "fs": { "/var/run/fttr-capabilities/config": "file" } },
+		"title": "Configuration",
+		"order": 20,
+		"action": {
+			"type": "view",
+			"path": "fttr/config"
+		}
+	},
+	"admin/network/fttr/sync": {
+		"depends": { "fs": { "/var/run/fttr-capabilities/sync": "file" } },
+		"title": "Synchronization",
+		"order": 25,
+		"action": { "type": "view", "path": "fttr/sync" }
+	},
+	"admin/network/fttr/hl202": {
+		"depends": { "fs": { "/var/run/fttr-capabilities/hl202": "file" } },
+		"title": "HL202 management",
+		"order": 35,
+		"action": { "type": "view", "path": "fttr/hl202" }
+	},
+	"admin/network/fttr/hardware": {
+		"title": "Hardware status",
+		"order": 30,
+		"action": {
+			"type": "view",
+			"path": "fttr/hardware"
+		}
+	},
+	"admin/network/fttr/npu": {
+		"title": "NPU",
+		"order": 31,
+		"action": { "type": "view", "path": "fttr/npu" }
+	},
+	"admin/network/fttr/calibration": {
+		"title": "Optical calibration",
+		"order": 32,
+		"action": {
+			"type": "view",
+			"path": "fttr/calibration"
+		}
+	},
+	"admin/network/fttr/about": {
+		"title": "About",
+		"order": 90,
+		"action": {
+			"type": "view",
+			"path": "fttr/about"
+		}
+	}
+}

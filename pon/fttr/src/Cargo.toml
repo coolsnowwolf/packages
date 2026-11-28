@@ -1,0 +1,114 @@
+[package]
+name = "openwrt-fttr"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+autobins = false
+description = "OpenWrt FTTR controller and multi-vendor device management tools"
+repository = "https://github.com/LazuliKao/openwrt-fttr"
+
+[workspace]
+members = ["crates/*"]
+default-members = ["."]
+resolver = "2"
+
+[features]
+default = ["device-hl202", "mqtt", "mqtt-bridge", "npu", "platform-h3c-hm2004-du", "allocator-mimalloc"]
+npu = ["tokio/process"]
+platform-h3c-hm2004-du = []
+platform-fiberhome-an4475-g2 = []
+platform-tianyi-tyfza1 = []
+all-platforms = ["platform-h3c-hm2004-du", "platform-fiberhome-an4475-g2", "platform-tianyi-tyfza1"]
+device-hl202 = ["dep:flate2", "dep:tar"]
+device-hwtc = []
+device-star = []
+device-zte = []
+device-scty = []
+device-fiberhome = []
+device-realtek = []
+all-devices = ["device-hl202", "device-hwtc", "device-star", "device-zte", "device-scty", "device-fiberhome", "device-realtek"]
+acs = ["dep:quick-xml", "dep:hyper", "dep:hyper-util", "dep:http-body-util", "dep:bytes", "dep:digest_auth", "dep:hyper-rustls", "dep:tokio-io-timeout"]
+acs-bridge = ["acs"]
+mqtt = ["dep:rumqttd", "dep:rumqttc"]
+mqtt-bridge = ["mqtt"]
+allocator-mimalloc = ["dep:mimalloc"]
+diagnostics = []
+
+[dependencies]
+fttr-api = { path = "crates/fttr-api" }
+fttr-jobs = { path = "crates/fttr-jobs" }
+sha2 = "0.10.9"
+libc = "0.2.191"
+# The original mimalloc 0.1.52 still bundles C 3.3.2; this fork bundles 3.5.3.
+mimalloc = { package = "mold-mimalloc", version = "=0.1.52", default-features = false, features = ["no_thp"], optional = true }
+serde = { version = "1.0.229", default-features = false, features = ["derive", "alloc"] }
+serde_json = { version = "1.0.154", default-features = false, features = ["std"] }
+quick-xml = { version = "0.42.0", features = ["async-tokio"], optional = true }
+flate2 = { version = "1.1.10", default-features = false, features = ["rust_backend"], optional = true }
+tar = { version = "0.4.46", default-features = false, optional = true }
+rumqttd = { version = "=0.20.0", git = "https://github.com/LazuliKao/rumqtt.git", rev = "e7ad1ac94b504d43ce2659eb84db559675f6d5cf", default-features = false, optional = true }
+rumqttc = { version = "=0.25.1", default-features = false, optional = true }
+tokio = { version = "1.54.1", default-features = false, features = ["rt-multi-thread", "macros", "net", "io-util", "sync", "time", "signal"] }
+hyper = { version = "1.12.0", default-features = false, features = ["http1", "server", "client"], optional = true }
+hyper-util = { version = "0.1.21", default-features = false, features = ["tokio", "client-legacy", "http1"], optional = true }
+http-body-util = { version = "0.1.5", optional = true }
+bytes = { version = "1.12.1", optional = true }
+base64 = "0.23.1"
+digest_auth = { version = "0.3.1", optional = true }
+hyper-rustls = { version = "0.27.10", default-features = false, features = ["http1", "ring", "webpki-roots", "tls12"], optional = true }
+tokio-io-timeout = { version = "1.2.1", optional = true }
+openwrt-uci = { path = "crates/openwrt-uci" }
+openwrt-ubus = { path = "crates/openwrt-ubus" }
+
+[dev-dependencies]
+bytes = "1.12.1"
+
+[[bin]]
+name = "fttrctl"
+path = "src/bin/fttrctl.rs"
+
+[[bin]]
+name = "fttrd"
+path = "src/bin/fttrd.rs"
+
+[[bin]]
+name = "fttr-platform-probe"
+path = "src/bin/fttr-platform-probe.rs"
+required-features = ["diagnostics"]
+
+[[bin]]
+name = "fttr-omci-mib"
+path = "src/bin/fttr-omci-mib.rs"
+required-features = ["diagnostics"]
+
+[[bin]]
+name = "fttr-omci-probe"
+path = "src/bin/fttr-omci-probe.rs"
+required-features = ["diagnostics"]
+
+[[bin]]
+name = "fttr-omci-service"
+path = "src/bin/fttr-omci-service.rs"
+required-features = ["diagnostics"]
+
+[[bin]]
+name = "fttr-k155-service"
+path = "src/bin/fttr-k155-service.rs"
+required-features = ["diagnostics", "device-hwtc"]
+
+[[bin]]
+name = "fttr-ranging"
+path = "src/bin/fttr-ranging.rs"
+required-features = ["diagnostics", "platform-h3c-hm2004-du"]
+
+[[bin]]
+name = "fttr-star-observe"
+path = "src/bin/fttr-star-observe.rs"
+required-features = ["diagnostics", "device-star"]
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

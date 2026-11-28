@@ -1,0 +1,257 @@
+Subject: h3c-fmcs: support QWRT Linux 5.4
+
+Adapt to the legacy driver and networking APIs. Enable the FTTR offload
+adapter when the OpenWrt bridge flowtable API is available.
+
+Signed-off-by: coolsnowwolf <coolsnowwolf@gmail.com>
+
+--- a/Makefile
++++ b/Makefile
+@@ -1,2 +1,7 @@
+ obj-m += h3c-fmcs.o
+ h3c-fmcs-objs := fmcs_main.o fmcs_spi.o fmcs_netdev.o fmcs_offload.o
++
++# The FTTR offload adapter uses the OpenWrt bridge flowtable API.
++ifneq ($(shell grep -l '^int dev_fill_bridge_path' $(srctree)/include/linux/netdevice.h),)
++ccflags-y += -DFMCS_FLOW_OFFLOAD
++endif
+--- a/fmcs_main.c
++++ b/fmcs_main.c
+@@ -5,6 +5,7 @@
+  */
+ 
+ #include <linux/module.h>
++#include <linux/version.h>
+ #include <linux/init.h>
+ #include <linux/platform_device.h>
+ #include <linux/firmware.h>
+@@ -441,7 +442,11 @@
+ }
+ static DEVICE_ATTR_WO(reload_fpga);
+ 
++#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 11, 0)
++static int fmcs_match_spi_child(struct device *dev, void *data)
++#else
+ static int fmcs_match_spi_child(struct device *dev, const void *data)
++#endif
+ {
+ 	return dev->class && !strcmp(dev->class->name, "spi_master");
+ }
+@@ -572,7 +577,11 @@
+ 	if (ret)
+ 		goto err_cdev;
+ 
++#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 4, 0)
++	priv->class = class_create(THIS_MODULE, FMCS_DEV_NAME);
++#else
+ 	priv->class = class_create(FMCS_DEV_NAME);
++#endif
+ 	if (IS_ERR(priv->class)) {
+ 		ret = PTR_ERR(priv->class);
+ 		goto err_class;
+@@ -645,9 +654,6 @@
+ {
+ 	struct fmcs_priv *priv = platform_get_drvdata(pdev);
+ 
+-	if (!priv)
+-		return;
+-
+ 	g_fmcs_priv = NULL;
+ 	device_remove_file(priv->dev, &dev_attr_ploam_rx_stats);
+ 	device_remove_file(priv->dev, &dev_attr_fpga_status);
+@@ -671,6 +677,14 @@
+ 
+ }
+ 
++#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 11, 0)
++static int fmcs_remove_legacy(struct platform_device *pdev)
++{
++	fmcs_remove(pdev);
++	return 0;
++}
++#endif
++
+ static const struct of_device_id fmcs_of_match[] = {
+ 	{ .compatible = "h3c,fmcs" },
+ 	{ /* sentinel */ }
+@@ -679,7 +693,11 @@
+ 
+ static struct platform_driver fmcs_driver = {
+ 	.probe  = fmcs_probe,
++#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 11, 0)
++	.remove = fmcs_remove_legacy,
++#else
+ 	.remove = fmcs_remove,
++#endif
+ 	.driver = {
+ 		.name           = FMCS_DRV_NAME,
+ 		.of_match_table = fmcs_of_match,
+--- a/fmcs_netdev.c
++++ b/fmcs_netdev.c
+@@ -6,6 +6,7 @@
+  */
+ 
+ #include <linux/netdevice.h>
++#include <linux/version.h>
+ #include <linux/etherdevice.h>
+ #include <linux/skbuff.h>
+ #include <linux/if_vlan.h>
+@@ -50,6 +51,10 @@
+ 
+ 	if (ret)
+ 		return ret;
++#ifndef FMCS_FLOW_OFFLOAD
++	if (mask)
++		return -EOPNOTSUPP;
++#endif
+ 	if (mask & ~GENMASK(FMCS_MAX_FTTR_PORTS - 1, 0))
+ 		return -ERANGE;
+ 	rtnl_lock();
+@@ -144,6 +149,10 @@
+ 
+ 	if (ret)
+ 		return ret;
++#ifndef FMCS_FLOW_OFFLOAD
++	if (mask)
++		return -EOPNOTSUPP;
++#endif
+ 	if (mask & ~GENMASK(FMCS_MAX_FTTR_PORTS - 1, 0))
+ 		return -ERANGE;
+ 	if (mask && hweight32(mask) < 2)
+@@ -398,8 +407,17 @@
+ 
+ 	if (!priv->dev || !priv->dev->of_node)
+ 		ret = -ENODEV;
+-	else
++	else {
++#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 13, 0)
++		const void *addr = of_get_mac_address(priv->dev->of_node);
++
++		ret = PTR_ERR_OR_ZERO(addr);
++		if (!ret)
++			ether_addr_copy(mac, addr);
++#else
+ 		ret = of_get_mac_address(priv->dev->of_node, mac);
++#endif
++	}
+ 
+ 	if (ret == -EPROBE_DEFER)
+ 		return ret;
+@@ -602,6 +620,7 @@
+ 	return 0;
+ }
+ 
++#ifdef FMCS_FLOW_OFFLOAD
+ static inline bool fmcs_in_bridge_path(void)
+ {
+ 	void *ret0 = __builtin_return_address(0);
+@@ -673,6 +692,8 @@
+ 	return fmcs_bridge_setup_tc(port->priv, type, data);
+ }
+ 
++#endif
++
+ static const struct net_device_ops fmcs_omci_ops = {
+ 	.ndo_start_xmit = fmcs_omci_xmit,
+ };
+@@ -689,8 +710,10 @@
+ 	.ndo_validate_addr   = eth_validate_addr,
+ 	.ndo_get_iflink      = fmcs_fttr_get_iflink,
+ 	.ndo_change_mtu      = fmcs_fttr_change_mtu,
++#ifdef FMCS_FLOW_OFFLOAD
+ 	.ndo_fill_forward_path = fmcs_fttr_fill_forward_path,
+ 	.ndo_setup_tc        = fmcs_fttr_setup_tc,
++#endif
+ };
+ 
+ void fmcs_rx_omci_frame(struct fmcs_priv *priv, const u8 *data, size_t len)
+@@ -929,7 +952,11 @@
+ 		dev->netdev_ops = &fmcs_fttr_ops;
+ 		dev->priv_flags &= ~IFF_TX_SKB_SHARING;
+ 		/* The transport and its receive handler live in init_net. */
++#ifdef NETIF_F_NETNS_LOCAL
++		dev->features |= NETIF_F_NETNS_LOCAL;
++#else
+ 		dev->netns_immutable = true;
++#endif
+ 		dev->min_mtu = ETH_MIN_MTU;
+ 		dev->max_mtu = ETH_MAX_MTU;
+ 		dev->needed_headroom = VLAN_HLEN;
+--- a/fmcs_offload.c
++++ b/fmcs_offload.c
+@@ -1,6 +1,7 @@
+ // SPDX-License-Identifier: GPL-2.0
+ /* FTTR logical bridge ports -> lower-device flow block. No private PPE API. */
+ #include <linux/etherdevice.h>
++#include <linux/module.h>
+ #include <linux/if_vlan.h>
+ #include <linux/if_bridge.h>
+ #include <linux/in6.h>
+@@ -10,6 +11,7 @@
+ #include <net/pkt_cls.h>
+ #include "fmcs.h"
+ 
++#ifdef FMCS_FLOW_OFFLOAD
+ static bool fmcs_bridge_debug;
+ module_param_named(bridge_offload_debug, fmcs_bridge_debug, bool, 0644);
+ MODULE_PARM_DESC(bridge_offload_debug, "Rate-limited bridge TC adapter diagnostics");
+@@ -380,3 +382,18 @@
+ 	kfree(b);
+ 	priv->bridge_offload = NULL;
+ }
++
++#else
++int fmcs_bridge_init(struct fmcs_priv *priv)
++{
++	return 0;
++}
++
++void fmcs_bridge_exit(struct fmcs_priv *priv)
++{
++}
++
++void fmcs_bridge_unbind(struct fmcs_priv *priv, struct net_device *lower)
++{
++}
++#endif
+--- a/fmcs_spi.c
++++ b/fmcs_spi.c
+@@ -124,11 +124,12 @@
+ 
+ 	while (rem > 0) {
+ 		u32 chunk = min_t(u32, rem, 511);
++		u32 i;
+ 		int ret = an7581_spi_op_write(priv, SPI_OP_TX_DFIFO, chunk);
+ 		if (ret)
+ 			return ret;
+ 
+-		for (u32 i = 0; i < chunk; i++) {
++		for (i = 0; i < chunk; i++) {
+ 			int timeout = 10000;
+ 			while (readl(priv->spi_base + REG_SPI_DFIFO_W_FULL) && --timeout)
+ 				cpu_relax();
+@@ -148,11 +149,12 @@
+ 
+ 	while (rem > 0) {
+ 		u32 chunk = min_t(u32, rem, 511);
++		u32 i;
+ 		int ret = an7581_spi_op_write(priv, SPI_OP_RX_DFIFO, chunk);
+ 		if (ret)
+ 			return ret;
+ 
+-		for (u32 i = 0; i < chunk; i++) {
++		for (i = 0; i < chunk; i++) {
+ 			int timeout = 10000;
+ 			while (readl(priv->spi_base + REG_SPI_DFIFO_R_EMPTY) && --timeout)
+ 				cpu_relax();
+@@ -223,7 +225,9 @@
+ 		/* Preserve every payload bit, including the LSB, on the wire. */
+ 		ret = an7581_spi_read_bytes(priv, wire, recv_len + !!skip);
+ 		if (!ret) {
+-			for (u32 i = 0; i < recv_len; ++i)
++			u32 i;
++
++			for (i = 0; i < recv_len; ++i)
+ 				recv_buf[i] = skip ? (wire[i] << skip) |
+ 					(wire[i + 1] >> (8 - skip)) : wire[i];
+ 		}
