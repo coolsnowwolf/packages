@@ -1,0 +1,80 @@
+Subject: [PATCH] ovpn: select EIP93 hybrid AES-GCM on AN7581
+
+Select the EIP93 CTR driver explicitly for OpenVPN DCO on AN7581 and
+reuse the kernel GCM template for GHASH. Try both GHASH driver names
+to support kernels before and after the GHASH library conversion.
+Use synchronous AES-GCM when the hybrid transform is unavailable or
+disabled with the eip93 module parameter.
+
+Signed-off-by: coolsnowwolf <coolsnowwolf@gmail.com>
+---
+--- a/drivers/net/ovpn/crypto_aead.c
++++ b/drivers/net/ovpn/crypto_aead.c
+@@ -8,6 +8,8 @@
+  */
+ 
+ #include <crypto/aead.h>
++#include <linux/moduleparam.h>
++#include <linux/of.h>
+ #include <linux/skbuff.h>
+ #include <net/ip.h>
+ #include <net/ipv6.h>
+@@ -29,6 +31,10 @@
+ #define ALG_NAME_AES		"gcm(aes)"
+ #define ALG_NAME_CHACHAPOLY	"rfc7539(chacha20,poly1305)"
+ 
++static bool eip93 = true;
++module_param(eip93, bool, 0644);
++MODULE_PARM_DESC(eip93, "Use AN7581 EIP93 hybrid AES-GCM for new keys (default: true)");
++
+ static int ovpn_aead_encap_overhead(const struct ovpn_crypto_key_slot *ks)
+ {
+ 	return  OVPN_OPCODE_SIZE +			/* OP header size */
+@@ -350,6 +356,28 @@
+ 	return crypto_aead_decrypt(req);
+ }
+ 
++static struct crypto_aead *ovpn_aead_alloc(const char *alg_name)
++{
++	u32 mask = IS_ENABLED(CONFIG_CRYPTO_DEV_SAFEXCEL) ? CRYPTO_ALG_ASYNC : 0;
++	struct crypto_aead *aead;
++
++	if (!IS_ENABLED(CONFIG_CRYPTO_DEV_EIP93) || strcmp(alg_name, ALG_NAME_AES) ||
++	    !(of_machine_is_compatible("airoha,an7581") ||
++	      of_machine_is_compatible("airoha,en7581")))
++		return crypto_alloc_aead(alg_name, 0, mask);
++
++	if (READ_ONCE(eip93) && !mask) {
++		/* EIP93 handles AES-CTR. The GCM template handles GHASH. */
++		aead = crypto_alloc_aead("gcm_base(ctr(aes-eip93),ghash-generic)", 0, 0);
++		if (IS_ERR(aead) && PTR_ERR(aead) == -ENOENT)
++			aead = crypto_alloc_aead("gcm_base(ctr(aes-eip93),ghash-lib)", 0, 0);
++		if (!IS_ERR(aead))
++			return aead;
++	}
++
++	return crypto_alloc_aead(alg_name, 0, CRYPTO_ALG_ASYNC);
++}
++
+ /* Initialize a struct crypto_aead object */
+ static struct crypto_aead *ovpn_aead_init(const char *title,
+ 					  const char *alg_name,
+@@ -359,7 +387,7 @@
+ 	struct crypto_aead *aead;
+ 	int ret;
+ 
+-	aead = crypto_alloc_aead(alg_name, 0, IS_ENABLED(CONFIG_CRYPTO_DEV_SAFEXCEL) ? CRYPTO_ALG_ASYNC : 0);
++	aead = ovpn_aead_alloc(alg_name);
+ 	if (IS_ERR(aead)) {
+ 		ret = PTR_ERR(aead);
+ 		pr_err("%s crypto_alloc_aead failed, err=%d\n", title, ret);
+@@ -392,7 +420,8 @@
+ 		goto error;
+ 	}
+ 
+-	pr_debug("********* Cipher %s (%s)\n", alg_name, title);
++	pr_debug("********* Cipher %s (%s)\n",
++		 crypto_tfm_alg_driver_name(crypto_aead_tfm(aead)), title);
+ 	pr_debug("*** IV size=%u\n", crypto_aead_ivsize(aead));
+ 	pr_debug("*** req size=%u\n", crypto_aead_reqsize(aead));
+ 	pr_debug("*** block size=%u\n", crypto_aead_blocksize(aead));
